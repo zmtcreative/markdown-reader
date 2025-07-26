@@ -2,4 +2,4 @@
 
 ## About
 
-This is a Markdown Reader written in Go using the Wails + Svelte framework.
+This is a Markdown Reader written in Go using the Wails framework
