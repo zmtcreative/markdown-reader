@@ -1,0 +1,36 @@
+build/bin
+frontend/dist
+frontend/node_modules
+
+package-lock.json
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Code coverage profiles and other test artifacts
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# env file
+.env
+
+.clj-kondo/
+.lsp/
+
+build/windows/installer/wails_tools.nsh

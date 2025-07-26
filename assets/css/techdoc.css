@@ -1,0 +1,169 @@
+:root {
+    --zmtc-techdoc-heading-margin: 0rem;
+    --td-base-margin: 0rem;
+    --td-section-indent: 1rem;
+    --td-header-left-indent: -1rem;
+    --td-header-right-indent: 0.5rem;
+    --color-neutral-50: 250,250,250;
+    --color-neutral-100: 245,245,245;
+    --color-neutral-200: 229,229,229;
+    --color-neutral-300: 212,212,212;
+    --color-neutral-400: 163,163,163;
+    --color-neutral-500: 115,115,115;
+    --color-neutral-600: 82,82,82;
+    --color-neutral-700: 64,64,64;
+    --color-neutral-800: 38,38,38;
+    --color-neutral-900: 23,23,23;
+    --color-neutral-950: 10,10,10;
+    --td-indent-h1: var(--td-base-margin);
+    --td-indent-h2: var(--td-section-indent);
+    --td-indent-h3: var(--td-section-indent);
+    --td-indent-h4: var(--td-section-indent);
+    --td-indent-h5: var(--td-section-indent);
+    --td-indent-h6: var(--td-section-indent);
+
+    /* Set suffix and separator for the header numbering
+        (default suffix is ":" and default separator is ".") */
+    --td-suffix: " -";
+    --td-separator: ".";
+}
+
+.markdown-body section > h1, .h1 {
+   font-size: calc(1.375rem + 1.5vw);
+}
+
+.markdown-body section > h2, .h2 {
+   font-size: calc(1.325rem + 0.9vw);
+  /* font-variant: small-caps; */
+}
+
+.markdown-body section > h3, .h3 {
+   font-size: calc(1.3rem + 0.6vw);
+}
+
+.markdown-body section > h4, .h4 {
+   font-size: calc(1.275rem + 0.2vw);
+}
+
+.markdown-body section > h5, .h5 {
+   font-size: 1.25rem;
+}
+
+.markdown-body section > h6, .h6 {
+   font-size: 1.125rem;
+}
+
+.markdown-body section > h1 {
+   counter-reset: td-h2 0;
+   margin-left: var(--td-base-margin);
+   margin-right: var(--td-base-margin);
+}
+
+.markdown-body section > h2 {
+   counter-reset: td-h3 0;
+   background-color: rgba(var(--color-neutral-700),1);
+   color: white;
+   margin-top: 0;
+   padding: 5px;
+   margin-left: var(--td-header-left-indent);
+   margin-right: var(--td-base-margin);
+   text-decoration-line: none;
+}
+
+.markdown-body section > h3 {
+   counter-reset: td-h4 0;
+   background-color: rgba(var(--color-neutral-700),1);
+   color: white;
+   margin-top: 0;
+   padding: 5px;
+   margin-left: var(--td-header-left-indent);
+   margin-right: var(--td-base-margin);
+}
+
+.markdown-body section > h4 {
+   counter-reset: td-h5 0;
+   background-color: rgba(var(--color-neutral-700),1);
+   color: white;
+   margin-top: 0;
+   padding: 5px;
+   margin-left: var(--td-header-left-indent);
+   margin-right: var(--td-base-margin);
+}
+
+.markdown-body section > h5 {
+   counter-reset: td-h6 1;
+   background-color: rgba(var(--color-neutral-700),1);
+   color: white;
+   margin-top: 0;
+   padding: 5px;
+   margin-left: var(--td-header-left-indent);
+   margin-right: var(--td-base-margin);
+}
+
+.markdown-body section > h6 {
+   background-color: rgba(var(--color-neutral-700),1);
+   color: white !important;
+   margin-top: 0;
+   padding: 5px;
+   margin-left: var(--td-header-left-indent);
+   margin-right: var(--td-base-margin);
+}
+
+.markdown-body section > h2::before {
+   display: inline-block;
+   counter-increment: td-h2;
+   content: counter(td-h2) var(--td-suffix,":")" " !important;
+}
+
+.markdown-body section > h3::before {
+   display: inline-block;
+   counter-increment: td-h3;
+   content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
+}
+
+.markdown-body section > h4::before {
+   display: inline-block;
+   counter-increment: td-h4;
+   content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
+}
+
+.markdown-body section > h5::before {
+   display: inline-block;
+   counter-increment: td-h5;
+   content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
+}
+
+.markdown-body section > h6::before {
+   display: inline-block;
+   counter-increment: td-h6;
+   content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
+}
+
+.markdown-body section:has(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+    margin-left: var(--td-base-margin);
+}
+
+.markdown-body section:has(h2):not(h3):not(h4):not(h5):not(h6),
+.markdown-body section:has(h3):not(h4):not(h5):not(h6),
+.markdown-body section:has(h4):not(h5):not(h6),
+.markdown-body section:has(h5):not(h6),
+.markdown-body section:has(h6) {
+    margin-left: var(--td-section-indent);
+}
+
+/* .markdown-body section:has(h3):not(h4):not(h5):not(h6) {
+    margin-left: var(--td-section-indent);
+}
+
+.markdown-body section:has(h4):not(h5):not(h6) {
+    margin-left: var(--td-section-indent);
+}
+
+.markdown-body section:has(h5):not(h6) {
+    margin-left: var(--td-section-indent);
+}
+
+.markdown-body section:has(h6) {
+    margin-left: var(--td-section-indent);
+} */
+
