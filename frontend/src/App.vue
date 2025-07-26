@@ -1,21 +1,30 @@
-<script lang="ts" setup>
-import HelloWorld from './components/HelloWorld.vue'</script>
-
 <template>
-  <img id="logo" alt="Wails logo" src="./assets/images/logo-universal.png"/>
-  <HelloWorld/>
+  <article v-html="renderedHTML" class="markdown-body"></article>
 </template>
 
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+
+const renderedHTML = ref('');
+
+onMounted(async () => {
+  // Get the markdown file path from the command line arguments
+  const args = await window.go.main.App.GetArgs();
+  console.log('Command line arguments length:', args.length);
+  console.log('Command line arguments:', args);
+  if (args.length > 0) {
+    const filePath = args[0];
+    try {
+      renderedHTML.value = await window.go.main.App.ProcessMarkdown(filePath);
+    } catch (e) {
+      console.error(e);
+      renderedHTML.value = 'Error rendering markdown.';
+    }
+  } else {
+    renderedHTML.value = 'No markdown file specified.';
+  }
+});
+</script>
+
 <style>
-#logo {
-  display: block;
-  width: 50%;
-  height: 50%;
-  margin: auto;
-  padding: 10% 0 0;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  background-origin: content-box;
-}
 </style>
