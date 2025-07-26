@@ -3,9 +3,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 
-const renderedHTML = ref('');
+const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
 
 onMounted(async () => {
   // Get the markdown file path from the command line arguments
@@ -24,6 +25,22 @@ onMounted(async () => {
     renderedHTML.value = 'No markdown file specified.';
   }
 });
+
+// Function to update the rendered HTML
+const updateContent = (html: string) => {
+  renderedHTML.value = html;
+};
+
+onMounted(() => {
+  // Listen for the 'markdown-rendered' event from the Go backend
+  EventsOn('markdown-rendered', updateContent);
+});
+
+onUnmounted(() => {
+  // Clean up the event listener when the component is destroyed
+  EventsOff('markdown-rendered');
+});
+
 </script>
 
 <style>
