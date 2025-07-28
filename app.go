@@ -10,16 +10,22 @@ import (
 	"strings"
 	"time"
 
+	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
 	dateparse "github.com/araddon/dateparse"
+	figure "github.com/mangoumbrella/goldmark-figure"
+	fences "github.com/stefanfritsch/goldmark-fences"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
+	"go.abhg.dev/goldmark/anchor"
 	"go.abhg.dev/goldmark/frontmatter"
+	mermaid "go.abhg.dev/goldmark/mermaid"
 )
 
 // App struct
@@ -79,6 +85,7 @@ func (a *App) shutdown(ctx context.Context) {
 
 
 func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
+	myIcons := InitAlertIcons() // Initialize alert icons
     options := []goldmark.Option{
         goldmark.WithParserOptions(
             parser.WithAutoHeadingID(), // Automatically generate IDs for headings
@@ -90,6 +97,18 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
             extension.DefinitionList,
             extension.Footnote,
             extension.Typographer,
+			&mermaid.Extender{}, // Add Mermaid support for diagrams
+			&alerts.GhAlerts{
+				Icons: myIcons,
+			},
+			emoji.Emoji,
+			figure.Figure.WithSkipNoCaption(),
+			&anchor.Extender{
+				Position: anchor.Before,
+				Texter: anchor.Text("#"),
+			},
+			&fences.Extender{},
+			&SectionWrapperExtension{},
         ),
     }
 

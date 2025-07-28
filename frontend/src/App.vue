@@ -1,10 +1,19 @@
 <template>
-  <article v-html="renderedHTML" class="markdown-body"></article>
+    <header class="app-header">
+      <h1 v-html="docHTMLTitle" class="document-title"></h1>
+      <p v-html="docHTMLDate" class="document-dates"></p>
+      <!-- Display error message if preset -->
+      <p v-if="errorMessage" class="error-message">Error: {{ errorMessage }}</p>
+    </header>
+    <main class="content-area">
+      <article v-html="renderedHTML" id="content" class="markdown-body"></article>
+    </main>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
+import mermaid from 'mermaid';
 
 const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
 const docHTMLTitle = ref('');
@@ -16,10 +25,14 @@ const errorMessage = ref('');
 const helpModalOverlay = document.getElementById('help-modal-overlay');
 const helpModalText = document.getElementById('help-modal-text');
 const helpModalCloseBtn = document.getElementById('help-modal-close');
-// const helpText = ref('');
-
 
 onMounted(() => {
+  // Initialize Mermaid.js
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'default',
+  });
+
   // Listen for the 'markdown-rendered' event from the Go backend
   EventsOn('markdown-rendered', (html: string, title: string, date: string) => {
     console.log('Received markdownLoaded event. Updating HTML content.');
@@ -27,6 +40,13 @@ onMounted(() => {
     docHTMLTitle.value = title;
     docHTMLDate.value = date;
     errorMessage.value = ''; // Clear any previous error message
+    nextTick(() => {
+      console.log('Next tick after setting renderedHTML');
+      // After the content is set, initialize Mermaid diagrams
+      mermaid.run({
+        nodes: document.querySelectorAll('.markdown-body .mermaid'),
+      });
+    });
   });
   EventsOn('error', (message: string) => {
     console.error('Received error event:', message);
