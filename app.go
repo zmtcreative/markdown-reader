@@ -164,6 +164,9 @@ func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) { // Corrected: Use *men
 	if err != nil {
 		log.Printf("Error loading selected Markdown file %q: %v", selection, err)
 		runtime.EventsEmit(a.ctx, "error", "Failed to load selected file: "+err.Error())
+	} else {
+		log.Printf("Successfully loaded Markdown file: %s", selection)
+		a.initialFile = selection // Update initialFile to the newly opened file
 	}
 }
 
