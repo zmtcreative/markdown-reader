@@ -4,7 +4,7 @@
     --callout-border-width: 0px;
     --callout-border-opacity: 0.25;
     --callout-padding: 12px 12px 12px 24px;
-    --callout-radius: 4px;
+    --callout-radius: 10px;
     --callout-title-color: inherit;
     --callout-title-padding: 0;
     --callout-title-size: inherit;
@@ -137,6 +137,70 @@ svg, svg.cls-1 {
     color: rgb(var(--callout-color));
     line-height: var(--line-height-tight);
     align-items: flex-start;
+    font-weight: var(--callout-title-weight);
+}
+
+.markdown-alert .markdown-alert-title {
+    padding: var(--callout-title-padding);
+    display: flex;
+    gap: 4px;
+    font-size: var(--callout-title-size);
+    color: rgb(var(--callout-color));
+    line-height: var(--line-height-tight);
+    align-items: flex-start;
+}
+.markdown-alert .markdown-alert-title svg.lucide {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.markdown-alert[data-callout="todo"] {
+    --callout-color: var(--callout-todo);
+    --callout-icon: lucide-check-circle-2;
+}
+.markdown-alert[data-callout="success"],
+.markdown-alert[data-callout="check"],
+.markdown-alert[data-callout="done"] {
+    --callout-color: var(--callout-success);
+    --callout-icon: lucide-check;
+}
+.markdown-alert[data-callout="warning"],
+.markdown-alert[data-callout="attention"] {
+    --callout-color: var(--callout-warning);
+    --callout-icon: lucide-alert-triangle;
+}
+.markdown-alert[data-callout="danger"],
+.markdown-alert[data-callout="caution"],
+.markdown-alert[data-callout="error"] {
+    --callout-color: var(--callout-error);
+    --callout-icon: lucide-zap;
+}
+.markdown-alert[data-callout="tip"],
+.markdown-alert[data-callout="hint"] {
+    --callout-color: var(--callout-tip);
+    --callout-icon: lucide-flame;
+}
+.markdown-alert[data-callout="example"] {
+    --callout-color: var(--callout-example);
+    --callout-icon: lucide-list;
+}
+.markdown-alert[data-callout="abstract"],
+.markdown-alert[data-callout="summary"],
+.markdown-alert[data-callout="tldr"] {
+    --callout-color: var(--callout-summary);
+    --callout-icon: lucide-clipboard-list;
+}
+.markdown-alert[data-callout="quote"],
+.markdown-alert[data-callout="cite"] {
+    --callout-color: var(--callout-quote);
+    --callout-icon: quote-glyph;
+}
+
+.markdown-alert p:not(:first-child) {
+    /* overflow-x: auto; */
+    padding: var(--callout-content-padding);
+    background-color: var(--callout-content-background);
 }
 
 .disallowed, .disallowed svg.cls-1 {
