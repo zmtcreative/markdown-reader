@@ -32,15 +32,13 @@ type App struct {
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-    return &App{
+    app := &App{
         frontMatter: map[string]string{},
         stripH1: false,
-        mdConverter: goldmark.New(
-            goldmark.WithExtensions(
-                &frontmatter.Extender{}, // Add the frontmatter extension
-            ),
-        ),
     }
+	app.GetArgs() // Get command line arguments
+	app.mdConverter = app.CreateGoldmarkInstance()
+	return app
 }
 
 // startup is called when the app starts. The context is created
@@ -89,6 +87,23 @@ func (a *App) GetArgs() {
             a.initialFile = string(*initialFile)
         }
     }
+}
+func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
+    options := []goldmark.Option{
+        goldmark.WithParserOptions(
+            parser.WithAutoHeadingID(), // Automatically generate IDs for headings
+            parser.WithAttribute(),      // Enable attributes for nodes
+        ),
+        goldmark.WithExtensions(
+            &frontmatter.Extender{}, // Add the frontmatter extension
+            extension.GFM,
+            extension.DefinitionList,
+            extension.Footnote,
+            extension.Typographer,
+        ),
+    }
+
+    return goldmark.New(options...)
 }
 
 // // ProcessMarkdown reads a markdown file, renders it to HTML using Goldmark, and returns the HTML string.

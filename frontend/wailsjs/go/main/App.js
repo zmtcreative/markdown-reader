@@ -6,6 +6,10 @@ export function ConvertMarkdownToHTML(arg1) {
   return window['go']['main']['App']['ConvertMarkdownToHTML'](arg1);
 }
 
+export function CreateGoldmarkInstance() {
+  return window['go']['main']['App']['CreateGoldmarkInstance']();
+}
+
 export function GetArgs() {
   return window['go']['main']['App']['GetArgs']();
 }
