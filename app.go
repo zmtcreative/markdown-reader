@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	dateparse "github.com/araddon/dateparse"
+	flag "github.com/spf13/pflag"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
@@ -29,6 +29,8 @@ type App struct {
     initialFile string
     stripH1 bool
 	allowInlineHTML bool
+	cmdlineOptions string // Store command line options here
+	sanitizeHTML bool // Flag to control sanitization of HTML and URL links
     frontMatter map[string]string // Store frontmatter data here
     mdConverter goldmark.Markdown
 }
@@ -39,8 +41,12 @@ func NewApp() *App {
         frontMatter: map[string]string{},
         stripH1: false,
 		allowInlineHTML: true, // Default to true, can be set via CLI flag
+		sanitizeHTML: true, // Default to true, can be set via CLI flag
     }
-	app.GetArgs() // Get command line arguments
+	if err := app.GetArgs(); err != nil {
+		log.Printf("Error processing command line arguments: %v", err)
+		return nil // Return nil if there was an error processing command line arguments
+	}
 	app.mdConverter = app.CreateGoldmarkInstance()
 	return app
 }
@@ -78,11 +84,17 @@ func (a *App) shutdown(ctx context.Context) {
 }
 
 
-func (a *App) GetArgs() {
+func (a *App) GetArgs() (err error) {
     // Using flag.Parsed() prevents re-parsing, which can cause panics.
     if !flag.Parsed() {
         // This logic seems to be for finding a single file from command-line args.
-        initialFile := flag.String("file", "", "Path to the initial Markdown file")
+        initialFile := flag.StringP("file", "f", "", "Path to the initial Markdown file")
+		allowInlineHTML := flag.Bool("nohtml", true, "No inline HTML rendering (default: allow inline HTML)")
+		sanitizeHTML := flag.Bool("nosanitize", true, "No sanitizing of HTML and URL output (default: sanitize HTML and URLs)")
+		// showHelp := flag.BoolP("help", "h", true, "Display help message")
+		flag.Lookup("nohtml").NoOptDefVal = "false" // Allow --nohtml to be used without a value
+		flag.Lookup("nosanitize").NoOptDefVal = "false" // Allow --nosanitize to be used without a value
+		// flag.Lookup("help").NoOptDefVal = "false" // Allow --help to be used without a value
         flag.Parse()
         if *initialFile == "" && len(flag.Args()) > 0 {
             a.initialFile = string(flag.Args()[0])
@@ -90,7 +102,43 @@ func (a *App) GetArgs() {
         if *initialFile != "" {
             a.initialFile = string(*initialFile)
         }
+		a.allowInlineHTML = *allowInlineHTML
+		a.sanitizeHTML = *sanitizeHTML
+		if !*allowInlineHTML {
+			fmt.Println("--nohtml option provided: Inline HTML rendering is disabled.")
+		}
+		if !*sanitizeHTML {
+			fmt.Println("--nosanitize option provided: HTML and URL sanitization is disabled.")
+		}
+        if err := flag.ErrHelp; err != nil {
+            log.Println("Error parsing flags:", err)
+            flag.Usage()
+        }
+
+        // 1. Build the usage string first
+        var usageText strings.Builder
+        usageText.WriteString(fmt.Sprintf("Usage: %s [options] [file]\n\n", os.Args[0]))
+        usageText.WriteString("Options:\n")
+
+        flag.VisitAll(func(f *flag.Flag) {
+            if !f.Hidden {
+                line := fmt.Sprintf("  -%s, --%s", f.Shorthand, f.Name)
+                line += fmt.Sprintf("\t%s", f.Usage)
+                if f.DefValue != "" {
+                    line += fmt.Sprintf(" (default: %s)", f.DefValue)
+                }
+                usageText.WriteString(line + "\n")
+            }
+        })
+        a.cmdlineOptions = usageText.String()
+
+        // 2. Assign a function to flag.Usage that prints the string
+        flag.Usage = func() {
+            fmt.Fprint(os.Stderr, a.cmdlineOptions)
+        }
     }
+
+    return err
 }
 
 func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
@@ -114,11 +162,16 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 			goldmark.WithRendererOptions(
             	html.WithUnsafe(), // Allow unsafe HTML rendering
     	    ),
+		)
+    }
+
+	if a.sanitizeHTML {
+		options = append(options,
 			goldmark.WithExtensions(
 				&SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
 			),
 		)
-    }
+	}
 
     return goldmark.New(options...)
 }

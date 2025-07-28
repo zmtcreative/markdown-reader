@@ -4,6 +4,7 @@ go 1.23
 
 require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
+	github.com/spf13/pflag v1.0.7
 	github.com/wailsapp/wails/v2 v2.10.2
 	github.com/yuin/goldmark v1.7.13
 	go.abhg.dev/goldmark/frontmatter v0.2.0
