@@ -12,6 +12,13 @@ const docHTMLDate = ref('');
 
 const errorMessage = ref('');
 
+// Get references to the modal elements
+const helpModalOverlay = document.getElementById('help-modal-overlay');
+const helpModalText = document.getElementById('help-modal-text');
+const helpModalCloseBtn = document.getElementById('help-modal-close');
+// const helpText = ref('');
+
+
 onMounted(() => {
   // Listen for the 'markdown-rendered' event from the Go backend
   EventsOn('markdown-rendered', (html: string, title: string, date: string) => {
@@ -33,6 +40,39 @@ onUnmounted(() => {
   // Clean up the event listener when the component is destroyed
   EventsOff('markdown-rendered');
   EventsOff('error');
+});
+
+// Function to hide the modal
+function hideHelpModal() {
+    if (helpModalOverlay) {
+        helpModalOverlay.style.display = 'none';
+    }
+}
+
+// Function to show the modal
+function showHelpModal(helpText: string) {
+    if (helpModalOverlay && helpModalText) {
+        helpModalText.textContent = helpText;
+        helpModalOverlay.style.display = 'block';
+    }
+}
+
+// Add event listeners to close the modal
+if (helpModalCloseBtn) {
+    helpModalCloseBtn.addEventListener('click', hideHelpModal);
+}
+// Also close if the user clicks on the dark overlay
+if (helpModalOverlay) {
+    helpModalOverlay.addEventListener('click', (event) => {
+        if (event.target === helpModalOverlay) {
+            hideHelpModal();
+        }
+    });
+}
+
+// Listen for an event from the Go backend to show the help dialog
+EventsOn("show-help", (helpText) => {
+    showHelpModal(helpText);
 });
 
 </script>

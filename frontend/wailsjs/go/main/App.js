@@ -10,10 +10,6 @@ export function CreateGoldmarkInstance() {
   return window['go']['main']['App']['CreateGoldmarkInstance']();
 }
 
-export function GetArgs() {
-  return window['go']['main']['App']['GetArgs']();
-}
-
 export function LoadAndDisplayMarkdown(arg1) {
   return window['go']['main']['App']['LoadAndDisplayMarkdown'](arg1);
 }

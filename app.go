@@ -11,7 +11,6 @@ import (
 	"time"
 
 	dateparse "github.com/araddon/dateparse"
-	flag "github.com/spf13/pflag"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
@@ -43,11 +42,6 @@ func NewApp() *App {
 		allowInlineHTML: true, // Default to true, can be set via CLI flag
 		sanitizeHTML: true, // Default to true, can be set via CLI flag
     }
-	if err := app.GetArgs(); err != nil {
-		log.Printf("Error processing command line arguments: %v", err)
-		return nil // Return nil if there was an error processing command line arguments
-	}
-	app.mdConverter = app.CreateGoldmarkInstance()
 	return app
 }
 
@@ -80,66 +74,9 @@ func (a *App) domReady(ctx context.Context) {
 // shutdown is called when the app is about to exit.
 // Perform any cleanup here if necessary.
 func (a *App) shutdown(ctx context.Context) {
-	log.Println("Application is shutting down.")
+    log.Println("Application is shutting down.")
 }
 
-
-func (a *App) GetArgs() (err error) {
-    // Using flag.Parsed() prevents re-parsing, which can cause panics.
-    if !flag.Parsed() {
-        // This logic seems to be for finding a single file from command-line args.
-        initialFile := flag.StringP("file", "f", "", "Path to the initial Markdown file")
-		allowInlineHTML := flag.Bool("nohtml", true, "No inline HTML rendering (default: allow inline HTML)")
-		sanitizeHTML := flag.Bool("nosanitize", true, "No sanitizing of HTML and URL output (default: sanitize HTML and URLs)")
-		// showHelp := flag.BoolP("help", "h", true, "Display help message")
-		flag.Lookup("nohtml").NoOptDefVal = "false" // Allow --nohtml to be used without a value
-		flag.Lookup("nosanitize").NoOptDefVal = "false" // Allow --nosanitize to be used without a value
-		// flag.Lookup("help").NoOptDefVal = "false" // Allow --help to be used without a value
-        flag.Parse()
-        if *initialFile == "" && len(flag.Args()) > 0 {
-            a.initialFile = string(flag.Args()[0])
-        }
-        if *initialFile != "" {
-            a.initialFile = string(*initialFile)
-        }
-		a.allowInlineHTML = *allowInlineHTML
-		a.sanitizeHTML = *sanitizeHTML
-		if !*allowInlineHTML {
-			fmt.Println("--nohtml option provided: Inline HTML rendering is disabled.")
-		}
-		if !*sanitizeHTML {
-			fmt.Println("--nosanitize option provided: HTML and URL sanitization is disabled.")
-		}
-        if err := flag.ErrHelp; err != nil {
-            log.Println("Error parsing flags:", err)
-            flag.Usage()
-        }
-
-        // 1. Build the usage string first
-        var usageText strings.Builder
-        usageText.WriteString(fmt.Sprintf("Usage: %s [options] [file]\n\n", os.Args[0]))
-        usageText.WriteString("Options:\n")
-
-        flag.VisitAll(func(f *flag.Flag) {
-            if !f.Hidden {
-                line := fmt.Sprintf("  -%s, --%s", f.Shorthand, f.Name)
-                line += fmt.Sprintf("\t%s", f.Usage)
-                if f.DefValue != "" {
-                    line += fmt.Sprintf(" (default: %s)", f.DefValue)
-                }
-                usageText.WriteString(line + "\n")
-            }
-        })
-        a.cmdlineOptions = usageText.String()
-
-        // 2. Assign a function to flag.Usage that prints the string
-        flag.Usage = func() {
-            fmt.Fprint(os.Stderr, a.cmdlineOptions)
-        }
-    }
-
-    return err
-}
 
 func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
     options := []goldmark.Option{
@@ -175,38 +112,6 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 
     return goldmark.New(options...)
 }
-
-// // ProcessMarkdown reads a markdown file, renders it to HTML using Goldmark, and returns the HTML string.
-// func (a *App) ProcessMarkdown(filepath string) (string, error) {
-//     content, err := os.ReadFile(filepath)
-//     if err != nil {
-//         return "", fmt.Errorf("could not read file: %w", err)
-//     }
-
-//     md := goldmark.New(
-//         goldmark.WithExtensions(
-//             &frontmatter.Extender{}, // Add the frontmatter extension
-//         ),
-//     )
-
-//     var buf bytes.Buffer
-//     var meta map[string]string
-//     context := parser.NewContext() // Create a context for parsing
-//     if err := md.Convert(content, &buf, parser.WithContext(context)); err != nil {
-//         return "", fmt.Errorf("could not convert markdown: %w", err)
-//     }
-
-//     // Extract frontmatter data from the context
-//     fm := frontmatter.Get(context)
-//     if fm != nil {
-//         if err := fm.Decode(&meta); err == nil {
-//             a.frontMatter = meta
-//             log.Printf("Frontmatter data: %v", a.frontMatter) // Log the frontmatter data
-//         }
-//     }
-
-//     return buf.String(), nil
-// }
 
 func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) { // Corrected: Use *menu.CallbackData
 	log.Println("File -> Open menu item clicked. Opening file dialog...")
@@ -337,6 +242,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 func (a *App) ConvertMarkdownToHTML(markdown []byte) ([]byte, map[string]string, error) {
 	var buf strings.Builder
 	var meta map[string]string
+	a.mdConverter = a.CreateGoldmarkInstance() // Ensure we use the configured Goldmark instance
 	cntxt := parser.NewContext()
 	err := a.mdConverter.Convert(markdown, &buf, parser.WithContext(cntxt))
 	if err != nil {

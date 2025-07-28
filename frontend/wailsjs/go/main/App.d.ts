@@ -7,8 +7,6 @@ export function ConvertMarkdownToHTML(arg1:Array<number>):Promise<Array<number>>
 
 export function CreateGoldmarkInstance():Promise<goldmark.Markdown>;
 
-export function GetArgs():Promise<void>;
-
 export function LoadAndDisplayMarkdown(arg1:string):Promise<void>;
 
 export function OpenFileMenuHandler(arg1:menu.CallbackData):Promise<void>;
