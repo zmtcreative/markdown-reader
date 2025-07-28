@@ -46,6 +46,7 @@ onMounted(() => {
       mermaid.run({
         nodes: document.querySelectorAll('.markdown-body .mermaid'),
       });
+      document.title = title; // Set the document title
     });
   });
   EventsOn('error', (message: string) => {
