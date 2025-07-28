@@ -16,7 +16,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"go.abhg.dev/goldmark/frontmatter"
 )
@@ -26,6 +28,7 @@ type App struct {
     ctx context.Context
     initialFile string
     stripH1 bool
+	allowInlineHTML bool
     frontMatter map[string]string // Store frontmatter data here
     mdConverter goldmark.Markdown
 }
@@ -35,6 +38,7 @@ func NewApp() *App {
     app := &App{
         frontMatter: map[string]string{},
         stripH1: false,
+		allowInlineHTML: true, // Default to true, can be set via CLI flag
     }
 	app.GetArgs() // Get command line arguments
 	app.mdConverter = app.CreateGoldmarkInstance()
@@ -88,6 +92,7 @@ func (a *App) GetArgs() {
         }
     }
 }
+
 func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
     options := []goldmark.Option{
         goldmark.WithParserOptions(
@@ -101,6 +106,18 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
             extension.Footnote,
             extension.Typographer,
         ),
+    }
+
+    // Conditionally add renderer options based on allowInlineHTML setting
+    if a.allowInlineHTML {
+        options = append(options,
+			goldmark.WithRendererOptions(
+            	html.WithUnsafe(), // Allow unsafe HTML rendering
+    	    ),
+			goldmark.WithExtensions(
+				&SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
+			),
+		)
     }
 
     return goldmark.New(options...)
