@@ -4,6 +4,8 @@ go 1.23.0
 
 toolchain go1.24.5
 
+replace github.com/ZMT-Creative/goldmark-gh-alerts => ../../Projects/goldmark-gh-alerts
+
 require (
 	github.com/ZMT-Creative/goldmark-gh-alerts v0.1.0
 	github.com/alecthomas/chroma/v2 v2.14.0

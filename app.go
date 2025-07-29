@@ -131,8 +131,10 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
                     lang, _ := c.Language()
                     if entering {
                         // Add language class to the <pre> tag
-                        _, _ = w.WriteString(`<pre class="language-` + string(lang) + ` ` + string(lang) + `">`)
-						_, _ = w.WriteString(`<code class="chroma ` + string(lang) + `">`)
+						fmt.Fprintf(w, `<pre class="gmhl" language="%s">`, lang)
+                        // _, _ = w.WriteString(`<pre class="gmhl language-` + string(lang) + ` ` + string(lang) + `">`)
+						fmt.Fprintf(w, `<code class="chroma" language="%s">`, lang)
+						// _, _ = w.WriteString(`<code class="chroma ` + string(lang) + `">`)
                     } else {
                         _, _ = w.WriteString(`</code></pre>`)
                     }

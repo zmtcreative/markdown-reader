@@ -167,27 +167,63 @@ div.toggle-theme {
   padding-bottom: 0.3em;
 }
 
-.markdown-body pre[class|="language"] {
-    /* background-color: #f6f8fa; */
-    /* background-color: #26282a; */
-    border-radius: 6px;
-    padding: 16px;
+.markdown-body pre.gmhl {
+    border: 1px solid black;
+    position: relative;
+    padding-top: inherit;
+    height: auto;
+    /* border-radius: 6px;
+    padding: 0 16px;
     overflow: auto;
     font-size: 14px;
-    line-height: 1.45;
+    line-height: 1.15; */
 }
 
-.markdown-body code {
-  /* background-color: rgba(27,31,35,0.05); */
-  border-radius: 3px;
-  padding: 0.2em 0.4em;
+.markdown-body pre.gmhl:where(pre[language], pre[nolabel]) > code {
+    display: block;
+    padding: 0.5rem 0.5rem 0rem 0.5rem;
+    line-height: 1.15;
+    overflow-x: auto;
+    font-size: 14px;
+    /* height: auto; */
+    /* min-height: 1.5rem; */
+    /* min-block-size: 1.5em; */
+    /* overflow-x: auto;
+    font-size: 14px;
+    line-height: 1.15; */
 }
 
-.markdown-body pre:not([class|="language"]) {
-  /* background-color: #f6f8fa; */
-  border-radius: 6px;
-  padding: 16px;
-  overflow: auto;
+/* .markdown-body pre.gmhl {
+  position: relative;
+  padding-top: inherit;
+} */
+
+.markdown-body pre.gmhl:where(pre[language], pre[nolabel])::before {
+    display: block;
+    position: absolute;
+    text-transform: lowercase;
+    text-indent: 0.333rem;
+    font-variant: small-caps;
+    font-weight: bold;
+    font-size: 1rem;
+    /* top: -0.4rem; */
+    top: 0rem;
+    left: 0px;
+    text-align: left;
+    font-style: italic;
+    width: 100%;
+    padding: 0rem 0 0.2rem 0.1rem;
+    color: white;
+    background-color: rgb(var(--css-color-black));
+    /* border: 1px dotted red; */
+}
+
+.markdown-body pre.gmhl[language]:where(:not(pre[nolabel])):has(code)::before {
+    content: attr(language);
+}
+
+.markdown-body pre.gmhl[nolabel]:has(code)::before {
+    content: "";
 }
 
 .markdown-body blockquote {
@@ -225,7 +261,7 @@ html.dark .markdown-body a {
   display: none;
 }
 
-.markdown-alert {
+.gh-alert {
     overflow: hidden;
     border-style: solid;
     border-color: rgba(var(--callout-color), var(--callout-border-opacity));
@@ -239,75 +275,84 @@ html.dark .markdown-body a {
     --callout-icon: lucide-pencil;
 }
 
-.markdown-alert-title {
+.gh-alert-title {
     padding: var(--callout-title-padding);
-    display: flex;
+    display: inline-block;
     gap: 4px;
     font-size: var(--callout-title-size);
     color: rgb(var(--callout-color));
     line-height: var(--line-height-tight);
-    align-items: flex-start;
+    /* align-items: flex-start; */
     font-weight: var(--callout-title-weight);
 }
 
-.markdown-alert .markdown-alert-title {
+.gh-alert .gh-alert-title {
     padding: var(--callout-title-padding);
-    display: flex;
+    display: inline-block;
     gap: 4px;
     font-size: var(--callout-title-size);
     color: rgb(var(--callout-color));
     line-height: var(--line-height-tight);
-    align-items: flex-start;
+    /* align-items: flex-start; */
 }
-.markdown-alert .markdown-alert-title svg.lucide {
+.gh-alert .gh-alert-title p {
+    display: inline-block;
+    margin: 0;
+    margin-bottom: 0.25em;
+    font-size: 1.2em;
+    font-weight: var(--callout-title-weight);
+}
+.gh-alert .gh-alert-title svg.lucide {
     flex: 0 0 auto;
-    display: flex;
+    display: inline-block;
+    margin-bottom: -0.25em;
     align-items: center;
+    margin-right: 0.2em;
 }
 
-.markdown-alert[data-callout="todo"] {
+.gh-alert[data-callout="todo"] {
     --callout-color: var(--callout-todo);
     --callout-icon: lucide-check-circle-2;
 }
-.markdown-alert[data-callout="success"],
-.markdown-alert[data-callout="check"],
-.markdown-alert[data-callout="done"] {
+.gh-alert[data-callout="success"],
+.gh-alert[data-callout="check"],
+.gh-alert[data-callout="done"] {
     --callout-color: var(--callout-success);
     --callout-icon: lucide-check;
 }
-.markdown-alert[data-callout="warning"],
-.markdown-alert[data-callout="attention"] {
+.gh-alert[data-callout="warning"],
+.gh-alert[data-callout="attention"] {
     --callout-color: var(--callout-warning);
     --callout-icon: lucide-alert-triangle;
 }
-.markdown-alert[data-callout="danger"],
-.markdown-alert[data-callout="caution"],
-.markdown-alert[data-callout="error"] {
+.gh-alert[data-callout="danger"],
+.gh-alert[data-callout="caution"],
+.gh-alert[data-callout="error"] {
     --callout-color: var(--callout-error);
     --callout-icon: lucide-zap;
 }
-.markdown-alert[data-callout="tip"],
-.markdown-alert[data-callout="hint"] {
+.gh-alert[data-callout="tip"],
+.gh-alert[data-callout="hint"] {
     --callout-color: var(--callout-tip);
     --callout-icon: lucide-flame;
 }
-.markdown-alert[data-callout="example"] {
+.gh-alert[data-callout="example"] {
     --callout-color: var(--callout-example);
     --callout-icon: lucide-list;
 }
-.markdown-alert[data-callout="abstract"],
-.markdown-alert[data-callout="summary"],
-.markdown-alert[data-callout="tldr"] {
+.gh-alert[data-callout="abstract"],
+.gh-alert[data-callout="summary"],
+.gh-alert[data-callout="tldr"] {
     --callout-color: var(--callout-summary);
     --callout-icon: lucide-clipboard-list;
 }
-.markdown-alert[data-callout="quote"],
-.markdown-alert[data-callout="cite"] {
+.gh-alert[data-callout="quote"],
+.gh-alert[data-callout="cite"] {
     --callout-color: var(--callout-quote);
     --callout-icon: quote-glyph;
 }
 
-.markdown-alert p:not(:first-child) {
+.gh-alert p:not(:first-child) {
     /* overflow-x: auto; */
     padding: var(--callout-content-padding);
     background-color: var(--callout-content-background);
