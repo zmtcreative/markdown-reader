@@ -6,6 +6,7 @@ toolchain go1.24.5
 
 require (
 	github.com/ZMT-Creative/goldmark-gh-alerts v0.1.0
+	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/mangoumbrella/goldmark-figure v1.3.0
 	github.com/spf13/pflag v1.0.7
@@ -13,6 +14,7 @@ require (
 	github.com/wailsapp/wails/v2 v2.10.2
 	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-emoji v1.0.3
+	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	go.abhg.dev/goldmark/anchor v0.2.0
 	go.abhg.dev/goldmark/frontmatter v0.2.0
 	go.abhg.dev/goldmark/mermaid v0.5.0
@@ -23,6 +25,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
+	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect

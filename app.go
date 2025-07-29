@@ -11,6 +11,7 @@ import (
 	"time"
 
 	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	dateparse "github.com/araddon/dateparse"
 	figure "github.com/mangoumbrella/goldmark-figure"
 	fences "github.com/stefanfritsch/goldmark-fences"
@@ -18,6 +19,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -109,6 +111,26 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 			},
 			&fences.Extender{},
 			&SectionWrapperExtension{},
+            highlighting.NewHighlighting(
+                highlighting.WithStyle("github"),
+                highlighting.WithWrapperRenderer(func(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
+                    lang, _ := c.Language()
+                    if entering {
+                        // Add language class to the <pre> tag
+                        _, _ = w.WriteString(`<pre class="language-` + string(lang) + ` ` + string(lang) + `">`)
+						_, _ = w.WriteString(`<code class="chroma ` + string(lang) + `">`)
+                    } else {
+                        _, _ = w.WriteString(`</code></pre>`)
+                    }
+                }),
+                highlighting.WithFormatOptions(
+                    chromahtml.WithClasses(true),
+                    chromahtml.PreventSurroundingPre(true), // Let WithWrapperRenderer handle the <pre> tag
+                    chromahtml.WithAllClasses(true), // Use all classes for syntax highlighting
+					// chromahtml.ClassPrefix("chroma-"), // Use a custom class prefix for Chroma styles
+                    chromahtml.Standalone(true), // Set to false to prevent a full HTML document
+                ),
+            ),
         ),
     }
 
