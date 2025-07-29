@@ -1,5 +1,9 @@
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
+github.com/ZMT-Creative/goldmark-gh-alerts v0.1.0 h1:xwdcrmaU3yFmAOujqCBmwiL0hQcctukmYudzSfrF2N8=
+github.com/ZMT-Creative/goldmark-gh-alerts v0.1.0/go.mod h1:5AxN4TzlZsRG1T9/OanJBvAAsI9L1xVC5+qbeXy5Ees=
+github.com/ZMT-Creative/goldmark-gh-alerts v0.2.0 h1:ReXF9GSe2LPjdVGa3DItyQkwAa310+t5uVO5ftguO1w=
+github.com/ZMT-Creative/goldmark-gh-alerts v0.2.0/go.mod h1:5AxN4TzlZsRG1T9/OanJBvAAsI9L1xVC5+qbeXy5Ees=
 github.com/alecthomas/assert/v2 v2.7.0 h1:QtqSACNS3tF7oasA8CU6A6sXZSBDqnm7RfpLl9bZqbE=
 github.com/alecthomas/assert/v2 v2.7.0/go.mod h1:Bze95FyfUr7x34QZrjL+XP+0qgp/zg8yS+TtBj1WA3k=
 github.com/alecthomas/chroma/v2 v2.2.0/go.mod h1:vf4zrexSH54oEjJ7EdB65tGNHmH3pGZmVkgTP5RHvAs=
