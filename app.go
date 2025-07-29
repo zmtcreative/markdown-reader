@@ -25,6 +25,7 @@ import (
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 	"go.abhg.dev/goldmark/anchor"
 	"go.abhg.dev/goldmark/frontmatter"
 	mermaid "go.abhg.dev/goldmark/mermaid"
@@ -36,6 +37,7 @@ type App struct {
     initialFile string
     stripH1 bool
 	allowInlineHTML bool
+	theme string // Store display mode (e.g., "light", "dark")
 	cmdlineOptions string // Store command line options here
 	sanitizeHTML bool // Flag to control sanitization of HTML and URL links
     frontMatter map[string]string // Store frontmatter data here
@@ -49,6 +51,7 @@ func NewApp() *App {
         stripH1: false,
 		allowInlineHTML: true, // Default to true, can be set via CLI flag
 		sanitizeHTML: true, // Default to true, can be set via CLI flag
+		theme: "light",
     }
 	return app
 }
@@ -85,6 +88,17 @@ func (a *App) shutdown(ctx context.Context) {
     log.Println("Application is shutting down.")
 }
 
+func (a *App) GetTheme() string {
+	// Return the current theme (light or dark)
+	return a.theme
+}
+
+// SetTheme sets the theme and emits an event to the frontend.
+func (a *App) SetTheme(theme string) {
+    a.theme = theme
+    // Emit an event to notify the frontend of the change
+    runtime.EventsEmit(a.ctx, "theme:changed", theme)
+}
 
 func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 	myIcons := InitAlertIcons() // Initialize alert icons

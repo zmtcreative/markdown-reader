@@ -1,4 +1,5 @@
 <template>
+  <div class="toggle-theme"><button @click="toggleTheme">Toggle Theme</button></div>
     <header class="app-header">
       <h1 v-html="docHTMLTitle" class="document-title"></h1>
       <p v-html="docHTMLDate" class="document-dates"></p>
@@ -11,14 +12,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick,onMounted, onUnmounted } from 'vue';
+import { ref, watch, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
+import { GetTheme, SetTheme } from '../wailsjs/go/main/App';
 import mermaid from 'mermaid';
 
 const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
 const docHTMLTitle = ref('');
 const docHTMLDate = ref('');
-
 const errorMessage = ref('');
 
 // Get references to the modal elements
@@ -26,7 +27,42 @@ const helpModalOverlay = document.getElementById('help-modal-overlay');
 const helpModalText = document.getElementById('help-modal-text');
 const helpModalCloseBtn = document.getElementById('help-modal-close');
 
-onMounted(() => {
+const currentTheme = ref('light');
+
+// Function to toggle the theme
+async function toggleTheme() {
+  const newTheme = currentTheme.value === 'light' ? 'dark' : 'light';
+  await SetTheme(newTheme); // Call Go backend to set the new theme
+  currentTheme.value = newTheme;
+}
+
+// Watch for changes in the theme and update the body class
+watch(currentTheme, (newTheme, oldTheme) => {
+  if (oldTheme) {
+    document.body.classList.remove(oldTheme);
+  }
+  document.body.classList.add(newTheme);
+  // Also update the <html> element if needed
+  document.documentElement.className = newTheme;
+
+  // Re-initialize Mermaid with the correct theme
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: newTheme === 'dark' ? 'dark' : 'default',
+  });
+}, { immediate: true }); // immediate: true runs the watcher on component mount
+
+onMounted(async () => {
+  // Get initial theme from Go backend
+  currentTheme.value = await GetTheme();
+
+  // Listen for theme changes initiated from the backend
+  EventsOn('theme:changed', (newTheme: string) => {
+    if (newTheme) {
+      currentTheme.value = newTheme;
+    }
+  });
+
   // Initialize Mermaid.js
   mermaid.initialize({
     startOnLoad: false,

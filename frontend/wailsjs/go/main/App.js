@@ -10,10 +10,18 @@ export function CreateGoldmarkInstance() {
   return window['go']['main']['App']['CreateGoldmarkInstance']();
 }
 
+export function GetTheme() {
+  return window['go']['main']['App']['GetTheme']();
+}
+
 export function LoadAndDisplayMarkdown(arg1) {
   return window['go']['main']['App']['LoadAndDisplayMarkdown'](arg1);
 }
 
 export function OpenFileMenuHandler(arg1) {
   return window['go']['main']['App']['OpenFileMenuHandler'](arg1);
+}
+
+export function SetTheme(arg1) {
+  return window['go']['main']['App']['SetTheme'](arg1);
 }
