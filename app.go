@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -11,14 +10,25 @@ import (
 	"strings"
 	"time"
 
+	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	dateparse "github.com/araddon/dateparse"
+	figure "github.com/mangoumbrella/goldmark-figure"
+	fences "github.com/stefanfritsch/goldmark-fences"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
+	"go.abhg.dev/goldmark/anchor"
 	"go.abhg.dev/goldmark/frontmatter"
+	mermaid "go.abhg.dev/goldmark/mermaid"
 )
 
 // App struct
@@ -26,21 +36,24 @@ type App struct {
     ctx context.Context
     initialFile string
     stripH1 bool
+	allowInlineHTML bool
+	theme string // Store display mode (e.g., "light", "dark")
+	cmdlineOptions string // Store command line options here
+	sanitizeHTML bool // Flag to control sanitization of HTML and URL links
     frontMatter map[string]string // Store frontmatter data here
     mdConverter goldmark.Markdown
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-    return &App{
+    app := &App{
         frontMatter: map[string]string{},
         stripH1: false,
-        mdConverter: goldmark.New(
-            goldmark.WithExtensions(
-                &frontmatter.Extender{}, // Add the frontmatter extension
-            ),
-        ),
+		allowInlineHTML: true, // Default to true, can be set via CLI flag
+		sanitizeHTML: true, // Default to true, can be set via CLI flag
+		theme: "light",
     }
+	return app
 }
 
 // startup is called when the app starts. The context is created
@@ -72,56 +85,90 @@ func (a *App) domReady(ctx context.Context) {
 // shutdown is called when the app is about to exit.
 // Perform any cleanup here if necessary.
 func (a *App) shutdown(ctx context.Context) {
-	log.Println("Application is shutting down.")
+    log.Println("Application is shutting down.")
 }
 
+func (a *App) GetTheme() string {
+	// Return the current theme (light or dark)
+	return a.theme
+}
 
-func (a *App) GetArgs() {
-    // Using flag.Parsed() prevents re-parsing, which can cause panics.
-    if !flag.Parsed() {
-        // This logic seems to be for finding a single file from command-line args.
-        initialFile := flag.String("file", "", "Path to the initial Markdown file")
-        flag.Parse()
-        if *initialFile == "" && len(flag.Args()) > 0 {
-            a.initialFile = string(flag.Args()[0])
-        }
-        if *initialFile != "" {
-            a.initialFile = string(*initialFile)
-        }
+// SetTheme sets the theme and emits an event to the frontend.
+func (a *App) SetTheme(theme string) {
+    a.theme = theme
+    // Emit an event to notify the frontend of the change
+    runtime.EventsEmit(a.ctx, "theme:changed", theme)
+}
+
+func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
+	myIcons := InitAlertIcons() // Initialize alert icons
+    options := []goldmark.Option{
+        goldmark.WithParserOptions(
+            parser.WithAutoHeadingID(), // Automatically generate IDs for headings
+            parser.WithAttribute(),      // Enable attributes for nodes
+        ),
+        goldmark.WithExtensions(
+            &frontmatter.Extender{}, // Add the frontmatter extension
+            extension.GFM,
+            extension.DefinitionList,
+            extension.Footnote,
+            extension.Typographer,
+			&mermaid.Extender{}, // Add Mermaid support for diagrams
+			&alerts.GhAlerts{
+				Icons: myIcons,
+			},
+			emoji.Emoji,
+			figure.Figure.WithSkipNoCaption(),
+			&anchor.Extender{
+				Position: anchor.Before,
+				Texter: anchor.Text("#"),
+			},
+			&fences.Extender{},
+			&SectionWrapperExtension{},
+            highlighting.NewHighlighting(
+                highlighting.WithStyle("github"),
+                highlighting.WithWrapperRenderer(func(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
+                    lang, _ := c.Language()
+                    if entering {
+                        // Add language class to the <pre> tag
+						fmt.Fprintf(w, `<pre class="gmhl" language="%s">`, lang)
+                        // _, _ = w.WriteString(`<pre class="gmhl language-` + string(lang) + ` ` + string(lang) + `">`)
+						fmt.Fprintf(w, `<code class="chroma" language="%s">`, lang)
+						// _, _ = w.WriteString(`<code class="chroma ` + string(lang) + `">`)
+                    } else {
+                        _, _ = w.WriteString(`</code></pre>`)
+                    }
+                }),
+                highlighting.WithFormatOptions(
+                    chromahtml.WithClasses(true),
+                    chromahtml.PreventSurroundingPre(true), // Let WithWrapperRenderer handle the <pre> tag
+                    chromahtml.WithAllClasses(true), // Use all classes for syntax highlighting
+					// chromahtml.ClassPrefix("chroma-"), // Use a custom class prefix for Chroma styles
+                    chromahtml.Standalone(true), // Set to false to prevent a full HTML document
+                ),
+            ),
+        ),
     }
+
+    // Conditionally add renderer options based on allowInlineHTML setting
+    if a.allowInlineHTML {
+        options = append(options,
+			goldmark.WithRendererOptions(
+            	html.WithUnsafe(), // Allow unsafe HTML rendering
+    	    ),
+		)
+    }
+
+	if a.sanitizeHTML {
+		options = append(options,
+			goldmark.WithExtensions(
+				&SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
+			),
+		)
+	}
+
+    return goldmark.New(options...)
 }
-
-// // ProcessMarkdown reads a markdown file, renders it to HTML using Goldmark, and returns the HTML string.
-// func (a *App) ProcessMarkdown(filepath string) (string, error) {
-//     content, err := os.ReadFile(filepath)
-//     if err != nil {
-//         return "", fmt.Errorf("could not read file: %w", err)
-//     }
-
-//     md := goldmark.New(
-//         goldmark.WithExtensions(
-//             &frontmatter.Extender{}, // Add the frontmatter extension
-//         ),
-//     )
-
-//     var buf bytes.Buffer
-//     var meta map[string]string
-//     context := parser.NewContext() // Create a context for parsing
-//     if err := md.Convert(content, &buf, parser.WithContext(context)); err != nil {
-//         return "", fmt.Errorf("could not convert markdown: %w", err)
-//     }
-
-//     // Extract frontmatter data from the context
-//     fm := frontmatter.Get(context)
-//     if fm != nil {
-//         if err := fm.Decode(&meta); err == nil {
-//             a.frontMatter = meta
-//             log.Printf("Frontmatter data: %v", a.frontMatter) // Log the frontmatter data
-//         }
-//     }
-
-//     return buf.String(), nil
-// }
 
 func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) { // Corrected: Use *menu.CallbackData
 	log.Println("File -> Open menu item clicked. Opening file dialog...")
@@ -155,6 +202,9 @@ func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) { // Corrected: Use *men
 	if err != nil {
 		log.Printf("Error loading selected Markdown file %q: %v", selection, err)
 		runtime.EventsEmit(a.ctx, "error", "Failed to load selected file: "+err.Error())
+	} else {
+		log.Printf("Successfully loaded Markdown file: %s", selection)
+		a.initialFile = selection // Update initialFile to the newly opened file
 	}
 }
 
@@ -252,6 +302,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 func (a *App) ConvertMarkdownToHTML(markdown []byte) ([]byte, map[string]string, error) {
 	var buf strings.Builder
 	var meta map[string]string
+	a.mdConverter = a.CreateGoldmarkInstance() // Ensure we use the configured Goldmark instance
 	cntxt := parser.NewContext()
 	err := a.mdConverter.Convert(markdown, &buf, parser.WithContext(cntxt))
 	if err != nil {

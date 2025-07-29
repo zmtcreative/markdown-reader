@@ -11,4 +11,5 @@ if ($args.Length -gt 0) {
 
 $sample_file = $sample_file.Replace('\', '\\')
 
-wails dev -appargs "-file ""${sample_file}"""
+wails dev -appargs "--file=""${sample_file}"""
+# wails dev -loglevel Trace -appargs "--nohtml"
