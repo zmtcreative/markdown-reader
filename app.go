@@ -42,6 +42,7 @@ type App struct {
     stripH1 bool
 	allowInlineHTML bool
 	theme string // Store display mode (e.g., "light", "dark")
+	docTypes []string // List of document types (e.g., "techdoc", "mydoc")
 	cmdlineOptions string // Store command line options here
 	sanitizeHTML bool // Flag to control sanitization of HTML and URL links
     frontMatter map[string]string // Store frontmatter data here
@@ -343,11 +344,22 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 
 	runtime.EventsEmit(a.ctx, "markdown-rendered", string(htmlContent), docTitle, docDate)
 
-	if docType == "techdoc" {
-		a.AddTechDocClass()
-	} else {
-		a.RemoveTechDocClass()
+	// if docType == "techdoc" {
+	// 	a.AddDocClass(docType)
+	// } else {
+	// 	a.RemoveDocClass(docType)
+	// }
+
+	if a.docTypes != nil {
+		for _, dt := range a.docTypes {
+			a.RemoveDocClass(dt)
+		}
 	}
+	if docType != "" {
+		a.AddDocClass(docType)
+		a.docTypes = append(a.docTypes, docType)
+	}
+
 	return nil
 }
 
@@ -515,17 +527,17 @@ func InitAlertIcons() map[string]string {
 	return ai
 }
 
-// AddTechDocClass adds the 'techdoc' class to html and body elements
-func (a *App) AddTechDocClass() {
-    runtime.EventsEmit(a.ctx, "add-techdoc-class")
+// AddTechDocClass adds the class to html and body elements
+func (a *App) AddDocClass(thisClass ...string) {
+    runtime.EventsEmit(a.ctx, "add-techdoc-class", thisClass)
 }
 
-// RemoveTechDocClass removes the 'techdoc' class from html and body elements
-func (a *App) RemoveTechDocClass() {
-    runtime.EventsEmit(a.ctx, "remove-techdoc-class")
+// RemoveTechDocClass removes the class from html and body elements
+func (a *App) RemoveDocClass(thisClass ...string) {
+    runtime.EventsEmit(a.ctx, "remove-techdoc-class", thisClass)
 }
 
-// ToggleTechDocClass toggles the 'techdoc' class on html and body elements
-func (a *App) ToggleTechDocClass() {
-    runtime.EventsEmit(a.ctx, "toggle-techdoc-class")
+// ToggleTechDocClass toggles the class on html and body elements
+func (a *App) ToggleDocClass(thisClass ...string) {
+    runtime.EventsEmit(a.ctx, "toggle-techdoc-class", thisClass)
 }

@@ -29,25 +29,25 @@ const helpModalCloseBtn = document.getElementById('help-modal-close');
 
 const currentTheme = ref('light');
 
-// Function to add 'techdoc' class to html and body elements
-function addTechDocClass() {
-  document.documentElement.classList.add('techdoc');
-  document.body.classList.add('techdoc');
+// Function to add class to html and body elements
+function addDocClass(thisClass: string) {
+  document.documentElement.classList.add(thisClass);
+  document.body.classList.add(thisClass);
 }
 
-// Function to remove 'techdoc' class from html and body elements
-function removeTechDocClass() {
-  document.documentElement.classList.remove('techdoc');
-  document.body.classList.remove('techdoc');
+// Function to remove class from html and body elements
+function removeDocClass(thisClass: string) {
+  document.documentElement.classList.remove(thisClass);
+  document.body.classList.remove(thisClass);
 }
 
-// Function to toggle 'techdoc' class on html and body elements
-function toggleTechDocClass() {
-  const hasClass = document.documentElement.classList.contains('techdoc');
+// Function to toggle class on html and body elements
+function toggleDocClass(thisClass: string) {
+  const hasClass = document.documentElement.classList.contains(thisClass);
   if (hasClass) {
-    removeTechDocClass();
+    removeDocClass(thisClass);
   } else {
-    addTechDocClass();
+    addDocClass(thisClass);
   }
 }
 
@@ -86,16 +86,16 @@ onMounted(async () => {
   });
 
   // Listen for techdoc class manipulation events from Go backend
-  EventsOn('add-techdoc-class', () => {
-    addTechDocClass();
+  EventsOn('add-techdoc-class', (thisClass: string) => {
+    addDocClass(thisClass);
   });
 
-  EventsOn('remove-techdoc-class', () => {
-    removeTechDocClass();
+  EventsOn('remove-techdoc-class', (thisClass: string) => {
+    removeDocClass(thisClass);
   });
 
-  EventsOn('toggle-techdoc-class', () => {
-    toggleTechDocClass();
+  EventsOn('toggle-techdoc-class', (thisClass: string) => {
+    toggleDocClass(thisClass);
   });
 
   // Initialize Mermaid.js

@@ -3,7 +3,7 @@
 import {goldmark} from '../models';
 import {menu} from '../models';
 
-export function AddTechDocClass():Promise<void>;
+export function AddDocClass(arg1:Array<string>):Promise<void>;
 
 export function ConvertMarkdownToHTML(arg1:Array<number>):Promise<Array<number>>;
 
@@ -15,8 +15,8 @@ export function LoadAndDisplayMarkdown(arg1:string):Promise<void>;
 
 export function OpenFileMenuHandler(arg1:menu.CallbackData):Promise<void>;
 
-export function RemoveTechDocClass():Promise<void>;
+export function RemoveDocClass(arg1:Array<string>):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;
 
-export function ToggleTechDocClass():Promise<void>;
+export function ToggleDocClass(arg1:Array<string>):Promise<void>;
