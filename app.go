@@ -263,19 +263,21 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		return fmt.Errorf("failed to read file %s: %w", filePath, err) // Corrected: Use fmt.Errorf
 	}
 
+	// Normalize line endings to Unix-style (LF)
+	// Some extensions (e.g., goldmark-gh-alerts) rely on Unix-style line endings
+	mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
+
 	// Extract the document title from the H1 heading element if present
+	// os.WriteFile("tmp/debug-before-extract-h1.md", mdContent, 0644) // Debugging: Write Markdown to file
     var thisDocumentTitle string
     if a.stripH1 {
 		thisDocumentTitle, mdContent, _ = ExtractH1(string(mdContent))
     }
+	// os.WriteFile("tmp/debug-after-extract-h1.md", mdContent, 0644) // Debugging: Write Markdown to file
 	// thisDocumentTitle := ""
 	// if err != nil {
 	// 	return fmt.Errorf("failed to extract document title: %w", err) // Corrected: Use fmt.Errorf
 	// }
-
-	// Normalize line endings to Unix-style (LF)
-	// Some extensions (e.g., goldmark-gh-alerts) rely on Unix-style line endings
-	mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
 
 	// Convert Markdown content to HTML
 	htmlContent, docFrontmatter, err := a.ConvertMarkdownToHTML(mdContent)
@@ -334,7 +336,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		}
 	}
 
-	// os.WriteFile("debug-before.html", htmlContent, 0644) // Debugging: Write HTML to file
+	// os.WriteFile("tmp/debug-before.html", htmlContent, 0644) // Debugging: Write HTML to file
 
 	// Cleanup HTML content by adjusting line breaks and removing unnecessary tags
 	// This is necessary to ensure proper rendering in the frontend since some Markdown renderers
@@ -342,7 +344,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	// like Highlighting/Chroma).
 	htmlContent = a.cleanupHTMLContent(htmlContent)
 
-	// os.WriteFile("debug-after.html", htmlContent, 0644) // Debugging: Write HTML to file
+	// os.WriteFile("tmp/debug-after.html", htmlContent, 0644) // Debugging: Write HTML to file
 
 	runtime.EventsEmit(a.ctx, "markdown-rendered", string(htmlContent), docTitle, docDate)
 
@@ -477,19 +479,33 @@ func ExtractTextContent(n ast.Node, source []byte) string {
 }
 
 func RemoveNodeFromSource(source []byte, node ast.Node) string {
-	segment := node.Lines().At(0)
-	start := segment.Start
-	end := segment.Stop
+    lines := node.Lines()
+    if lines.Len() == 0 {
+        return string(source)
+    }
 
-	// Extend removal range to include trailing newline if present
-	if end < len(source) && source[end] == '\n' {
-		end++
-	} else if end < len(source)-1 && source[end] == '\r' && source[end+1] == '\n' {
-		end += 2
-	}
+    // Get the full range from first line start to last line end
+    firstLine := lines.At(0)
+    lastLine := lines.At(lines.Len() - 1)
 
-	// Remove the node's segment from the source
-	return string(source[:start]) + string(source[end:])
+    // Find the actual start of the line (including any preceding whitespace and # markers)
+    start := firstLine.Start
+    // Go backwards to find the beginning of the line
+    for start > 0 && source[start-1] != '\n' && source[start-1] != '\r' {
+        start--
+    }
+
+    end := lastLine.Stop
+
+    // Extend removal range to include trailing newline if present
+    if end < len(source) && source[end] == '\n' {
+        end++
+    } else if end < len(source)-1 && source[end] == '\r' && source[end+1] == '\n' {
+        end += 2
+    }
+
+    // Remove the node's segment from the source
+    return string(source[:start]) + string(source[end:])
 }
 
 func InitAlertIcons() map[string]string {
