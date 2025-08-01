@@ -1,7 +1,5 @@
 github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
 github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/ZMT-Creative/goldmark-gh-alerts v0.1.0 h1:xwdcrmaU3yFmAOujqCBmwiL0hQcctukmYudzSfrF2N8=
-github.com/ZMT-Creative/goldmark-gh-alerts v0.1.0/go.mod h1:5AxN4TzlZsRG1T9/OanJBvAAsI9L1xVC5+qbeXy5Ees=
 github.com/ZMT-Creative/goldmark-gh-alerts v0.2.0 h1:ReXF9GSe2LPjdVGa3DItyQkwAa310+t5uVO5ftguO1w=
 github.com/ZMT-Creative/goldmark-gh-alerts v0.2.0/go.mod h1:5AxN4TzlZsRG1T9/OanJBvAAsI9L1xVC5+qbeXy5Ees=
 github.com/alecthomas/assert/v2 v2.7.0 h1:QtqSACNS3tF7oasA8CU6A6sXZSBDqnm7RfpLl9bZqbE=
@@ -75,6 +73,8 @@ github.com/mattn/go-colorable v0.1.14/go.mod h1:6LmQG8QLFO4G5z1gPvYEzlUgJ2wF+stg
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mattn/go-runewidth v0.0.10/go.mod h1:RAqKPSqVFrSLVXbA8x7dzmKdmGzieGRCM46jaSJTDAk=
+github.com/mdigger/goldmark-attributes v0.0.0-20250724115859-bd3108091530 h1:PtnMRIkeWQi6FgIdfI1mtm+cMX1g1KVs+0NuJYeT8Tw=
+github.com/mdigger/goldmark-attributes v0.0.0-20250724115859-bd3108091530/go.mod h1:Df2jMu8JhRCOgI3hp7CU8Y8Rjw+uaOySYtZk+P6+Vj0=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c h1:+mdjkGKdHQG3305AYmdv1U2eRNDiU2ErMBj1gwrq8eQ=
 github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c/go.mod h1:7rwL4CYBLnjLxUqIJNnCWiEdr3bn6IUYi15bNlnbCCU=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

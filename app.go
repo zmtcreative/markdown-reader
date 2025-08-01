@@ -14,6 +14,8 @@ import (
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	dateparse "github.com/araddon/dateparse"
 	figure "github.com/mangoumbrella/goldmark-figure"
+
+	// blockattr "github.com/mdigger/goldmark-attributes"
 	fences "github.com/stefanfritsch/goldmark-fences"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -131,7 +133,7 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
                     lang, _ := c.Language()
                     if entering {
                         // Add language class to the <pre> tag
-						fmt.Fprintf(w, `<pre class="gmhl" language="%s">`, lang)
+						fmt.Fprintf(w, `<pre language="%s" class="gmhl">`, lang)
                         // _, _ = w.WriteString(`<pre class="gmhl language-` + string(lang) + ` ` + string(lang) + `">`)
 						fmt.Fprintf(w, `<code class="chroma" language="%s">`, lang)
 						// _, _ = w.WriteString(`<code class="chroma ` + string(lang) + `">`)
