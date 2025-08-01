@@ -167,7 +167,7 @@ div.toggle-theme {
   padding-bottom: 0.3em;
 }
 
-.markdown-body pre.gmhl {
+.markdown-body pre[language] {
     border: 1px solid black;
     position: relative;
     padding-top: inherit;
@@ -175,13 +175,13 @@ div.toggle-theme {
     /* border-radius: 6px;
     padding: 0 16px;
     overflow: auto;
-    font-size: 14px;
-    line-height: 1.15; */
+    font-size: 14px; */
+    /* line-height: 1.15; */
 }
 
-.markdown-body pre.gmhl:where(pre[language], pre[nolabel]) > code {
+.markdown-body pre[language] > code {
     display: block;
-    padding: 0.5rem 0.5rem 0rem 0.5rem;
+    padding: 0.75rem 0.5rem;;
     line-height: 1.15;
     overflow-x: auto;
     font-size: 14px;
@@ -193,12 +193,13 @@ div.toggle-theme {
     line-height: 1.15; */
 }
 
+
 /* .markdown-body pre.gmhl {
   position: relative;
   padding-top: inherit;
 } */
 
-.markdown-body pre.gmhl:where(pre[language], pre[nolabel])::before {
+.markdown-body pre[language]::before {
     display: block;
     position: absolute;
     text-transform: lowercase;
@@ -218,12 +219,24 @@ div.toggle-theme {
     /* border: 1px dotted red; */
 }
 
-.markdown-body pre.gmhl[language]:where(:not(pre[nolabel])):has(code)::before {
+.markdown-body pre[language]:has(code)::before {
     content: attr(language);
 }
-
-.markdown-body pre.gmhl[nolabel]:has(code)::before {
+.markdown-body pre[language=""]:has(code)::before {
+    content: " ";
+}
+.markdown-body pre[label]:has(code)::before {
+    content: attr(label);
+}
+.markdown-body pre[lable]:has(code)::before {
+    content: attr(lable);
+}
+.markdown-body pre.nolabel:has(code)::before,
+.markdown-body pre.nolable:has(code)::before,
+.markdown-body pre[nolabel]:has(code)::before,
+.markdown-body pre[nolable]:has(code)::before {
     content: "";
+    display: none;
 }
 
 .markdown-body blockquote {
