@@ -20,7 +20,7 @@
     --callout-fail: 233, 49, 71;
     --callout-success: 8, 185, 78;
     --callout-example: 120, 82, 238;
-    --callout-important: 127, 0, 255;
+    --callout-important: 0, 191, 188;
     --callout-summary: 0, 191, 188;
     --callout-tip: 0, 191, 188;
     --callout-question: 236, 117, 0;
@@ -349,10 +349,6 @@ html.dark .markdown-body a {
 .gh-alert[data-callout="quote"],
 .gh-alert[data-callout="cite"] {
     --callout-color: var(--callout-quote);
-    --callout-icon: quote-glyph;
-}
-gh-alert[data-callout="important"] {
-    --callout-color: var(--callout-important);
     --callout-icon: quote-glyph;
 }
 
