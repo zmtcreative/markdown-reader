@@ -47,6 +47,10 @@ type App struct {
     mdConverter goldmark.Markdown
 }
 
+var GlobalAttributeFilter = util.NewBytesFilterString(`accesskey,autocapitalize,autofocus,class,contenteditable,dir,draggable,enterkeyhint,hidden,id,inert,inputmode,is,itemid,itemprop,itemref,itemscope,itemtype,lang,part,role,slot,spellcheck,style,tabindex,title,translate`) // nolint:lll
+var CodeBlockAttributeFilter = GlobalAttributeFilter.ExtendString(`nolabel,nolable,label,lable`)
+var dataPrefix = []byte("data-")
+
 // NewApp creates a new App application struct
 func NewApp() *App {
     app := &App{
@@ -168,11 +172,37 @@ func highlightingCustomWrapperRenderer (w util.BufWriter, c highlighting.CodeBlo
 	if entering {
 		lang, _ := c.Language()
         // Add language class to the <pre> tag
-		fmt.Fprintf(w, `<pre language="%s" class="gmhl">`, lang)
+		fmt.Fprintf(w, `<pre language="%s"`, lang)
+		if c.Attributes() != nil {
+			renderCodeBlockAttributes(w, c, CodeBlockAttributeFilter)
+		}
+		fmt.Fprintf(w, `>`)
 		// Add language class to the <code> tag
 		fmt.Fprintf(w, `<code class="chroma" language="%s">`, lang)
 	} else {
 		_, _ = w.WriteString(`</code></pre>`)
+	}
+}
+
+func renderCodeBlockAttributes(w util.BufWriter, c highlighting.CodeBlockContext, filter util.BytesFilter) {
+	for _, attr := range c.Attributes().All() {
+		if filter != nil && !filter.Contains(attr.Name) {
+			if !bytes.HasPrefix(attr.Name, dataPrefix) {
+				continue
+			}
+		}
+		_, _ = w.WriteString(" ")
+		_, _ = w.Write(attr.Name)
+		_, _ = w.WriteString(`="`)
+		var value []byte
+		switch typed := attr.Value.(type) {
+			case []byte:
+				value = typed
+			case string:
+				value = util.StringToReadOnlyBytes(typed)
+		}
+		_, _ = w.Write(util.EscapeHTML(value))
+		_ = w.WriteByte('"')
 	}
 }
 
