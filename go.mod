@@ -11,6 +11,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/mangoumbrella/goldmark-figure v1.3.0
 	github.com/mdigger/goldmark-attributes v0.0.0-20250724115859-bd3108091530
+	github.com/nemunaire/goldmark-inline-attributes v0.0.0-20230824135609-6883396a74e2
 	github.com/spf13/pflag v1.0.7
 	github.com/stefanfritsch/goldmark-fences v1.0.0
 	github.com/wailsapp/wails/v2 v2.10.2
