@@ -15,7 +15,8 @@ import (
 	dateparse "github.com/araddon/dateparse"
 	figure "github.com/mangoumbrella/goldmark-figure"
 
-	// blockattr "github.com/mdigger/goldmark-attributes"
+	blockattr "github.com/mdigger/goldmark-attributes"
+	bracketedspan "github.com/nemunaire/goldmark-inline-attributes"
 	fences "github.com/stefanfritsch/goldmark-fences"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -105,6 +106,8 @@ func (a *App) SetTheme(theme string) {
 func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 	myIcons := InitAlertIcons() // Initialize alert icons
     options := []goldmark.Option{
+		blockattr.Enable,
+		bracketedspan.Enable,
         goldmark.WithParserOptions(
             parser.WithAutoHeadingID(), // Automatically generate IDs for headings
             parser.WithAttribute(),      // Enable attributes for nodes

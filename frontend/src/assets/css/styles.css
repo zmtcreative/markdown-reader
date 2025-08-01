@@ -366,3 +366,9 @@ html.dark .markdown-body a {
 .mermaid {
     color: rgb(0, 0, 0);
 }
+
+.hello {
+    background-color: rgba(255, 0, 0, 0.5);
+    color: white;
+    font-weight: bold;
+}
