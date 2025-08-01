@@ -29,16 +29,28 @@
     --callout-quote: 158, 158, 158;
     --callout-collapse-icon: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxZW0iIGhlaWdodD0iMWVtIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxwYXRoIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHN0cm9rZS13aWR0aD0iMiIgZD0ibTkgMThsNi02bC02LTYiLz48L3N2Zz4=");
     --bg-color: #ffffff;
+    --bg-color-rgb: 255, 255, 255;
     --text-color: #2e3440;
+    --text-color-rgb: 46, 52, 64;
     --header-bg-color: #f8f9fa;
+    --header-bg-color-rgb: 248, 249, 250;
     --border-color: #d8dee9;
+    --border-color-rgb: 216, 222, 233;
+    --inline-code-bg: rgba(0, 0, 0, 0.05);
+    --codeblock-opacity: 0.025;
 }
 
 html.dark {
   --bg-color: #2e3440;
+  --bg-color-rgb: 46, 52, 64;
   --text-color: #d8dee9;
+  --text-color-rgb: 216, 222, 233;
   --header-bg-color: #3b4252;
+  --header-bg-color-rgb: 59, 66, 82;
   --border-color: #4c566a;
+  --border-color-rgb: 76, 86, 106;
+  --inline-code-bg: rgba(255, 255, 255, 0.1);
+  --codeblock-opacity: 0.25;
 }
 
 html {
@@ -168,11 +180,21 @@ div.toggle-theme {
   padding-bottom: 0.3em;
 }
 
+.markdown-body code {
+    font-family: "MesloLGL Nerd Font","FiraCode Nerd Font", "Fira Code", "Consolas","Courier New", Courier, monospace;
+    font-size: 0.9em;
+    background-color: var(--inline-code-bg);
+    color: var(--text-color);
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
 .markdown-body pre[language] {
     border: 1px solid black;
     position: relative;
     padding-top: inherit;
     height: auto;
+    background-color: rgba(var(--css-color-black), var(--codeblock-opacity));
     /* border-radius: 6px;
     padding: 0 16px;
     overflow: auto;
@@ -186,6 +208,7 @@ div.toggle-theme {
     line-height: 1.15;
     overflow-x: auto;
     font-size: 14px;
+    background-color: inherit;
     /* height: auto; */
     /* min-height: 1.5rem; */
     /* min-block-size: 1.5em; */

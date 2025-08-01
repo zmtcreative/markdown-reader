@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -137,7 +138,7 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 			&fences.Extender{},
 			&SectionWrapperExtension{},
             highlighting.NewHighlighting(
-                highlighting.WithStyle("github"),
+                highlighting.WithStyle("monokailight"),
                 highlighting.WithWrapperRenderer(highlightingCustomWrapperRenderer),
                 highlighting.WithFormatOptions(
                     chromahtml.WithClasses(false),
@@ -173,6 +174,7 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 func highlightingCustomWrapperRenderer(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
 	if entering {
 		lang, _ := c.Language()
+		lang = getLanguageByAlias(lang)
         // Add language class to the <pre> tag
 		fmt.Fprintf(w, `<pre language="%s"`, lang)
 		if c.Attributes() != nil {
@@ -543,4 +545,54 @@ func (a *App) RemoveDocClass(thisClass ...string) {
 // ToggleDocClass toggles the class on html and body elements
 func (a *App) ToggleDocClass(thisClass ...string) {
     runtime.EventsEmit(a.ctx, "toggle-doc-class", thisClass)
+}
+
+type CodeLanguage struct {
+	Name string
+	Aliases []string // Aliases for the language
+}
+
+var CodeLanguages = []CodeLanguage{
+	{Name: "actionscript", Aliases: []string{"actionscript", "as", "as3", "actionscript3"}},
+	{Name: "awk", Aliases: []string{"awk", "gawk", "nawk", "mawk"}},
+	{Name: "bash", Aliases: []string{"bash", "bashrc", "ksh", "sh", "shell", "zsh", "zshrc"}},
+	{Name: "basic", Aliases: []string{"basic", "bas", "qbasic"}},
+	{Name: "batchfile", Aliases: []string{"batchfile", "bat", "cmd", "dos", "dosbatch", "windowsbatch", "winbatch"}},
+	{Name: "c", Aliases: []string{"c", "c89", "c90", "c99", "c11", "h", "idc"}},
+	{Name: "c++", Aliases: []string{"c++", "cpp", "cxx", "cc", "c++11", "c++14", "c++17", "c++20", "h++", "hpp", "hxx"}},
+	{Name: "c#", Aliases: []string{"c#", "csharp", "cs"}},
+	{Name: "clojure", Aliases: []string{"clojure", "clj"}},
+	{Name: "coffeescript", Aliases: []string{"coffeescript", "coffee", "coffee-script", "cjs"}},
+	{Name: "diff", Aliases: []string{"diff", "patch", "gitdiff", "gdiff", "udiff"}},
+	{Name: "f#", Aliases: []string{"f#", "fsharp", "fs"}},
+	{Name: "fortran", Aliases: []string{"fortran", "f77", "f90", "f95", "f03", "f08"}},
+	{Name: "gnuplot", Aliases: []string{"gnuplot", "gp", "plot"}},
+	{Name: "go", Aliases: []string{"go", "golang"}},
+	{Name: "groovy", Aliases: []string{"groovy", "gradle", "gvy", "gy"}},
+	{Name: "haskell", Aliases: []string{"haskell", "hs"}},
+	{Name: "html", Aliases: []string{"html", "htm", "xhtml"}},
+	{Name: "ini", Aliases: []string{"ini", "dosini", "winini", "inf"}},
+	{Name: "javascript", Aliases: []string{"javascript", "js", "jsm"}},
+	{Name: "julia", Aliases: []string{"julia", "jl"}},
+	{Name: "kotlin", Aliases: []string{"kotlin", "kt"}},
+	{Name: "lisp", Aliases: []string{"lisp", "cl", "common-lisp"}},
+	{Name: "makefile", Aliases: []string{"makefile", "mf", "mk", "mak", "make"}},
+	{Name: "markdown", Aliases: []string{"markdown", "md"}},
+	{Name: "perl", Aliases: []string{"perl", "pl", "pm", "pod"}},
+	{Name: "postscript", Aliases: []string{"postscript", "ps", "eps"}},
+	{Name: "powershell", Aliases: []string{"powershell", "ps1", "psm1", "psd1", "pwsh", "posh"}},
+	{Name: "python", Aliases: []string{"python", "py", "py3", "py2", "python2", "python3"}},
+	{Name: "rexx", Aliases: []string{"rexx", "rex", "arexx", "rx"}},
+	{Name: "ruby", Aliases: []string{"ruby", "rb", "rbw", "rbx", "rake", "gemspec", "gemfile"}},
+	{Name: "rust", Aliases: []string{"rust", "rs"}},
+	{Name: "typescript", Aliases: []string{"typescript", "ts", "tsx", "tsm"}},
+}
+
+func getLanguageByAlias(language []byte) []byte {
+	for _, lang := range CodeLanguages {
+		if lang.Name == string(language) || slices.Contains(lang.Aliases, string(language)) {
+			return []byte(lang.Name)
+		}
+	}
+	return language
 }
