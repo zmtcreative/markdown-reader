@@ -29,6 +29,28 @@ const helpModalCloseBtn = document.getElementById('help-modal-close');
 
 const currentTheme = ref('light');
 
+// Function to add 'techdoc' class to html and body elements
+function addTechDocClass() {
+  document.documentElement.classList.add('techdoc');
+  document.body.classList.add('techdoc');
+}
+
+// Function to remove 'techdoc' class from html and body elements
+function removeTechDocClass() {
+  document.documentElement.classList.remove('techdoc');
+  document.body.classList.remove('techdoc');
+}
+
+// Function to toggle 'techdoc' class on html and body elements
+function toggleTechDocClass() {
+  const hasClass = document.documentElement.classList.contains('techdoc');
+  if (hasClass) {
+    removeTechDocClass();
+  } else {
+    addTechDocClass();
+  }
+}
+
 // Function to toggle the theme
 async function toggleTheme() {
   const newTheme = currentTheme.value === 'light' ? 'dark' : 'light';
@@ -61,6 +83,19 @@ onMounted(async () => {
     if (newTheme) {
       currentTheme.value = newTheme;
     }
+  });
+
+  // Listen for techdoc class manipulation events from Go backend
+  EventsOn('add-techdoc-class', () => {
+    addTechDocClass();
+  });
+
+  EventsOn('remove-techdoc-class', () => {
+    removeTechDocClass();
+  });
+
+  EventsOn('toggle-techdoc-class', () => {
+    toggleTechDocClass();
   });
 
   // Initialize Mermaid.js
@@ -97,6 +132,9 @@ onUnmounted(() => {
   // Clean up the event listener when the component is destroyed
   EventsOff('markdown-rendered');
   EventsOff('error');
+  EventsOff('add-techdoc-class');
+  EventsOff('remove-techdoc-class');
+  EventsOff('toggle-techdoc-class');
 });
 
 // Function to hide the modal

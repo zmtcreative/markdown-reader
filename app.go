@@ -281,7 +281,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	}
 
 	// Emit the converted HTML to the frontend.
-	var docTitle, docDate, tmpDocTitle, tmpDocDate string
+	var docTitle, docDate, docType, tmpDocTitle, tmpDocDate string
 	docFileTitle := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
 	timeLayout := time.DateTime + " MST"
 	docDateLM := ""
@@ -298,6 +298,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	if docFrontmatter != nil {
 		tmpDocTitle = GetValueFromMap(docFrontmatter, "Title")
 		tmpDocDate = GetValueFromMap(docFrontmatter, "Date")
+		docType = strings.ToLower(GetValueFromMap(docFrontmatter, "Type"))
 	}
 
 	if tmpDocTitle != "" {
@@ -341,6 +342,12 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	// os.WriteFile("debug-after.html", htmlContent, 0644) // Debugging: Write HTML to file
 
 	runtime.EventsEmit(a.ctx, "markdown-rendered", string(htmlContent), docTitle, docDate)
+
+	if docType == "techdoc" {
+		a.AddTechDocClass()
+	} else {
+		a.RemoveTechDocClass()
+	}
 	return nil
 }
 
@@ -506,4 +513,19 @@ func InitAlertIcons() map[string]string {
 	ai["warn"] = ai["warning"]
 
 	return ai
+}
+
+// AddTechDocClass adds the 'techdoc' class to html and body elements
+func (a *App) AddTechDocClass() {
+    runtime.EventsEmit(a.ctx, "add-techdoc-class")
+}
+
+// RemoveTechDocClass removes the 'techdoc' class from html and body elements
+func (a *App) RemoveTechDocClass() {
+    runtime.EventsEmit(a.ctx, "remove-techdoc-class")
+}
+
+// ToggleTechDocClass toggles the 'techdoc' class on html and body elements
+func (a *App) ToggleTechDocClass() {
+    runtime.EventsEmit(a.ctx, "toggle-techdoc-class")
 }
