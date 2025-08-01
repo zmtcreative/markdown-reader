@@ -74,6 +74,18 @@ watch(currentTheme, (newTheme, oldTheme) => {
   });
 }, { immediate: true }); // immediate: true runs the watcher on component mount
 
+// Print function
+function printContent() {
+    window.print();
+}
+
+// Save as PDF function (using browser's print to PDF)
+function saveAsPDF(filePath: string) {
+    // For web browsers, we can trigger print dialog with PDF option
+    // The actual file saving needs to be handled differently in Wails
+    window.print();
+}
+
 onMounted(async () => {
   // Get initial theme from Go backend
   currentTheme.value = await GetTheme();
@@ -83,6 +95,15 @@ onMounted(async () => {
     if (newTheme) {
       currentTheme.value = newTheme;
     }
+  });
+
+  // Listen for print events from Go backend
+  EventsOn('print-content', () => {
+      printContent();
+  });
+
+  EventsOn('save-as-pdf', (filePath: string) => {
+      saveAsPDF(filePath);
   });
 
   // Listen for techdoc class manipulation events from Go backend
@@ -135,6 +156,8 @@ onUnmounted(() => {
   EventsOff('add-doc-class');
   EventsOff('remove-doc-class');
   EventsOff('toggle-doc-class');
+  EventsOff('print-content');
+  EventsOff('save-as-pdf');
 });
 
 // Function to hide the modal

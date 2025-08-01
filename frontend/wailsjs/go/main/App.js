@@ -26,6 +26,14 @@ export function OpenFileMenuHandler(arg1) {
   return window['go']['main']['App']['OpenFileMenuHandler'](arg1);
 }
 
+export function PrintContent() {
+  return window['go']['main']['App']['PrintContent']();
+}
+
+export function PrintContentToPDF() {
+  return window['go']['main']['App']['PrintContentToPDF']();
+}
+
 export function RemoveDocClass(arg1) {
   return window['go']['main']['App']['RemoveDocClass'](arg1);
 }

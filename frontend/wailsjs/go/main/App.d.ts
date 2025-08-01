@@ -15,6 +15,10 @@ export function LoadAndDisplayMarkdown(arg1:string):Promise<void>;
 
 export function OpenFileMenuHandler(arg1:menu.CallbackData):Promise<void>;
 
+export function PrintContent():Promise<void>;
+
+export function PrintContentToPDF():Promise<void>;
+
 export function RemoveDocClass(arg1:Array<string>):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;

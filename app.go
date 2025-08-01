@@ -98,6 +98,36 @@ func (a *App) shutdown(ctx context.Context) {
     log.Println("Application is shutting down.")
 }
 
+// PrintContent prints the current HTML content
+func (a *App) PrintContent() error {
+    // Emit event to frontend to trigger print
+    runtime.EventsEmit(a.ctx, "print-content")
+    return nil
+}
+
+// PrintContentToPDF exports the current content to PDF (Windows-specific)
+func (a *App) PrintContentToPDF() error {
+    // Get a save file path for the PDF
+    filePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
+        Title: "Save as PDF",
+        DefaultFilename: "document.pdf",
+        Filters: []runtime.FileFilter{
+            {DisplayName: "PDF Files (*.pdf)", Pattern: "*.pdf"},
+        },
+    })
+    if err != nil {
+        return err
+    }
+
+    if filePath == "" {
+        return nil // User cancelled
+    }
+
+    // Emit event to frontend to save as PDF
+    runtime.EventsEmit(a.ctx, "save-as-pdf", filePath)
+    return nil
+}
+
 func (a *App) GetTheme() string {
 	// Return the current theme (light or dark)
 	return a.theme

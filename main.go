@@ -103,6 +103,13 @@ func main() {
 
 	fileMenu := appMenu.AddSubmenu("File")
 	fileMenu.AddText("Open", keys.CmdOrCtrl("o"), app.OpenFileMenuHandler)
+    fileMenu.AddSeparator()
+    fileMenu.AddText("Print", keys.CmdOrCtrl("p"), func(_ *menu.CallbackData) {
+        app.PrintContent()
+    })
+    // fileMenu.AddText("Save as PDF", keys.CmdOrCtrl("e"), func(_ *menu.CallbackData) {
+    //     app.PrintContentToPDF()
+    // })
 	fileMenu.AddSeparator()
 	fileMenu.AddText("Exit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
 		runtime.Quit(app.ctx)
