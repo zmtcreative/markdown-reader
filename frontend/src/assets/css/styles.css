@@ -1,14 +1,15 @@
 :root {
     --bold-modifier: 200;
     --line-height-tight: 1.3;
-    --callout-border-width: 0px;
-    --callout-border-opacity: 0.25;
+    --callout-border-width: 1px;
+    --callout-border-opacity: 1;
+    --callout-background-opacity: 0.025;
     --callout-padding: 12px 12px 12px 24px;
     --callout-radius: 10px;
     --callout-title-color: inherit;
     --callout-title-padding: 0;
     --callout-title-size: inherit;
-    --callout-title-weight: 600;
+    --callout-title-weight: 700;
     --callout-content-padding: 0;
     --callout-content-background: transparent;
     --callout-blend-mode: var(darken);
@@ -280,9 +281,10 @@ html.dark .markdown-body a {
     border-color: rgba(var(--callout-color), var(--callout-border-opacity));
     border-width: var(--callout-border-width);
     border-radius: var(--callout-radius);
+    border-left: calc(var(--callout-radius)*1.25) solid rgb(var(--callout-color));
     margin: 1em 0;
     mix-blend-mode: var(--callout-blend-mode);
-    background-color: rgba(var(--callout-color), 0.1);
+    background-color: rgba(var(--callout-color), var(--callout-background-opacity));
     padding: var(--callout-padding);
     --callout-color: var(--callout-default);
     --callout-icon: lucide-pencil;
