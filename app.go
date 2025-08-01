@@ -129,18 +129,7 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 			&SectionWrapperExtension{},
             highlighting.NewHighlighting(
                 highlighting.WithStyle("github"),
-                highlighting.WithWrapperRenderer(func(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
-                    lang, _ := c.Language()
-                    if entering {
-                        // Add language class to the <pre> tag
-						fmt.Fprintf(w, `<pre language="%s" class="gmhl">`, lang)
-                        // _, _ = w.WriteString(`<pre class="gmhl language-` + string(lang) + ` ` + string(lang) + `">`)
-						fmt.Fprintf(w, `<code class="chroma" language="%s">`, lang)
-						// _, _ = w.WriteString(`<code class="chroma ` + string(lang) + `">`)
-                    } else {
-                        _, _ = w.WriteString(`</code></pre>`)
-                    }
-                }),
+                highlighting.WithWrapperRenderer(highlightingCustomWrapperRenderer),
                 highlighting.WithFormatOptions(
                     chromahtml.WithClasses(true),
                     chromahtml.PreventSurroundingPre(true), // Let WithWrapperRenderer handle the <pre> tag
@@ -170,6 +159,18 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
 	}
 
     return goldmark.New(options...)
+}
+
+func highlightingCustomWrapperRenderer (w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
+	if entering {
+		lang, _ := c.Language()
+        // Add language class to the <pre> tag
+		fmt.Fprintf(w, `<pre language="%s" class="gmhl">`, lang)
+		// Add language class to the <code> tag
+		fmt.Fprintf(w, `<code class="chroma" language="%s">`, lang)
+	} else {
+		_, _ = w.WriteString(`</code></pre>`)
+	}
 }
 
 func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) { // Corrected: Use *menu.CallbackData
