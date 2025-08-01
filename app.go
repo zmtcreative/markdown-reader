@@ -169,7 +169,7 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
     return goldmark.New(options...)
 }
 
-func highlightingCustomWrapperRenderer (w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
+func highlightingCustomWrapperRenderer(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {
 	if entering {
 		lang, _ := c.Language()
         // Add language class to the <pre> tag
@@ -207,7 +207,7 @@ func renderCodeBlockAttributes(w util.BufWriter, c highlighting.CodeBlockContext
 	}
 }
 
-func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) { // Corrected: Use *menu.CallbackData
+func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) {
 	log.Println("File -> Open menu item clicked. Opening file dialog...")
 
 	// Open a file dialog to allow the user to select a Markdown file.
