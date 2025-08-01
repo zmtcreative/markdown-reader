@@ -527,17 +527,17 @@ func InitAlertIcons() map[string]string {
 	return ai
 }
 
-// AddTechDocClass adds the class to html and body elements
+// AddDocClass adds the class to html and body elements
 func (a *App) AddDocClass(thisClass ...string) {
-    runtime.EventsEmit(a.ctx, "add-techdoc-class", thisClass)
+    runtime.EventsEmit(a.ctx, "add-doc-class", thisClass)
 }
 
-// RemoveTechDocClass removes the class from html and body elements
+// RemoveDocClass removes the class from html and body elements
 func (a *App) RemoveDocClass(thisClass ...string) {
-    runtime.EventsEmit(a.ctx, "remove-techdoc-class", thisClass)
+    runtime.EventsEmit(a.ctx, "remove-doc-class", thisClass)
 }
 
-// ToggleTechDocClass toggles the class on html and body elements
+// ToggleDocClass toggles the class on html and body elements
 func (a *App) ToggleDocClass(thisClass ...string) {
-    runtime.EventsEmit(a.ctx, "toggle-techdoc-class", thisClass)
+    runtime.EventsEmit(a.ctx, "toggle-doc-class", thisClass)
 }

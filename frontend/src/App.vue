@@ -86,15 +86,15 @@ onMounted(async () => {
   });
 
   // Listen for techdoc class manipulation events from Go backend
-  EventsOn('add-techdoc-class', (thisClass: string) => {
+  EventsOn('add-doc-class', (thisClass: string) => {
     addDocClass(thisClass);
   });
 
-  EventsOn('remove-techdoc-class', (thisClass: string) => {
+  EventsOn('remove-doc-class', (thisClass: string) => {
     removeDocClass(thisClass);
   });
 
-  EventsOn('toggle-techdoc-class', (thisClass: string) => {
+  EventsOn('toggle-doc-class', (thisClass: string) => {
     toggleDocClass(thisClass);
   });
 
@@ -132,9 +132,9 @@ onUnmounted(() => {
   // Clean up the event listener when the component is destroyed
   EventsOff('markdown-rendered');
   EventsOff('error');
-  EventsOff('add-techdoc-class');
-  EventsOff('remove-techdoc-class');
-  EventsOff('toggle-techdoc-class');
+  EventsOff('add-doc-class');
+  EventsOff('remove-doc-class');
+  EventsOff('toggle-doc-class');
 });
 
 // Function to hide the modal
