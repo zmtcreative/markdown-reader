@@ -53,6 +53,8 @@
    font-size: 1.125rem;
 }
 
+.techdoc article.markdown-body,
+.techdoc header.app-header > h1,
 .techdoc .markdown-body section > h1 {
    counter-reset: td-h2 0;
    margin-left: var(--td-base-margin);

@@ -57,7 +57,7 @@ var dataPrefix = []byte("data-")
 func NewApp() *App {
     app := &App{
         frontMatter: map[string]string{},
-        stripH1: false,
+        stripH1: true,
 		allowInlineHTML: true, // Default to true, can be set via CLI flag
 		sanitizeHTML: true, // Default to true, can be set via CLI flag
 		theme: "light",
@@ -261,10 +261,6 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		return fmt.Errorf("failed to read file %s: %w", filePath, err) // Corrected: Use fmt.Errorf
 	}
 
-	// Normalize line endings to Unix-style (LF)
-	// Some extensions (e.g., goldmark-gh-alerts) rely on Unix-style line endings
-	mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
-
 	// Extract the document title from the H1 heading element if present
     var thisDocumentTitle string
     if a.stripH1 {
@@ -274,6 +270,10 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	// if err != nil {
 	// 	return fmt.Errorf("failed to extract document title: %w", err) // Corrected: Use fmt.Errorf
 	// }
+
+	// Normalize line endings to Unix-style (LF)
+	// Some extensions (e.g., goldmark-gh-alerts) rely on Unix-style line endings
+	mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
 
 	// Convert Markdown content to HTML
 	htmlContent, docFrontmatter, err := a.ConvertMarkdownToHTML(mdContent)
@@ -338,7 +338,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	// This is necessary to ensure proper rendering in the frontend since some Markdown renderers
 	// may produce inconsistent HTML output (this is a side effect of using some packages
 	// like Highlighting/Chroma).
-	htmlContent = cleanupHTMLContent(htmlContent)
+	htmlContent = a.cleanupHTMLContent(htmlContent)
 
 	// os.WriteFile("debug-after.html", htmlContent, 0644) // Debugging: Write HTML to file
 
@@ -356,14 +356,17 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		}
 	}
 	if docType != "" {
-		a.AddDocClass(docType)
-		a.docTypes = append(a.docTypes, docType)
+		docTypeArray := strings.Fields(docType)
+		for _, dt := range docTypeArray {
+			a.AddDocClass(dt)
+			a.docTypes = append(a.docTypes, dt)
+		}
 	}
 
 	return nil
 }
 
-func cleanupHTMLContent(htmlContent []byte) []byte {
+func (a *App) cleanupHTMLContent(htmlContent []byte) []byte {
 	// Use the regexp package for regex replacement.
 	// This is expensive from a computational perspective (compared to non-regex methods),
 	// but it allows for complex replacements that are not easily done with simple string methods.
