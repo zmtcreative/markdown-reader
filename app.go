@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -138,9 +139,9 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
                 highlighting.WithStyle("github"),
                 highlighting.WithWrapperRenderer(highlightingCustomWrapperRenderer),
                 highlighting.WithFormatOptions(
-                    chromahtml.WithClasses(true),
+                    chromahtml.WithClasses(false),
                     chromahtml.PreventSurroundingPre(true), // Let WithWrapperRenderer handle the <pre> tag
-                    chromahtml.WithAllClasses(true), // Use all classes for syntax highlighting
+                    chromahtml.WithAllClasses(false), // Use all classes for syntax highlighting
 					// chromahtml.ClassPrefix("chroma-"), // Use a custom class prefix for Chroma styles
                     chromahtml.Standalone(true), // Set to false to prevent a full HTML document
                 ),
@@ -153,7 +154,7 @@ func (a *App) CreateGoldmarkInstance() goldmark.Markdown {
         options = append(options,
 			goldmark.WithRendererOptions(
             	html.WithUnsafe(), // Allow unsafe HTML rendering
-    	    ),
+			),
 		)
     }
 
@@ -266,7 +267,7 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 	// Extract the document title from the H1 heading element if present
     var thisDocumentTitle string
     if a.stripH1 {
-	    thisDocumentTitle, mdContent, _ = ExtractH1(string(mdContent))
+		thisDocumentTitle, mdContent, _ = ExtractH1(string(mdContent))
     }
 	// thisDocumentTitle := ""
 	// if err != nil {
@@ -329,8 +330,51 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		}
 	}
 
+	// os.WriteFile("debug-before.html", htmlContent, 0644) // Debugging: Write HTML to file
+
+	// Cleanup HTML content by adjusting line breaks and removing unnecessary tags
+	// This is necessary to ensure proper rendering in the frontend since some Markdown renderers
+	// may produce inconsistent HTML output (this is a side effect of using some packages
+	// like Highlighting/Chroma).
+	htmlContent = cleanupHTMLContent(htmlContent)
+
+	// os.WriteFile("debug-after.html", htmlContent, 0644) // Debugging: Write HTML to file
+
 	runtime.EventsEmit(a.ctx, "markdown-rendered", string(htmlContent), docTitle, docDate)
 	return nil
+}
+
+func cleanupHTMLContent(htmlContent []byte) []byte {
+	// Use the regexp package for regex replacement.
+	// This is expensive from a computational perspective (compared to non-regex methods),
+	// but it allows for complex replacements that are not easily done with simple string methods.
+	htmlString := string(htmlContent)
+
+	// Make sure paragraph elements start on a new line in the HTML
+	re := regexp.MustCompile("(?si)" + `(>)\s*(<p>|<p\s+[^>]*>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+	// Fix an issue where the Chroma package adds <body></body> and <html></html> tags inside <pre> and <code> tags
+    re = regexp.MustCompile("(?si)" + `(?:(?:</body>|</html>)?\s)+(</code>)`)
+    htmlString = re.ReplaceAllString(htmlString, "\r\n$1")
+
+	re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)(<code[^>]*>)(?:<html>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+	re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)\s*(?:<body[^>]*>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+	// Ensure that any text/elements after a <code> tag are on a new line
+	re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)(\S+)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2\r\n$3")
+
+	// Make sure section elements start on a new line in the HTML
+	re = regexp.MustCompile("(?si)" + `(>)\s*(<section[^>]*>)`)
+	htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+	htmlContent = []byte(htmlString)
+
+	return htmlContent
 }
 
 // convertMarkdownToHTML converts a byte slice of Markdown content
