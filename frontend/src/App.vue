@@ -24,6 +24,7 @@ const errorMessage = ref('');
 
 // Get references to the modal elements
 const helpModalOverlay = document.getElementById('help-modal-overlay');
+const helpModalTitle = document.getElementById('help-modal-title');
 const helpModalText = document.getElementById('help-modal-text');
 const helpModalCloseBtn = document.getElementById('help-modal-close');
 
@@ -168,8 +169,9 @@ function hideHelpModal() {
 }
 
 // Function to show the modal
-function showHelpModal(helpText: string) {
-    if (helpModalOverlay && helpModalText) {
+function showHelpModal(helpTitle: string, helpText: string) {
+    if (helpModalOverlay && helpModalText && helpModalTitle) {
+        helpModalTitle.textContent = helpTitle; // Set the title of the modal
         helpModalText.textContent = helpText;
         helpModalOverlay.style.display = 'block';
     }
@@ -189,8 +191,8 @@ if (helpModalOverlay) {
 }
 
 // Listen for an event from the Go backend to show the help dialog
-EventsOn("show-help", (helpText) => {
-    showHelpModal(helpText);
+EventsOn("show-help", (helpTitle, helpText) => {
+    showHelpModal(helpTitle, helpText);
 });
 
 </script>

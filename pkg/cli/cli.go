@@ -16,6 +16,7 @@ type CliArgs struct {
     SanitizeHTML    bool
     ShowHelp        bool
     CmdlineOptions  string
+    AppName         string // Store the application name
 }
 
 // GetArgs becomes a standalone function that parses flags and returns them.
@@ -61,7 +62,10 @@ func GetArgs() (*CliArgs, error) {
 	usageText.WriteString("                         (default: allow inline HTML)\n")
 	usageText.WriteString("      --nosanitize     Disable sanitizing of HTML and URL output\n")
 	usageText.WriteString("                         (default: sanitize HTML and URLs)\n")
+
+    args.AppName = appName
     args.CmdlineOptions = usageText.String()
+
 
     // Assign the usage function to the global flag set for the main function to call.
     flag.Usage = func() {

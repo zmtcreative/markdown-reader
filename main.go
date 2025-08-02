@@ -4,9 +4,11 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"strings"
 
 	"markdown-reader/pkg/cli"
 
+	"github.com/tidwall/gjson"
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/menu/keys"
@@ -17,6 +19,15 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+//go:embed wails.json
+var wailsConfig string
+
+var (
+	Version = "dev-build"
+	Commit  = "none"
+	Date    = "unknown"
+)
 
 func main() {
     // Handle command-line arguments FIRST ---
@@ -34,6 +45,27 @@ func main() {
     app.allowInlineHTML = cliArgs.AllowInlineHTML
     app.sanitizeHTML = cliArgs.SanitizeHTML
     app.cmdlineOptions = cliArgs.CmdlineOptions
+
+	authorName := gjson.Get(wailsConfig, "author.name").String()
+	authorEmail := gjson.Get(wailsConfig, "author.email").String()
+	var versionText strings.Builder
+	versionText.WriteString("  Application: " + cliArgs.AppName + "\n")
+	versionText.WriteString("      Version: " + Version + "\n")
+	versionText.WriteString("   Build Date: " + Date + "\n\n")
+	versionText.WriteString("Copyright 2025 " + authorName + " <" + authorEmail + ">\n\n")
+	versionText.WriteString("Licensed under the Apache License, Version 2.0 (the \"License\");\n")
+	versionText.WriteString("you may not use this file except in compliance with the License.\n")
+	versionText.WriteString("You may obtain a copy of the License at\n\n")
+	versionText.WriteString("    https://www.apache.org/licenses/LICENSE-2.0\n\n")
+	versionText.WriteString("Unless required by applicable law or agreed to in writing, software\n")
+	versionText.WriteString("distributed under the License is distributed on an \"AS IS\" BASIS,\n")
+	versionText.WriteString("WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n")
+	versionText.WriteString("See the License for the specific language governing permissions and\n")
+	versionText.WriteString("limitations under the License.\n")
+
+	// versionText.WriteString("Commit Hash: " + Commit + "\n")
+
+	app.versionInfo = versionText.String()
 
 	// Create the application menu
 	appMenu := menu.NewMenu()
@@ -56,8 +88,13 @@ func main() {
     helpMenu := appMenu.AddSubmenu("Help")
     helpMenu.AddText("Command-Line Options", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
         // Emit an event to the frontend, sending the help text as data.
-        runtime.EventsEmit(app.ctx, "show-help", app.cmdlineOptions)
+        runtime.EventsEmit(app.ctx, "show-help", "Command-Line Options", app.cmdlineOptions)
     })
+	helpMenu.AddSeparator()
+	helpMenu.AddText("About", keys.CmdOrCtrl("a"), func(_ *menu.CallbackData) {
+		// Emit an event to the frontend, sending the version information as data.
+		runtime.EventsEmit(app.ctx, "show-help", "About", app.versionInfo)
+	})
 
 	// Create application with options
 	werr := wails.Run(&options.App{

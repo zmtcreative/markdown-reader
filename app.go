@@ -28,6 +28,7 @@ type App struct {
 	theme string // Store display mode (e.g., "light", "dark")
 	docTypes []string // List of document types (e.g., "techdoc", "mydoc")
 	cmdlineOptions string // Store command line options here
+	versionInfo string // Store version information
 	sanitizeHTML bool // Flag to control sanitization of HTML and URL links
     frontMatter map[string]string // Store frontmatter data here
     mdConverter goldmark.Markdown

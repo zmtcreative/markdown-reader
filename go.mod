@@ -14,6 +14,7 @@ require (
 	github.com/nemunaire/goldmark-inline-attributes v0.0.0-20230824135609-6883396a74e2
 	github.com/spf13/pflag v1.0.7
 	github.com/stefanfritsch/goldmark-fences v1.0.0
+	github.com/tidwall/gjson v1.18.0
 	github.com/wailsapp/wails/v2 v2.10.2
 	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-emoji v1.0.3
@@ -46,6 +47,8 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.51.0 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
