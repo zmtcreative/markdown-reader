@@ -9,5 +9,11 @@
   "author": {
     "name": "ZMT Creative LLC",
     "email": "github@zmtcreative.com"
+  },
+  "Info": {
+    "companyName": "ZMT Creative LLC",
+    "productName": "Markdown Reader",
+    "productVersion": "v0.0.1-alpha1",
+    "copyright": "Copyright 2025 ZMT Creative LLC"
   }
 }
