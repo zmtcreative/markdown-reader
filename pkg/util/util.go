@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"strings"
@@ -7,6 +7,7 @@ import (
 	"golang.org/x/text/language"
 )
 
+// GetValueFromMap performs a case-insensitive search for a key in a map.
 func GetValueFromMap(m map[string]string, key string) string {
 	if v, ok := m[key]; ok {
 		return v
