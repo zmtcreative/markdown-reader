@@ -6,14 +6,6 @@ export function AddDocClass(arg1) {
   return window['go']['main']['App']['AddDocClass'](arg1);
 }
 
-export function ConvertMarkdownToHTML(arg1) {
-  return window['go']['main']['App']['ConvertMarkdownToHTML'](arg1);
-}
-
-export function CreateGoldmarkInstance() {
-  return window['go']['main']['App']['CreateGoldmarkInstance']();
-}
-
 export function GetTheme() {
   return window['go']['main']['App']['GetTheme']();
 }

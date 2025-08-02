@@ -1,4 +1,4 @@
-package main
+package htmlsanitize
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ import (
 // var dangerSquare string
 
 //go:embed assets/images/broken-file.svg
-var brokenFile string
+var BrokenFile string
 
 // SanitizeHTMLExtension implements Goldmark extension for markdown and raw HTML filtering
 type SanitizeHTMLExtension struct{}
@@ -115,7 +115,7 @@ func (r *FilteredHTMLRenderer) renderLink(w util.BufWriter, source []byte, node 
 		_, _ = w.Write(util.EscapeHTML(util.URLEscape(link.Destination, true)))
 		_ = w.WriteByte('"')
 	} else {
-		newSVG = resizeSVG(brokenFile, 16, 16)
+		newSVG = resizeSVG(BrokenFile, 16, 16)
 		_, _ = w.WriteString(`<a class="disallowed bad-href" badhref="`)
 		_, _ = w.Write(util.EscapeHTML(util.URLEscape(link.Destination, true)))
 		_ = w.WriteByte('"')
