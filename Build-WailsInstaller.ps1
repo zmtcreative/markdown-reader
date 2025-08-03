@@ -162,10 +162,6 @@ function Invoke-WailsBuild {
         $FileVersion = "0.0.0.${ds}"
     }
 
-    if ($ExeOnly) { $NSIS = "" } else {
-        Update-ProjectNSI -ProjectNSIPath $ProjectNSI -FileVersion $FileVersion
-    }
-    if ($UPX) { $UPX = "-upx" }
 
     if ($ShowVersionOnly) {
         $NoBuild = $true
@@ -173,6 +169,12 @@ function Invoke-WailsBuild {
         Write-Host "     NSIS File version: $FileVersion"
         return
     } else {
+        if ($ExeOnly) { $NSIS = "" } else {
+            Update-ProjectNSI -ProjectNSIPath $ProjectNSI -FileVersion $FileVersion
+        }
+
+        if ($UPX) { $UPX = "-upx" }
+
         Write-Host -ForegroundColor Green "Updating wails.json with version value: $FileVersion"
         $WailsJsonPath = Join-Path $PSScriptRoot "wails.json"
         $WailsData = Get-JsonContent -Path $WailsJsonPath
