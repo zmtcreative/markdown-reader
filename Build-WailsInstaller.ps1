@@ -240,7 +240,8 @@ function Invoke-WailsBuild {
     $FileVersion = ""
     $RC = @("alpha", "beta", "rc", "")
     $Commit = $(git rev-parse --short HEAD)
-    if ( $(git describe --tags HEAD 2> $null) -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:-(?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
+    $CurrentCommitTag = $(git describe --tags HEAD 2> $null)
+    if ( $CurrentCommitTag -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:-(?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
         $Major = $Matches.major
         $Minor = $Matches.minor
         $Patch = $Matches.patch
