@@ -265,6 +265,7 @@ function Set-NewTag {
             return
         }
         Write-Host "Tag '$TagName' created and pushed to remote repository."
+        git fetch 2>$null
     }
 }
 
