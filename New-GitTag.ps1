@@ -1,4 +1,13 @@
 <#
+    .SYNOPSIS
+        Creates a new Git tag with the specified name and message, or increments the
+        version based on the current tag.
+    .DESCRIPTION
+        This script allows you to create a new Git tag with a specified name and
+        message. It can also increment the version based on the current tag,
+        allowing you to set alpha, beta, or release candidate tags, or increment
+        the patch, minor, or major version numbers. It updates the NSIS project
+        file and Wails JSON file with the new version information.
 #>
 
 #Requires -Version 7.0
@@ -156,7 +165,7 @@ function Update-ProjectNSI {
 
     foreach ($line in $NSIData) {
         if ($line -match '^(?<key>VIFileVersion\s+)"(?<value>[^"]+)"\s*$') {
-            if (string($Matches.key) -ne $FileVersion) {
+            if ($Matches.value -ne $FileVersion) {
                 $newval1 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIFileVersion\s+)"([^"]+)"\s*$', $newval1
                 Write-Host -ForegroundColor Yellow "  Updating VIFileVersion in NSIS project file"
@@ -164,7 +173,7 @@ function Update-ProjectNSI {
             }
         }
         if ($line -match '^(?<key>VIProductVersion\s+)"(?<value>[^"]+)"\s*$') {
-            if (string($Matches.key) -ne $FileVersion) {
+            if ($Matches.value -ne $FileVersion) {
                 Write-Host -ForegroundColor Yellow "  Updating VIProductVersion in NSIS project file"
                 $newval2 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIProductVersion\s+)"([^"]+)"\s*$', $newval2
@@ -172,7 +181,7 @@ function Update-ProjectNSI {
             }
         }
         if ($line -match '^(?<key>VIAddVersionKey\s+"FileVersion"\s+)"(?<value>[^"]+)"\s*$') {
-            if (string($Matches.key) -ne $FileVersion) {
+            if ($Matches.value -ne $FileVersion) {
                 Write-Host -ForegroundColor Yellow "  Updating VIAddVersionKey FileVersion in NSIS project file"
                 $newval3 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIAddVersionKey\s+"FileVersion"\s+)"([^"]+)"\s*$', $newval3
@@ -192,12 +201,18 @@ function Update-WailsJSON {
     param (
         [Parameter(Mandatory = $true)]
         [string]$WailsJsonPath,
-        [string]$Version
+        [string]$TagName
     )
 
     if (-not (Test-Path -Path $WailsJsonPath)) {
         Write-Host -ForegroundColor Red "wails.json file not found at path: $WailsJsonPath"
         return
+    }
+
+    $tmpVersionHash = Get-VersionHash -TagName $TagName
+    $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
+    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
+        $Version += "-${PreReleaseNumber}"
     }
 
     Write-Host -ForegroundColor Green "Updating wails.json with version value: $Version"
@@ -457,7 +472,7 @@ function Invoke-NewGitTag {
             $Message = $newTagName -replace '^v', 'Version '
         }
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
-        Update-WailsJSON -WailsJsonPath $WailsJsonPath -Version $newTagName
+        Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
         Write-Host -ForegroundColor Green "New Tag Name: $newTagName - Message: $Message"
     }
     else {
