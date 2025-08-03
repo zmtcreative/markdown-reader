@@ -474,7 +474,8 @@ function Push-RepositoryCommit {
         return $false
     }
     try {
-        git commit -a -m "Commit project with tag $TagName"
+        git commit -a -m "Commit project with tag $TagName" 2>&1 $null
+        git push 2>&1 $null
     } catch {
         Write-Host -ForegroundColor Red "Failed to commit changes: $_"
         Pop-Location -StackName "commitproject"
