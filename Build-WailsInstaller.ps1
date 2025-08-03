@@ -160,7 +160,7 @@ function Update-ProjectNSI {
 
     foreach ($line in $NSIData) {
         if ($line -match '^(?<key>VIFileVersion\s+)"(?<value>[^"]+)"\s*$') {
-            if (string($Matches.key) -ne $FileVersion) {
+            if ($Matches.value -ne $FileVersion) {
                 $newval1 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIFileVersion\s+)"([^"]+)"\s*$', $newval1
                 Write-Host -ForegroundColor Yellow "  Updating VIFileVersion in NSIS project file"
@@ -168,7 +168,7 @@ function Update-ProjectNSI {
             }
         }
         if ($line -match '^(?<key>VIProductVersion\s+)"(?<value>[^"]+)"\s*$') {
-            if (string($Matches.key) -ne $FileVersion) {
+            if ($Matches.value -ne $FileVersion) {
                 Write-Host -ForegroundColor Yellow "  Updating VIProductVersion in NSIS project file"
                 $newval2 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIProductVersion\s+)"([^"]+)"\s*$', $newval2
@@ -176,7 +176,7 @@ function Update-ProjectNSI {
             }
         }
         if ($line -match '^(?<key>VIAddVersionKey\s+"FileVersion"\s+)"(?<value>[^"]+)"\s*$') {
-            if (string($Matches.key) -ne $FileVersion) {
+            if ($Matches.value -ne $FileVersion) {
                 Write-Host -ForegroundColor Yellow "  Updating VIAddVersionKey FileVersion in NSIS project file"
                 $newval3 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIAddVersionKey\s+"FileVersion"\s+)"([^"]+)"\s*$', $newval3
