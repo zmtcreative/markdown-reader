@@ -6,8 +6,32 @@
         This script allows you to create a new Git tag with a specified name and
         message. It can also increment the version based on the current tag,
         allowing you to set alpha, beta, or release candidate tags, or increment
-        the patch, minor, or major version numbers. It updates the NSIS project
-        file and Wails JSON file with the new version information.
+        the patch, minor, or major version numbers.
+
+        It updates the NSIS project file and Wails JSON file with the new version
+        information, commits and pushes the changes to the repository, then creates
+        the new tag and pushes it to the remote repository.
+    .PARAMETER TagName
+        The name of the new Git tag to create. If not specified, it will prompt for
+        the tag name interactively.
+    .PARAMETER Message
+        The message for the new Git tag. If not specified, it will use the tag name as the message.
+    .PARAMETER IncrementPatch
+        Increment the patch version number.
+    .PARAMETER IncrementMinor
+        Increment the minor version number.
+    .PARAMETER IncrementMajor
+        Increment the major version number.
+    .PARAMETER IncrementPrerelease
+        Increment the existing prerelease version number.
+    .PARAMETER SetAlpha
+        Set the tag to alpha version.
+    .PARAMETER SetBeta
+        Set the tag to beta version.
+    .PARAMETER SetReleaseCandidate
+        Set the tag to rc (release candidate) version.
+    .PARAMETER ReleaseVersion
+        This is a release version, which removes the prerelease suffix but does not increment the version.
 #>
 
 #Requires -Version 7.0
@@ -50,6 +74,14 @@ Set-Location $PSScriptRoot
 $ScriptName = $MyInvocation.MyCommand.Name
 
 function Get-JsonContent {
+    <#
+    .SYNOPSIS
+        Reads a JSON file and converts it into a PowerShell object.
+    .DESCRIPTION
+        This function reads the content of a JSON file and converts it into a PowerShell object.
+    .PARAMETER Path
+        The path to the JSON file to read.
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, Position = 0)]
@@ -73,6 +105,14 @@ function Get-JsonContent {
 }
 
 function Set-JsonContent {
+    <#
+    .SYNOPSIS
+        Writes a PowerShell object to a JSON file.
+    .DESCRIPTION
+        This function takes a PowerShell object and writes it to a JSON file.
+    .PARAMETER Path
+        The path to the JSON file to write.
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, Position = 0)]
@@ -95,6 +135,17 @@ function Set-JsonContent {
 }
 
 function Update-ProjectNSI {
+    <#
+    .SYNOPSIS
+        Updates the NSI project file with the new version information.
+    .DESCRIPTION
+        This function modifies the specified NSI project file to reflect the new version
+        information based on the provided tag name.
+    .PARAMETER ProjectNSIPath
+        The path to the NSI project file to update.
+    .PARAMETER TagName
+        The tag name to use for the version update.
+    #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$ProjectNSIPath,
@@ -162,6 +213,17 @@ function Update-ProjectNSI {
 }
 
 function Update-WailsJSON {
+    <#
+    .SYNOPSIS
+        Updates the Wails JSON file with the new version information.
+    .DESCRIPTION
+        This function modifies the specified Wails JSON file to reflect the new version
+        information based on the provided tag name.
+    .PARAMETER WailsJsonPath
+        The path to the Wails JSON file to update.
+    .PARAMETER TagName
+        The tag name to use for the version update.
+    #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$WailsJsonPath,
@@ -196,6 +258,13 @@ function Update-WailsJSON {
 }
 
 function Get-MostRecentTag {
+    <#
+    .SYNOPSIS
+        Retrieves the most recent Git tag from the repository.
+    .DESCRIPTION
+        This function uses Git commands to find and return the most recent tag
+        in the current repository.
+    #>
     $currentTag = git describe --tags --abbrev=0 2>$null
     if ($currentTag) {
         # Write-Host "Most recent tag: $currentTag"
@@ -207,6 +276,16 @@ function Get-MostRecentTag {
 }
 
 function Get-VersionHash {
+    <#
+    .SYNOPSIS
+        Retrieves the version hash from a Git tag name structured as a semantic version.
+    .DESCRIPTION
+        This function extracts the version information from the specified Git tag name.
+        It assumes the tag follows the semantic versioning format:
+        vMAJOR.MINOR.PATCH[-PRERELEASE][+AHEAD-HASH].
+    .PARAMETER TagName
+        The name of the Git tag to parse for version information.
+    #>
     param (
         [Parameter(Mandatory = $true, HelpMessage = "The tag name to parse for the version hash.")]
         [string]$TagName
@@ -232,6 +311,16 @@ function Get-VersionHash {
 }
 
 function Set-NewTag {
+    <#
+    .SYNOPSIS
+        Creates a new Git tag with the specified name and message.
+    .DESCRIPTION
+        This function creates a new Git tag in the local repository and pushes it to the remote repository.
+    .PARAMETER TagName
+        The name of the new Git tag.
+    .PARAMETER Message
+        The message for the new Git tag.
+    #>
     param (
         [Parameter(Mandatory = $true, HelpMessage = "The name of the new Git tag.")]
         [string]$TagName,
@@ -270,6 +359,14 @@ function Set-NewTag {
 }
 
 function Get-NewTagName {
+    <#
+    .SYNOPSIS
+        Prompts the user to enter a new tag name.
+    .DESCRIPTION
+        This function allows the user to specify a new tag name, with the option to use a suggested tag name.
+    .PARAMETER SuggestedTagName
+        The current tag name.
+    #>
     param (
         [Parameter(Mandatory = $true, HelpMessage = "The current tag name.")]
         [string]$SuggestedTagName
@@ -299,6 +396,15 @@ function Get-NewTagName {
 }
 
 function Get-NextTagName {
+    <#
+    .SYNOPSIS
+        Retrieves the next tag name based on the current tag name hash.
+    .DESCRIPTION
+        This function calculates the next tag name by incrementing the version components
+        based on the specified parameters.
+    .PARAMETER VersionHash
+        The current tag name hash.
+    #>
     param(
         [Parameter(Mandatory = $true, HelpMessage = "The current tag name hash.")]
         [object]$VersionHash
@@ -401,6 +507,13 @@ function Get-NextTagName {
 }
 
 function Confirm-RepositoryIsClean {
+    <#
+    .SYNOPSIS
+        Checks if the Git repository is clean (no uncommitted changes).
+    .DESCRIPTION
+        This function checks the status of the Git repository and returns $true if there are no uncommitted changes,
+        otherwise it returns $false and displays a warning message.
+    #>
     $status = git status --porcelain
     if ($status) {
         $isClean = $true
@@ -437,6 +550,16 @@ function Confirm-RepositoryIsClean {
 }
 
 function Push-RepositoryCommit {
+    <#
+    .SYNOPSIS
+        Commits and pushes the modified wails.json and project.nsi files.
+    .DESCRIPTION
+        This function commits the changes made to the wails.json and project.nsi files
+        in the Git repository. It checks if there are any changes to commit, and if so,
+        it commits them with a message that includes the tag name.
+    .PARAMETER TagName
+        The name of the new Git tag.
+    #>
     param(
         [Parameter(Mandatory = $true, HelpMessage = "The tag name to commit changes for.")]
         [string]$TagName
@@ -486,6 +609,14 @@ function Push-RepositoryCommit {
 }
 
 function Invoke-NewGitTag {
+    <#
+    .SYNOPSIS
+        Creates a new Git tag.
+    .DESCRIPTION
+        This function creates a new Git tag in the local repository and pushes it to the remote repository.
+    .PARAMETER TagName
+        The name of the new Git tag.
+    #>
     $currentTag = Get-MostRecentTag
     $newTagName = ""
     $ProjectNSI = Join-Path $PSScriptRoot "build" "windows" "installer" "project.nsi"

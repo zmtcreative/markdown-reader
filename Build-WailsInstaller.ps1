@@ -1,4 +1,3 @@
-#!/usr/bin/env pwsh
 <#
     .SYNOPSIS
         Builds the Wails application and updates the version in wails.json.
@@ -7,7 +6,23 @@
         wails.json based on the current Git commit, and generates SHA256
         and SHA1 hashes for the installer files.
 
-        By default, it shows the current version and file version without building.
+        To preserve the current state of the repository, it reverts changes to
+        the wails.json and project.nsi files after building. It also checks
+        if the repository is clean before proceeding with the build. If there are
+        uncommitted changes, the script will not proceed and will display an error message.
+
+        By default, it shows the current version and file version (based on the
+        latest Git commit) that would be used for the build, but without actually
+        performing the build.
+
+        You can use the -Build, -NSIS, and -UPX switches to
+        perform the build, create an NSIS installer, and compress the executable.
+    .PARAMETER Build
+        Run the build process without generating the NSIS installer.
+    .PARAMETER NSIS
+        Implies -Build. Create the NSIS installer after building.
+    .PARAMETER UPX
+        Implies -Build. Use UPX to compress the executable file.
 #>
 
 #Requires -Version 7.0
@@ -25,15 +40,28 @@ param (
     [switch]$UPX
 )
 
+# Set the default behavior to show the current version and file version
+# without performing the build.
 $ShowVersionOnly = $true
 if ($Build -or $NSIS -or $UPX) {
     $ShowVersionOnly = $false
 }
+
+# Change to the script's directory (Assumes the script is in the root of the project)
 Set-Location $PSScriptRoot
 
+# Get the script name
 $ScriptName = $MyInvocation.MyCommand.Name
 
 function Get-JsonContent {
+    <#
+    .SYNOPSIS
+        Reads a JSON file and converts it into a PowerShell object.
+    .DESCRIPTION
+        This function reads the content of a JSON file and converts it into a PowerShell object.
+    .PARAMETER Path
+        The path to the JSON file to read.
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, Position = 0)]
@@ -57,6 +85,14 @@ function Get-JsonContent {
 }
 
 function Set-JsonContent {
+    <#
+    .SYNOPSIS
+        Writes a PowerShell object to a JSON file.
+    .DESCRIPTION
+        This function takes a PowerShell object and writes it to a JSON file.
+    .PARAMETER Path
+        The path to the JSON file to write.
+    #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, Position = 0)]
@@ -79,6 +115,16 @@ function Set-JsonContent {
 }
 
 function Get-DateStamp {
+    <#
+    .SYNOPSIS
+        Generates a timestamp based on the current date and time.
+    .DESCRIPTION
+        This function creates a timestamp by calculating the number of 10-minute intervals
+        that have elapsed since the beginning of the year.
+    .OUTPUTS
+        Returns an integer representing the number of 10-minute intervals since the start of the year.
+        Integer value will be in the range of 1 to approximately 52560 (for a full year).
+    #>
     $DateNow = Get-Date -AsUTC
     $TicksPerDay = 24 * 6   # number of 10 minute intervals in a day
     $DayOfYear = $DateNow.DayOfYear - 1
@@ -89,6 +135,13 @@ function Get-DateStamp {
 }
 
 function Confirm-RepositoryIsClean {
+    <#
+    .SYNOPSIS
+        Checks if the Git repository is clean (no uncommitted changes).
+    .DESCRIPTION
+        This function checks the status of the Git repository and determines if there are any
+        uncommitted changes. It returns $true if the repository is clean, and $false otherwise.
+    #>
     $status = git status --porcelain
     if ($status) {
         $isClean = $true
@@ -125,6 +178,16 @@ function Confirm-RepositoryIsClean {
 }
 
 function Restore-RepositoryToCleanState {
+    <#
+    .SYNOPSIS
+        Restores the Git repository to a clean state by discarding uncommitted changes.
+    .DESCRIPTION
+        This function checks for uncommitted changes in the specified files and restores them
+        to their last committed state.
+
+        As written, it will only restore changes to the wails.json and project.nsi files.
+        If you want to restore other files, add them to the $FileList array.
+    #>
     Push-Location $PSScriptRoot -StackName "restoreproject"
     Write-Host -ForegroundColor Yellow "Restoring repository to a clean state..."
     $FileList = @(
@@ -141,6 +204,16 @@ function Restore-RepositoryToCleanState {
 }
 
 function Update-ProjectNSI {
+    <#
+    .SYNOPSIS
+        Updates the NSIS project file with the specified file version.
+    .DESCRIPTION
+        This function modifies the NSIS project file to set the correct file version.
+    .PARAMETER ProjectNSIPath
+        The path to the NSIS project file to update.
+    .PARAMETER FileVersion
+        The new file version to set in the project file.
+    #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$ProjectNSIPath,
@@ -193,6 +266,16 @@ function Update-ProjectNSI {
 }
 
 function Update-WailsJSON {
+    <#
+    .SYNOPSIS
+        Updates the wails.json file with the specified version.
+    .DESCRIPTION
+        This function modifies the wails.json file to set the correct version.
+    .PARAMETER WailsJsonPath
+        The path to the wails.json file to update.
+    .PARAMETER Version
+        The new version to set in the wails.json file.
+    #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$WailsJsonPath,
@@ -221,6 +304,13 @@ function Update-WailsJSON {
 }
 
 function Invoke-WailsBuild {
+    <#
+    .SYNOPSIS
+        Invokes the Wails build process with the specified options.
+    .DESCRIPTION
+        This function prepares and executes the Wails build command with the appropriate
+        flags and environment variables.
+    #>
     $NSISOption = ""
     $UPXOption  = ""
     $ProjectNSI = Join-Path $PSScriptRoot "build" "windows" "installer" "project.nsi"
@@ -248,6 +338,7 @@ function Invoke-WailsBuild {
         $Prerelease = $Matches.prerelease
         $Ahead = $Matches.ahead
         $Hash = $Matches.hash
+        if ($Hash) { $Hash | Out-Null }  # suppress unused variable warning
         $Version = $Major + "." + $Minor + "." + $Patch
         $FileVersion = $Version
         if ($Prerelease) {
