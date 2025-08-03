@@ -163,13 +163,13 @@ function Update-ProjectNSI {
             if ($Matches.value -ne $FileVersion) {
                 $newval1 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIFileVersion\s+)"([^"]+)"\s*$', $newval1
-                Write-Host -ForegroundColor Green "  Updating VIFileVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIFileVersion to: $FileVersion"
                 $FileChanged = $true
             }
         }
         if ($line -match '^(?<key>VIProductVersion\s+)"(?<value>[^"]+)"\s*$') {
             if ($Matches.value -ne $FileVersion) {
-                Write-Host -ForegroundColor Green "  Updating VIProductVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIProductVersion to: $FileVersion"
                 $newval2 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIProductVersion\s+)"([^"]+)"\s*$', $newval2
                 $FileChanged = $true
@@ -177,7 +177,7 @@ function Update-ProjectNSI {
         }
         if ($line -match '^(?<key>VIAddVersionKey\s+"FileVersion"\s+)"(?<value>[^"]+)"\s*$') {
             if ($Matches.value -ne $FileVersion) {
-                Write-Host -ForegroundColor Green "  Updating VIAddVersionKey FileVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIAddVersionKey FileVersion to: $FileVersion"
                 $newval3 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIAddVersionKey\s+"FileVersion"\s+)"([^"]+)"\s*$', $newval3
                 $FileChanged = $true
@@ -214,7 +214,7 @@ function Update-WailsJSON {
     if ($WailsData.Info.productVersion -ne $Version) {
         $WailsData.Info.productVersion = $Version
         Set-JsonContent -Path $WailsJsonPath -Value $WailsData
-        Write-Host -ForegroundColor Green "  Version changed to: $Version"
+        Write-Host -ForegroundColor Green "  Updating productVersion to: $Version"
     } else {
         Write-Host -ForegroundColor Yellow "  No changes made to wails.json, version is already set to: $Version"
     }
@@ -292,17 +292,25 @@ function Invoke-WailsBuild {
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -Version $Version
 
         Push-Location $PSScriptRoot -StackName "project-root"
-        Write-Host -ForegroundColor Green "Building Wails application with version value: $Version"
+        Write-Host -NoNewLine -ForegroundColor Cyan "Building Wails application with version value: "
+        Write-Host -NoNewLine -ForegroundColor Black -BackgroundColor White "$Version"
+        Write-Host "`n`n$('=' * 78)"
         wails build -clean -ldflags "-X main.Version=${Version} -X main.Date=${Date} -X main.Commit=${Commit}" ${NSISOption} ${UPXOption}
-        Set-Location ./build/bin
-        foreach ($file in Get-ChildItem *-installer.exe -File -ErrorAction SilentlyContinue) {
-            $sha256Name = $file.Name + ".sha256"
-            $sha1Name = $file.Name + ".sha1"
-            $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
-            $sha1Hash = (Get-FileHash $file -Algorithm SHA1).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha1Name -Encoding utf8
-            "$sha256Hash  *$($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
-            "$sha1Hash  *$($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
+        Write-Host "$('=' * 78)`n"
+
+        if ($NSIS) {
+            Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for installer files..."
+            Set-Location ./build/bin
+            foreach ($file in Get-ChildItem *-installer.exe -File -ErrorAction SilentlyContinue) {
+                $sha256Name = $file.Name + ".sha256"
+                $sha1Name = $file.Name + ".sha1"
+                $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
+                $sha1Hash = (Get-FileHash $file -Algorithm SHA1).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha1Name -Encoding utf8
+                "$sha256Hash  *$($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
+                "$sha1Hash  *$($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
+            }
         }
+
         Restore-RepositoryToCleanState
         Pop-Location -StackName "project-root"
     }
