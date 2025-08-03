@@ -94,42 +94,6 @@ function Set-JsonContent {
     }
 }
 
-function Confirm-RepositoryIsClean {
-    $status = git status --porcelain
-    if ($status) {
-        $isClean = $true
-        $statusList = $status -split "`n"
-        $newStatusList = @()
-        foreach ($line in $statusList) {
-            if ( -not ($line -match $ScriptName) ) {
-                $isClean = $false
-                $newStatusList += $line
-            }
-        }
-
-        if ($isClean) { return $true }
-
-        Write-Host ""
-        Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
-        Write-Host ""
-        Write-Host "Uncommitted changes:"
-        Write-Host ""
-        $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
-        Write-Host ""
-        Write-Host "Suggestions:"
-        Write-Host "  - Commit your changes: git commit -m 'Your commit message'"
-        Write-Host "  - Create a new branch: git checkout -b new-branch-name "
-        Write-Host "       and commit your changes to the branch"
-        Write-Host "  - Stash your changes: git stash --all"
-        Write-Host "  - Discard your changes: git reset --hard HEAD"
-        Write-Host ""
-        Write-Host -ForegroundColor Cyan "NOTE: Script ignores changes to the script itself ($ScriptName)"
-        Write-Host ""
-        return $false
-    }
-    return $true
-}
-
 function Update-ProjectNSI {
     param (
         [Parameter(Mandatory = $true)]
@@ -286,6 +250,7 @@ function Set-NewTag {
         Write-Host "Tag '$TagName' already exists. Please choose a different tag name."
         return
     } else {
+
         Write-Host "Creating new tag: $TagName"
         try {
             git tag -a "$TagName" -m "$Message"
@@ -434,6 +399,90 @@ function Get-NextTagName {
     return $nextTagName
 }
 
+function Confirm-RepositoryIsClean {
+    $status = git status --porcelain
+    if ($status) {
+        $isClean = $true
+        $statusList = $status -split "`n"
+        $newStatusList = @()
+        foreach ($line in $statusList) {
+            if ( -not ($line -match $ScriptName) ) {
+                $isClean = $false
+                $newStatusList += $line
+            }
+        }
+
+        if ($isClean) { return $true }
+
+        Write-Host ""
+        Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
+        Write-Host ""
+        Write-Host "Uncommitted changes:"
+        Write-Host ""
+        $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
+        Write-Host ""
+        Write-Host "Suggestions:"
+        Write-Host "  - Commit your changes: git commit -m 'Your commit message'"
+        Write-Host "  - Create a new branch: git checkout -b new-branch-name "
+        Write-Host "       and commit your changes to the branch"
+        Write-Host "  - Stash your changes: git stash --all"
+        Write-Host "  - Discard your changes: git reset --hard HEAD"
+        Write-Host ""
+        Write-Host -ForegroundColor Cyan "NOTE: Script ignores changes to the script itself ($ScriptName)"
+        Write-Host ""
+        return $false
+    }
+    return $true
+}
+
+function Push-RepositoryCommit {
+    param(
+        [Parameter(Mandatory = $true, HelpMessage = "The tag name to commit changes for.")]
+        [string]$TagName
+    )
+    Push-Location $PSScriptRoot -StackName "commitproject"
+    # Write-Host -ForegroundColor Yellow "Restoring repository to a clean state..."
+
+    $FileList = @(
+        "wails.json",
+        "build/windows/installer/project.nsi"
+    )
+    $status = git status --porcelain
+    if ([string]::IsNullOrWhiteSpace($status)) {
+        Write-Host -ForegroundColor Green "Repository is clean. No changes to commit."
+        Pop-Location -StackName "commitproject"
+        return $true
+    }
+    $statusList = $status -split "`n"
+    $newStatusList = @()
+
+    foreach ($line in $statusList) {
+        $found = $false
+        foreach ($file in $FileList) {
+            if ($line -match "^\s*[A-Z]\s+$file") {
+                $found = $true
+                break
+            }
+        }
+        if (-not $found) {
+            $newStatusList += $line
+        }
+    }
+    if ($newStatusList.Count -ne 0) {
+        Confirm-RepositoryIsClean
+        return $false
+    }
+    try {
+        git commit -a -m "Commit project with tag $TagName"
+    } catch {
+        Write-Host -ForegroundColor Red "Failed to commit changes: $_"
+        Pop-Location -StackName "commitproject"
+        return $false
+    }
+    Pop-Location -StackName "commitproject"
+    return $true
+}
+
 function Invoke-NewGitTag {
     $currentTag = Get-MostRecentTag
     $newTagName = ""
@@ -473,7 +522,13 @@ function Invoke-NewGitTag {
         }
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
-        Write-Host -ForegroundColor Green "New Tag Name: $newTagName - Message: $Message"
+        if (-not (Push-RepositoryCommit -TagName $newTagName)) {
+            Write-Host -ForegroundColor Red "Failed to commit changes before tagging."
+            return
+        } else {
+            Write-Host -ForegroundColor Green "New Tag Name: $newTagName - Message: $Message"
+            Set-NewTag -TagName $newTagName -Message $Message
+        }
     }
     else {
         Write-Host -ForegroundColor Red "No new tag name provided. Exiting."
