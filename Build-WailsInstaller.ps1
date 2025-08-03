@@ -152,7 +152,7 @@ function Update-ProjectNSI {
         return
     }
 
-    Write-Host -ForegroundColor Green "Updating NSI project file: $ProjectNSIPath"
+    Write-Host -ForegroundColor Cyan "Updating NSI project file: $ProjectNSIPath"
 
     $NSIData = Get-Content -Path $ProjectNSIPath
     $NewNSIData = @()
@@ -163,13 +163,13 @@ function Update-ProjectNSI {
             if ($Matches.value -ne $FileVersion) {
                 $newval1 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIFileVersion\s+)"([^"]+)"\s*$', $newval1
-                Write-Host -ForegroundColor Yellow "  Updating VIFileVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIFileVersion in NSIS project file"
                 $FileChanged = $true
             }
         }
         if ($line -match '^(?<key>VIProductVersion\s+)"(?<value>[^"]+)"\s*$') {
             if ($Matches.value -ne $FileVersion) {
-                Write-Host -ForegroundColor Yellow "  Updating VIProductVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIProductVersion in NSIS project file"
                 $newval2 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIProductVersion\s+)"([^"]+)"\s*$', $newval2
                 $FileChanged = $true
@@ -177,7 +177,7 @@ function Update-ProjectNSI {
         }
         if ($line -match '^(?<key>VIAddVersionKey\s+"FileVersion"\s+)"(?<value>[^"]+)"\s*$') {
             if ($Matches.value -ne $FileVersion) {
-                Write-Host -ForegroundColor Yellow "  Updating VIAddVersionKey FileVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIAddVersionKey FileVersion in NSIS project file"
                 $newval3 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIAddVersionKey\s+"FileVersion"\s+)"([^"]+)"\s*$', $newval3
                 $FileChanged = $true
@@ -186,7 +186,7 @@ function Update-ProjectNSI {
         $NewNSIData += $line
     }
     if (-not $FileChanged) {
-        Write-Host -ForegroundColor Green "  No changes made to NSIS project file"
+        Write-Host -ForegroundColor Yellow "  No changes made to NSIS project file"
         return
     }
     Set-Content -Path $ProjectNSIPath -Encoding utf8 -Value $NewNSIData
@@ -204,7 +204,7 @@ function Update-WailsJSON {
         return
     }
 
-    Write-Host -ForegroundColor Green "Updating wails.json with version value: $Version"
+    Write-Host -ForegroundColor Cyan "Updating wails.json with version value: $Version"
     $WailsData = Get-JsonContent -Path $WailsJsonPath
 
     if (-not $WailsData) {
