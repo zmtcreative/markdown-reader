@@ -176,7 +176,7 @@ function Update-WailsJSON {
     $tmpVersionHash = Get-VersionHash -TagName $TagName
     $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
     if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
-        $Version += "-${PreReleaseNumber}"
+        $Version += "-" + $tmpVersionHash.Prerelease
     }
 
     Write-Host -ForegroundColor Green "Updating wails.json with version value: $Version"
@@ -265,7 +265,7 @@ function Set-NewTag {
             return
         }
         Write-Host "Tag '$TagName' created and pushed to remote repository."
-        git fetch 2>$null
+        git push 2>$null
     }
 }
 
