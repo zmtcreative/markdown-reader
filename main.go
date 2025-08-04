@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"os"
-	"strings"
+	"text/template"
 
 	"md-reader/internal/cli"
 
@@ -19,6 +20,12 @@ var assets embed.FS
 
 //go:embed wails.json
 var wailsConfig string
+
+//go:embed frontend/src/assets/html/about.gohtml
+var aboutTemplate string
+
+//go:embed frontend/src/assets/html/license-short.html
+var licenseShort string
 
 var (
 	Version = "dev-build"
@@ -37,35 +44,16 @@ func main() {
 
     // Create an instance of the app structure
     app := NewApp()
-    // Pass the parsed arguments to the app instance
+
+	// Pass the parsed arguments to the app instance
     app.initialFile = cliArgs.InitialFile
     app.allowInlineHTML = cliArgs.AllowInlineHTML
     app.sanitizeHTML = cliArgs.SanitizeHTML
     app.cmdlineOptions = cliArgs.CmdlineOptions
+	app.appName = cliArgs.AppName // Store the application name without extension
+	app.appNameWithExt = cliArgs.AppNameWithExt // Store the application name with extension
 
-	authorName := gjson.Get(wailsConfig, "author.name").String()
-	authorEmail := gjson.Get(wailsConfig, "author.email").String()
-	var versionText strings.Builder
-	versionText.WriteString("<pre>\n")
-	versionText.WriteString("  Application: " + cliArgs.AppName + "\n")
-	versionText.WriteString("      Version: " + Version + "\n")
-	versionText.WriteString("   Build Date: " + Date + "\n\n")
-	versionText.WriteString("Copyright 2025 " + authorName + " <" + authorEmail + ">\n\n")
-	versionText.WriteString("Licensed under the Apache License, Version 2.0 (the \"License\");\n")
-	versionText.WriteString("you may not use this file except in compliance with the License.\n")
-	versionText.WriteString("You may obtain a copy of the License at\n\n")
-	versionText.WriteString("    https://www.apache.org/licenses/LICENSE-2.0\n\n")
-	versionText.WriteString("Unless required by applicable law or agreed to in writing, software\n")
-	versionText.WriteString("distributed under the License is distributed on an \"AS IS\" BASIS,\n")
-	versionText.WriteString("WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n")
-	versionText.WriteString("See the License for the specific language governing permissions and\n")
-	versionText.WriteString("limitations under the License.\n")
-	versionText.WriteString("</pre>\n")
-
-	// versionText.WriteString("Commit Hash: " + Commit + "\n")
-
-	app.versionInfo = versionText.String()
-
+	app.versionInfo = app.getAbout()
 
 	// Create application with options
 	werr := wails.Run(&options.App{
@@ -88,4 +76,40 @@ func main() {
 	if werr != nil {
 		println("Error:", err.Error())
 	}
+}
+
+func (a *App) getAbout() string {
+	var versionText bytes.Buffer
+
+	authorName := gjson.Get(wailsConfig, "author.name").String()
+	// authorEmail := gjson.Get(wailsConfig, "author.email").String()
+	productName := gjson.Get(wailsConfig, "info.productName").String()
+
+	tplData := struct {
+		ProductName string
+		AppName  string
+		Version  string
+		BuildDate string
+		Copyright string
+		License   string
+	}{
+		ProductName: productName,
+		AppName:  a.appNameWithExt,
+		Version:  Version,
+		BuildDate: Date,
+		Copyright: fmt.Sprintf("Copyright 2025 %s", authorName),
+		License:   licenseShort,
+	}
+	tpl, err := template.New("about").Parse(aboutTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing about template: %v\n", err)
+		os.Exit(1)
+	}
+	err = tpl.Execute(&versionText, tplData)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing about template: %v\n", err)
+		os.Exit(1)
+	}
+
+	return versionText.String()
 }

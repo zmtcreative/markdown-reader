@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
@@ -24,6 +25,8 @@ import (
 type App struct {
     ctx context.Context
     initialFile string
+	appName string // Store the application name without extension
+	appNameWithExt string // Store the application name with extension
     stripH1 bool
 	allowInlineHTML bool
 	theme string // Store display mode (e.g., "light", "dark")
@@ -44,6 +47,7 @@ func NewApp() *App {
 		sanitizeHTML: true, // Default to true, can be set via CLI flag
 		theme: "light",
     }
+
 	return app
 }
 
