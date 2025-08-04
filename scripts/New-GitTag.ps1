@@ -69,9 +69,25 @@ param (
     [switch]$ReleaseVersion
 )
 
-Set-Location $PSScriptRoot
+# Set-Location $PSScriptRoot
 
-$ScriptName = $MyInvocation.MyCommand.Name
+# Set up script and project paths
+$ScriptFullName = $MyInvocation.MyCommand.Path
+$ScriptRoot = Split-Path -Parent $ScriptFullName
+$ScriptName = Split-Path -Leaf $ScriptFullName
+if ($ScriptRoot -match '[\\/]scripts[\\/]?$') {
+    $tmpProjectRoot = $ScriptRoot -replace '[\\/]scripts[\\/]?', ''
+} else {
+    $tmpProjectRoot = $ScriptRoot
+}
+if (Test-Path -Path "$tmpProjectRoot\wails.json") {
+    $ProjectRoot = $tmpProjectRoot
+} else {
+    Write-Host -ForegroundColor Red "Could not find wails.json in the expected project root: $tmpProjectRoot"
+    exit 1
+}
+
+Set-Location $ProjectRoot
 
 function Get-JsonContent {
     <#
@@ -564,7 +580,7 @@ function Push-RepositoryCommit {
         [Parameter(Mandatory = $true, HelpMessage = "The tag name to commit changes for.")]
         [string]$TagName
     )
-    Push-Location $PSScriptRoot -StackName "commitproject"
+    Push-Location $ProjectRoot -StackName "commitproject"
     # Write-Host -ForegroundColor Yellow "Restoring repository to a clean state..."
 
     $FileList = @(
@@ -619,8 +635,8 @@ function Invoke-NewGitTag {
     #>
     $currentTag = Get-MostRecentTag
     $newTagName = ""
-    $ProjectNSI = Join-Path $PSScriptRoot "build" "windows" "installer" "project.nsi"
-    $WailsJsonPath = Join-Path $PSScriptRoot "wails.json"
+    $ProjectNSI = Join-Path $ProjectRoot "build" "windows" "installer" "project.nsi"
+    $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
 
     if (-not (Confirm-RepositoryIsClean)) {
         return

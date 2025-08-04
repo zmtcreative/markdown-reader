@@ -11,10 +11,11 @@ import (
 
 	dateparse "github.com/araddon/dateparse"
 
-	"markdown-reader/pkg/markdown"
-	"markdown-reader/pkg/util"
+	"md-reader/internal/markdown"
+	mdrutils "md-reader/internal/utils"
 
 	"github.com/wailsapp/wails/v2/pkg/menu"
+	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
 )
@@ -77,6 +78,39 @@ func (a *App) domReady(ctx context.Context) {
 // Perform any cleanup here if necessary.
 func (a *App) shutdown(ctx context.Context) {
     log.Println("Application is shutting down.")
+}
+
+func (a *App) menu() *menu.Menu {
+	// Create the application menu
+	appMenu := menu.NewMenu()
+
+	fileMenu := appMenu.AddSubmenu("File")
+	fileMenu.AddText("Open", keys.CmdOrCtrl("o"), a.OpenFileMenuHandler)
+    fileMenu.AddSeparator()
+    fileMenu.AddText("Print", keys.CmdOrCtrl("p"), func(_ *menu.CallbackData) {
+        a.PrintContent()
+    })
+    // fileMenu.AddText("Save as PDF", keys.CmdOrCtrl("e"), func(_ *menu.CallbackData) {
+    //     app.PrintContentToPDF()
+    // })
+	fileMenu.AddSeparator()
+	fileMenu.AddText("Exit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
+		runtime.Quit(a.ctx)
+	})
+
+    // --- Add a new Help menu ---
+    helpMenu := appMenu.AddSubmenu("Help")
+    helpMenu.AddText("Command-Line Options", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
+        // Emit an event to the frontend, sending the help text as data.
+        runtime.EventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
+    })
+	helpMenu.AddSeparator()
+	helpMenu.AddText("About", keys.CmdOrCtrl("a"), func(_ *menu.CallbackData) {
+		// Emit an event to the frontend, sending the version information as data.
+		runtime.EventsEmit(a.ctx, "show-help", "About", a.versionInfo)
+	})
+
+	return appMenu
 }
 
 // PrintContent prints the current HTML content
@@ -212,9 +246,9 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		docDate = ""
 	}
 	if docFrontmatter != nil {
-		tmpDocTitle = util.GetValueFromMap(docFrontmatter, "Title")
-		tmpDocDate = util.GetValueFromMap(docFrontmatter, "Date")
-		docType = strings.ToLower(util.GetValueFromMap(docFrontmatter, "Type"))
+		tmpDocTitle = mdrutils.GetValueFromMap(docFrontmatter, "Title")
+		tmpDocDate = mdrutils.GetValueFromMap(docFrontmatter, "Date")
+		docType = strings.ToLower(mdrutils.GetValueFromMap(docFrontmatter, "Type"))
 	}
 
 	if tmpDocTitle != "" {

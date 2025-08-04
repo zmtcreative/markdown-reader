@@ -6,15 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"markdown-reader/pkg/cli"
+	"md-reader/internal/cli"
 
 	"github.com/tidwall/gjson"
 	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/menu"
-	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 //go:embed all:frontend/dist
@@ -67,34 +64,6 @@ func main() {
 
 	app.versionInfo = versionText.String()
 
-	// Create the application menu
-	appMenu := menu.NewMenu()
-
-	fileMenu := appMenu.AddSubmenu("File")
-	fileMenu.AddText("Open", keys.CmdOrCtrl("o"), app.OpenFileMenuHandler)
-    fileMenu.AddSeparator()
-    fileMenu.AddText("Print", keys.CmdOrCtrl("p"), func(_ *menu.CallbackData) {
-        app.PrintContent()
-    })
-    // fileMenu.AddText("Save as PDF", keys.CmdOrCtrl("e"), func(_ *menu.CallbackData) {
-    //     app.PrintContentToPDF()
-    // })
-	fileMenu.AddSeparator()
-	fileMenu.AddText("Exit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
-		runtime.Quit(app.ctx)
-	})
-
-    // --- Add a new Help menu ---
-    helpMenu := appMenu.AddSubmenu("Help")
-    helpMenu.AddText("Command-Line Options", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
-        // Emit an event to the frontend, sending the help text as data.
-        runtime.EventsEmit(app.ctx, "show-help", "Command-Line Options", app.cmdlineOptions)
-    })
-	helpMenu.AddSeparator()
-	helpMenu.AddText("About", keys.CmdOrCtrl("a"), func(_ *menu.CallbackData) {
-		// Emit an event to the frontend, sending the version information as data.
-		runtime.EventsEmit(app.ctx, "show-help", "About", app.versionInfo)
-	})
 
 	// Create application with options
 	werr := wails.Run(&options.App{
@@ -108,7 +77,7 @@ func main() {
 		OnStartup:        app.startup,
 		OnDomReady:       app.domReady,
 		OnShutdown:       app.shutdown,
-		Menu:             appMenu, // Add the menu here
+		Menu:             app.menu(), // Add the menu here
 		Bind: []interface{}{
 			app,
 		},

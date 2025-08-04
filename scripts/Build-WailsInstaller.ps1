@@ -40,6 +40,22 @@ param (
     [switch]$UPX
 )
 
+# Set up script and project paths
+$ScriptFullName = $MyInvocation.MyCommand.Path
+$ScriptRoot = Split-Path -Parent $ScriptFullName
+$ScriptName = Split-Path -Leaf $ScriptFullName
+if ($ScriptRoot -match '[\\/]scripts[\\/]?$') {
+    $tmpProjectRoot = $ScriptRoot -replace '[\\/]scripts[\\/]?', ''
+} else {
+    $tmpProjectRoot = $ScriptRoot
+}
+if (Test-Path -Path "$tmpProjectRoot\wails.json") {
+    $ProjectRoot = $tmpProjectRoot
+} else {
+    Write-Host -ForegroundColor Red "Could not find wails.json in the expected project root: $tmpProjectRoot"
+    exit 1
+}
+
 # Set the default behavior to show the current version and file version
 # without performing the build.
 $ShowVersionOnly = $true
@@ -47,11 +63,7 @@ if ($Build -or $NSIS -or $UPX) {
     $ShowVersionOnly = $false
 }
 
-# Change to the script's directory (Assumes the script is in the root of the project)
-Set-Location $PSScriptRoot
-
-# Get the script name
-$ScriptName = $MyInvocation.MyCommand.Name
+Set-Location $ProjectRoot
 
 function Get-JsonContent {
     <#
@@ -188,7 +200,7 @@ function Restore-RepositoryToCleanState {
         As written, it will only restore changes to the wails.json and project.nsi files.
         If you want to restore other files, add them to the $FileList array.
     #>
-    Push-Location $PSScriptRoot -StackName "restoreproject"
+    Push-Location $ProjectRoot -StackName "restoreproject"
     Write-Host -ForegroundColor Yellow "Restoring repository to a clean state..."
     $FileList = @(
         "wails.json",
@@ -313,8 +325,8 @@ function Invoke-WailsBuild {
     #>
     $NSISOption = ""
     $UPXOption  = ""
-    $ProjectNSI = Join-Path $PSScriptRoot "build" "windows" "installer" "project.nsi"
-    $WailsJsonPath = Join-Path $PSScriptRoot "wails.json"
+    $ProjectNSI = Join-Path $ProjectRoot "build" "windows" "installer" "project.nsi"
+    $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
 
     if ($NSIS) {
         $NSISOption = "-nsis"
@@ -382,7 +394,7 @@ function Invoke-WailsBuild {
         }
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -Version $Version
 
-        Push-Location $PSScriptRoot -StackName "project-root"
+        Push-Location $ProjectRoot -StackName "project-root"
         Write-Host -NoNewLine -ForegroundColor Cyan "Building Wails application with version value: "
         Write-Host -NoNewLine -ForegroundColor Black -BackgroundColor White "$Version"
         Write-Host "`n`n$('=' * 78)"
