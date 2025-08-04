@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "Markdown Reader",
+  "name": "Markdown-Reader",
   "outputfilename": "md-reader",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
