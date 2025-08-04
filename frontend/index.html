@@ -62,14 +62,15 @@
 <body>
 <div id="app"></div>
 <script src="./src/main.ts" type="module"></script>
-<!-- Help Modal HTML -->
+<!-- Help Modal HTML Start -->
 <div id="help-modal-overlay" class="modal-overlay">
     <div id="help-modal-content" class="modal-content">
         <button id="help-modal-close" class="modal-close-button">&times;</button>
         <h3 id="help-modal-title"></h3>
-        <pre id="help-modal-text"></pre>
+        <div id="help-modal-text"></div>
     </div>
 </div>
+<!-- Help Modal HTML End -->
 <script type="text/javascript">
     // Open all links externally
     document.body.addEventListener('click', function(e) {

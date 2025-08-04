@@ -172,7 +172,7 @@ function hideHelpModal() {
 function showHelpModal(helpTitle: string, helpText: string) {
     if (helpModalOverlay && helpModalText && helpModalTitle) {
         helpModalTitle.textContent = helpTitle; // Set the title of the modal
-        helpModalText.textContent = helpText;
+        helpModalText.innerHTML = helpText;
         helpModalOverlay.style.display = 'block';
     }
 }

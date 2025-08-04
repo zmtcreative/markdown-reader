@@ -46,6 +46,7 @@ func main() {
 	authorName := gjson.Get(wailsConfig, "author.name").String()
 	authorEmail := gjson.Get(wailsConfig, "author.email").String()
 	var versionText strings.Builder
+	versionText.WriteString("<pre>\n")
 	versionText.WriteString("  Application: " + cliArgs.AppName + "\n")
 	versionText.WriteString("      Version: " + Version + "\n")
 	versionText.WriteString("   Build Date: " + Date + "\n\n")
@@ -59,6 +60,7 @@ func main() {
 	versionText.WriteString("WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n")
 	versionText.WriteString("See the License for the specific language governing permissions and\n")
 	versionText.WriteString("limitations under the License.\n")
+	versionText.WriteString("</pre>\n")
 
 	// versionText.WriteString("Commit Hash: " + Commit + "\n")
 

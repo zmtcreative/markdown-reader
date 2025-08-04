@@ -53,7 +53,7 @@ func GetArgs() (*CliArgs, error) {
     // Build the usage string
     var usageText strings.Builder
 	appName := strings.TrimSuffix(filepath.Base(os.Args[0]), filepath.Ext(os.Args[0]))
-    usageText.WriteString(fmt.Sprintf("Usage: %s [options] [filepath]\n\n", appName))
+    usageText.WriteString(fmt.Sprintf("<pre>\nUsage: %s [options] [filepath]\n\n", appName))
 	usageText.WriteString("  filepath             Path to the initial Markdown file\n")
 	usageText.WriteString("                         (if not specified with --file)\n\n")
     usageText.WriteString("Options:\n")
@@ -61,7 +61,7 @@ func GetArgs() (*CliArgs, error) {
 	usageText.WriteString("      --nohtml         Disable inline HTML rendering\n")
 	usageText.WriteString("                         (default: allow inline HTML)\n")
 	usageText.WriteString("      --nosanitize     Disable sanitizing of HTML and URL output\n")
-	usageText.WriteString("                         (default: sanitize HTML and URLs)\n")
+	usageText.WriteString("                         (default: sanitize HTML and URLs)\n</pre>\n")
 
     args.AppName = appName
     args.CmdlineOptions = usageText.String()
