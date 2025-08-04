@@ -31,6 +31,7 @@ type App struct {
 	allowInlineHTML bool
 	theme string // Store display mode (e.g., "light", "dark")
 	docTypes []string // List of document types (e.g., "techdoc", "mydoc")
+	showHelp bool // Flag to indicate if help should be shown
 	cmdlineOptions string // Store command line options here
 	versionInfo string // Store version information
 	sanitizeHTML bool // Flag to control sanitization of HTML and URL links
@@ -45,6 +46,7 @@ func NewApp() *App {
         stripH1: true,
 		allowInlineHTML: true, // Default to true, can be set via CLI flag
 		sanitizeHTML: true, // Default to true, can be set via CLI flag
+		showHelp: false, // Default to false, can be set via CLI flag
 		theme: "light",
     }
 
@@ -75,6 +77,9 @@ func (a *App) domReady(ctx context.Context) {
 			"<p>Open a Markdown file using the <code>File &gt; Open</code> menu option or provide a path via the command line (e.g., <code>./markdown-reader.exe --file path/to/your/file.md</code>).</p>" +
 			"<p>This reader supports GitHub Flavored Markdown (GFM).</p>"
 		runtime.EventsEmit(a.ctx, "markdown-rendered", "<h2>No file loaded</h2>" + welcomeHTML)
+	}
+	if a.showHelp {
+		runtime.EventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
 	}
 }
 

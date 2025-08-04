@@ -35,12 +35,15 @@ var (
 
 func main() {
     // Handle command-line arguments FIRST ---
-    cliArgs, err := cli.GetArgs()
-    if err != nil {
-        // Handle parsing error if any
-        fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
-        os.Exit(1)
-    }
+    cliArgs, _ := cli.GetArgs()
+
+	// We ignore the error from GetArgs, since the app will start with default values
+	// if there are no command-line arguments or if parsing fails.
+    // if err != nil {
+    //     // Handle parsing error if any
+    //     fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+    //     // os.Exit(1)
+    // }
 
     // Create an instance of the app structure
     app := NewApp()
@@ -52,6 +55,7 @@ func main() {
     app.cmdlineOptions = cliArgs.CmdlineOptions
 	app.appName = cliArgs.AppName // Store the application name without extension
 	app.appNameWithExt = cliArgs.AppNameWithExt // Store the application name with extension
+	app.showHelp = cliArgs.ShowHelp // Store the help flag
 
 	app.versionInfo = app.getAbout()
 
