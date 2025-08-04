@@ -78,7 +78,7 @@ func main() {
 	})
 
 	if werr != nil {
-		println("Error:", err.Error())
+		println("Error:", werr.Error())
 	}
 }
 
