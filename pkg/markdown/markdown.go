@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"markdown-reader/pkg/goldmarkext/htmlsanitize"
-	"markdown-reader/pkg/goldmarkext/sectionwrapper"
+	"markdown-reader/pkg/gm-ext/htmlsanitize"
+	"markdown-reader/pkg/gm-ext/sectionwrapper"
 
 	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
