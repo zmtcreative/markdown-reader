@@ -7,9 +7,16 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "./src/assets/scss/index" as *;`, // Modern @use syntax
-        // api: 'modern' // Use modern Sass API
+        api: 'legacy', // Use legacy Sass API
+        silenceDeprecations: ['legacy-js-api'],
+        outputStyle: 'expanded'
       }
+    },
+    postcss: {
+      plugins: [
+        require('postcss-nesting')(),
+        require('autoprefixer')()
+      ]
     }
   }
 })
