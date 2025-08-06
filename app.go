@@ -185,22 +185,18 @@ func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) {
 		return
 	}
 
-	if selection == "" {
-		log.Println("No file selected in dialog. Using current file if available.")
-		// runtime.EventsEmit(a.ctx, "error", "No file was selected.")
-		selection = a.currentFile // Fallback to current file if no selection
-	} else {
+	if selection != "" {
 		log.Printf("User selected file: %s", selection)
-	}
-
-	// log.Printf("User selected file: %s", selection)
-	err = a.LoadAndDisplayMarkdown(selection)
-	if err != nil {
-		log.Printf("Error loading selected Markdown file %q: %v", selection, err)
-		runtime.EventsEmit(a.ctx, "error", "Failed to load selected file: "+err.Error())
+		err = a.LoadAndDisplayMarkdown(selection)
+		if err != nil {
+			log.Printf("Error loading selected Markdown file %q: %v", selection, err)
+			runtime.EventsEmit(a.ctx, "error", "Failed to load selected file: "+err.Error())
+		} else {
+			log.Printf("Successfully loaded Markdown file: %s", selection)
+			a.currentFile = selection // Update currentFile to the newly opened file
+		}
 	} else {
-		log.Printf("Successfully loaded Markdown file: %s", selection)
-		a.currentFile = selection // Update currentFile to the newly opened file
+		log.Println("No file selected. User cancelled the dialog.")
 	}
 }
 
