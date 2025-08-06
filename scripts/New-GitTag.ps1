@@ -614,7 +614,7 @@ function Push-RepositoryCommit {
         Confirm-RepositoryIsClean
         return $false
     }
-    git commit -a -m "Commit project with tag $TagName" 2>&1 $null
+    git commit -a -m "$Message" 2>&1 $null
     if (! $?) {
         Write-Host -ForegroundColor Red "Failed to commit changes. Please check the repository status."
         Pop-Location -StackName "commitproject"
@@ -636,8 +636,6 @@ function Invoke-NewGitTag {
         Creates a new Git tag.
     .DESCRIPTION
         This function creates a new Git tag in the local repository and pushes it to the remote repository.
-    .PARAMETER TagName
-        The name of the new Git tag.
     #>
     $currentTag = Get-MostRecentTag
     $newTagName = ""
