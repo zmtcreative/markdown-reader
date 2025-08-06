@@ -364,7 +364,7 @@ function Set-NewTag {
         return
     } else {
         Write-Host "Creating new tag: $TagName"
-        $gitTagResults = (git tag -a "$TagName" -m "$Message")
+        $gitTagResults = $(git tag -a "$TagName" -m "$Message")
         if (! $?) {
             Write-Host -ForegroundColor Red "   Failed to create tag '$TagName'.`n   Please check the repository status."
             $gitTagResults | ForEach-Object { Write-Host -ForegroundColor Yellow "   $_" }
@@ -376,7 +376,7 @@ function Set-NewTag {
             return
         }
         Write-Host -ForegroundColor Green "   Tag '$TagName' created and pushed to remote repository."
-        git push 2>$null
+        git push 2>&1 $null
     }
 }
 
