@@ -344,53 +344,6 @@ html.dark .markdown-body a {
             margin-right: var(--td-base-margin);
         }
 
-        // Counter resets and numbering
-        section > h1 { counter-reset: td-h2 0; }
-        section > h2 { counter-reset: td-h3 0; }
-        section > h3 { counter-reset: td-h4 0; }
-        section > h4 { counter-reset: td-h5 0; }
-        section > h5 { counter-reset: td-h6 0; }
-
-        section {
-            > h2::before {
-                display: inline-block;
-                counter-increment: td-h2;
-                content: counter(td-h2) var(--td-suffix,":")" " !important;
-            }
-        }
-
-        section {
-            > h3::before {
-                display: inline-block;
-                counter-increment: td-h3;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
-            }
-        }
-
-        section {
-            > h4::before {
-                display: inline-block;
-                counter-increment: td-h4;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
-            }
-        }
-
-        section {
-            > h5::before {
-                display: inline-block;
-                counter-increment: td-h5;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
-            }
-        }
-
-        section {
-            > h6::before {
-                display: inline-block;
-                counter-increment: td-h6;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
-            }
-        }
-
         section:has(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
             margin-left: var(--td-base-margin);
         }
@@ -402,6 +355,53 @@ html.dark .markdown-body a {
         section:has(h5):not(h6),
         section:has(h6) {
             margin-left: var(--td-section-indent);
+        }
+
+        // Counter resets and numbering
+        section > h1 { counter-reset: td-h2 0; }
+        section > h2 { counter-reset: td-h3 0; }
+        section > h3 { counter-reset: td-h4 0; }
+        section > h4 { counter-reset: td-h5 0; }
+        section > h5 { counter-reset: td-h6 0; }
+
+        section.section-h2 {
+            > h2::before {
+                display: inline-block;
+                counter-increment: td-h2;
+                content: counter(td-h2) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section.section-h3 {
+            > h3::before {
+                display: inline-block;
+                counter-increment: td-h3;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section.section-h4 {
+            > h4::before {
+                display: inline-block;
+                counter-increment: td-h4;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section.section-h5 {
+            > h5::before {
+                display: inline-block;
+                counter-increment: td-h5;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section.section-h6 {
+            > h6::before {
+                display: inline-block;
+                counter-increment: td-h6;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
+            }
         }
     }
 }
