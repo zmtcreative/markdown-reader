@@ -38,9 +38,17 @@
 
 [CmdletBinding(DefaultParameterSetName = "None")]
 param (
-    [Parameter(Mandatory = $false, ParameterSetName = "Default", Position = 0, HelpMessage = "The new Git tag to create.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "Default", HelpMessage = "The new Git tag to create.")]
     [string]$TagName = "",
-    [Parameter(Mandatory = $false, ParameterSetName = "Default", Position = 1, HelpMessage = "The message for the new Git tag.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "Default", HelpMessage = "The message for the new Git tag.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "SetAlpha", HelpMessage = "Set the tag to alpha.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "SetBeta", HelpMessage = "Set the tag to beta.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "SetReleaseCandidate", HelpMessage = "Set the tag to release candidate.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "IncMajor", HelpMessage = "Increment the major version.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "IncMinor", HelpMessage = "Increment the minor version.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "IncPatch", HelpMessage = "Increment the patch version.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "IncPrerelease", HelpMessage = "Increment the existing prerelease version.")]
+    [Parameter(Mandatory = $false, ParameterSetName = "ReleaseVersion", HelpMessage = "This is a release version (remove prerelease suffix but no increments).")]
     [string]$Message = "",
     [Parameter(Mandatory = $false, ParameterSetName = "SetAlpha", HelpMessage = "Set the tag to alpha.")]
     [Parameter(Mandatory = $false, ParameterSetName = "SetBeta", HelpMessage = "Set the tag to beta.")]
@@ -65,7 +73,7 @@ param (
     [switch]$SetBeta,
     [Parameter(Mandatory = $false, ParameterSetName = "SetReleaseCandidate", HelpMessage = "Set the tag to release candidate.")]
     [switch]$SetReleaseCandidate,
-    [Parameter(Mandatory = $false, ParameterSetName = "isRelease", HelpMessage = "This is a release version (remove prerelease suffix but no increments).")]
+    [Parameter(Mandatory = $false, ParameterSetName = "ReleaseVersion", HelpMessage = "This is a release version (remove prerelease suffix but no increments).")]
     [switch]$ReleaseVersion
 )
 
