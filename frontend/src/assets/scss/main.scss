@@ -1,3 +1,5 @@
+@use "variables" as *; // Import variables for use in this file
+
 // ============================================================================
 // Main SCSS Entry Point - Consolidated from multiple CSS files
 // ============================================================================
@@ -407,6 +409,11 @@ html.dark .markdown-body a {
 .fg-red { color: red; }
 .fg-green { color: green; }
 .fg-blue { color: blue; }
+
+// Custom Testing Styles
+.hello {
+    background-color: rgba(255,0,0,0.5);
+}
 
 // ============================================================================
 // Print Styles
