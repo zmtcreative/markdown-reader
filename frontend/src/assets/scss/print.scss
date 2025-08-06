@@ -1,0 +1,112 @@
+@use "variables" as *; // Import variables for use in this file
+
+// ============================================================================
+// Print Styles
+// ============================================================================
+
+@media print {
+    body {
+        background-color: white !important;
+        color: black !important;
+        font-size: 12pt;
+        line-height: 1.4;
+    }
+
+    #app {
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+    }
+
+    .content-area {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .app-header {
+        background-color: white !important;
+        color: black !important;
+        border: none !important;
+        box-shadow: none !important;
+        page-break-after: avoid;
+        position: static !important;
+    }
+
+    .toggle-theme {
+        display: none !important;
+    }
+
+    .markdown-body {
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background-color: white !important;
+        color: black !important;
+
+        pre[language] {
+            background-color: #f8f9fa !important;
+            border: 1px solid #ddd !important;
+            page-break-inside: avoid;
+            overflow: visible !important;
+
+            > code {
+                background-color: transparent !important;
+                color: black !important;
+                overflow: visible !important;
+                white-space: pre-wrap !important;
+            }
+
+            &::before {
+                color: black !important;
+                background-color: #e9ecef !important;
+            }
+        }
+
+        a {
+            color: #0066cc !important;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+            color: black !important;
+        }
+
+        h1 {
+            page-break-before: always;
+
+            &:first-child {
+                page-break-before: avoid;
+            }
+        }
+
+        table {
+            page-break-inside: avoid;
+        }
+
+        blockquote {
+            border-left-color: #666 !important;
+            color: #333 !important;
+        }
+
+        > * {
+            page-break-inside: avoid;
+        }
+    }
+
+    .gh-alert {
+        border-left-color: #666 !important;
+        background-color: #f8f9fa !important;
+        page-break-inside: avoid;
+
+        .gh-alert-title {
+            color: black !important;
+        }
+    }
+
+    .mermaid {
+        display: none !important;
+    }
+}
