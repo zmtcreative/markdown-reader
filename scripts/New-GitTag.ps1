@@ -670,7 +670,7 @@ function Invoke-NewGitTag {
         if ([string]::IsNullOrWhiteSpace($Message)) {
             $Message = $verMessage
         } else {
-            $Message = $Message + " (${verMessage})"
+            $Message = $Message + " (${newTagName})"
         }
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
