@@ -173,7 +173,7 @@ function Update-ProjectNSI {
         return
     }
 
-    Write-Host -ForegroundColor Green "Updating NSI project file: $ProjectNSIPath"
+    Write-Host -ForegroundColor Cyan "Updating NSI project file: $ProjectNSIPath"
 
     $RC = @("alpha", "beta", "rc", "patch", "")
     $tmpVersionHash = Get-VersionHash -TagName $TagName
@@ -199,13 +199,13 @@ function Update-ProjectNSI {
             if ($Matches.value -ne $FileVersion) {
                 $newval1 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIFileVersion\s+)"([^"]+)"\s*$', $newval1
-                Write-Host -ForegroundColor Yellow "  Updating VIFileVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIFileVersion in NSIS project file"
                 $FileChanged = $true
             }
         }
         if ($line -match '^(?<key>VIProductVersion\s+)"(?<value>[^"]+)"\s*$') {
             if ($Matches.value -ne $FileVersion) {
-                Write-Host -ForegroundColor Yellow "  Updating VIProductVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIProductVersion in NSIS project file"
                 $newval2 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIProductVersion\s+)"([^"]+)"\s*$', $newval2
                 $FileChanged = $true
@@ -213,7 +213,7 @@ function Update-ProjectNSI {
         }
         if ($line -match '^(?<key>VIAddVersionKey\s+"FileVersion"\s+)"(?<value>[^"]+)"\s*$') {
             if ($Matches.value -ne $FileVersion) {
-                Write-Host -ForegroundColor Yellow "  Updating VIAddVersionKey FileVersion in NSIS project file"
+                Write-Host -ForegroundColor Green "  Updating VIAddVersionKey FileVersion in NSIS project file"
                 $newval3 = $Matches.key + '"' + $FileVersion + '"'
                 $line = $line -replace '^(VIAddVersionKey\s+"FileVersion"\s+)"([^"]+)"\s*$', $newval3
                 $FileChanged = $true
@@ -222,7 +222,7 @@ function Update-ProjectNSI {
         $NewNSIData += $line
     }
     if (-not $FileChanged) {
-        Write-Host -ForegroundColor Green "  No changes made to NSIS project file"
+        Write-Host -ForegroundColor Yellow "  No changes made to NSIS project file"
         return
     }
     Set-Content -Path $ProjectNSIPath -Encoding utf8 -Value $NewNSIData
@@ -257,7 +257,7 @@ function Update-WailsJSON {
         $Version += "-" + $tmpVersionHash.Prerelease
     }
 
-    Write-Host -ForegroundColor Green "Updating wails.json with version value: $Version"
+    Write-Host -ForegroundColor Cyan "Updating wails.json with version value: $Version"
     $WailsData = Get-JsonContent -Path $WailsJsonPath
 
     if (-not $WailsData) {
@@ -345,28 +345,29 @@ function Set-NewTag {
     )
 
     if (-not $TagName) {
-        Write-Host "No tag name provided. Please specify a tag name."
+        Write-Host -ForegroundColor Red "[Set-NewTag()] No tag name provided. Please specify a tag name."
         return
     }
 
     # Check if the tag already exists
     $existingTags = git tag
     if ($existingTags -contains $TagName) {
-        Write-Host -ForegroundColor Yellow "Tag '$TagName' already exists. Please choose a different tag name."
+        Write-Host -ForegroundColor Yellow "   Tag '$TagName' already exists. Please choose a different tag name."
         return
     } else {
         Write-Host "Creating new tag: $TagName"
-        git tag -a "$TagName" -m "$Message"
+        $gitTagResults = (git tag -a "$TagName" -m "$Message")
         if (! $?) {
             Write-Host -ForegroundColor Red "   Failed to create tag '$TagName'.`n   Please check the repository status."
+            $gitTagResults | ForEach-Object { Write-Host -ForegroundColor Yellow "   $_" }
             return
         }
-        git push origin "$TagName"
+        git push origin "$TagName" 2>&1 $null
         if (! $?) {
             Write-Host -ForegroundColor Red "   Failed to push tag '$TagName' to remote repository.`n   Please check the repository status."
             return
         }
-        Write-Host -ForegroundColor Green "Tag '$TagName' created and pushed to remote repository."
+        Write-Host -ForegroundColor Green "   Tag '$TagName' created and pushed to remote repository."
         git push 2>$null
     }
 }
@@ -614,17 +615,24 @@ function Push-RepositoryCommit {
         Confirm-RepositoryIsClean
         return $false
     }
+    Write-Host -ForegroundColor Cyan "Committing changes to repository with message: $Message"
     git commit -a -m "$Message" 2>&1 $null
     if (! $?) {
-        Write-Host -ForegroundColor Red "Failed to commit changes. Please check the repository status."
+        Write-Host -ForegroundColor Red "   Failed to commit changes. Please check the repository status."
         Pop-Location -StackName "commitproject"
         return $false
     }
+    else {
+        Write-Host -ForegroundColor Green "   Changes committed successfully."
+    }
     git push 2>&1 $null
     if (! $?) {
-        Write-Host -ForegroundColor Red "Failed to push changes. Please check the repository status."
+        Write-Host -ForegroundColor Red "   Failed to push changes. Please check the repository status."
         Pop-Location -StackName "commitproject"
         return $false
+    }
+    else {
+        Write-Host -ForegroundColor Green "   Changes pushed successfully."
     }
     Pop-Location -StackName "commitproject"
     return $true
@@ -682,7 +690,7 @@ function Invoke-NewGitTag {
             Write-Host -ForegroundColor Red "Failed to commit changes before tagging."
             return
         } else {
-            Write-Host -ForegroundColor Green "New Tag Name: $newTagName - Message: $Message"
+            Write-Host -ForegroundColor Cyan "New Tag Name: $newTagName - Message: $Message"
             Set-NewTag -TagName $newTagName -Message $Message
         }
     }
