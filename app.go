@@ -12,6 +12,8 @@ import (
 	"unicode/utf8"
 
 	dateparse "github.com/araddon/dateparse"
+	encodingUnicode "golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 
 	"md-reader/internal/markdown"
 	mdrutils "md-reader/internal/utils"
@@ -231,7 +233,28 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
 		return fmt.Errorf("failed to read file %s: %w", filePath, err) // Corrected: Use fmt.Errorf
 	}
 
-	// Normalize line endings to Unix-style (LF)
+    // Detect and handle UTF-16 BOMs, and convert to UTF-8 if necessary
+    if len(mdContent) >= 2 {
+        bom := mdContent[:2]
+        var transformer transform.Transformer
+        if bom[0] == 0xFE && bom[1] == 0xFF { // UTF-16 BE
+            transformer = encodingUnicode.UTF16(encodingUnicode.BigEndian, encodingUnicode.IgnoreBOM).NewDecoder()
+        } else if bom[0] == 0xFF && bom[1] == 0xFE { // UTF-16 LE
+            transformer = encodingUnicode.UTF16(encodingUnicode.LittleEndian, encodingUnicode.IgnoreBOM).NewDecoder()
+        }
+
+        if transformer != nil {
+            utf8Content, _, err := transform.Bytes(transformer, mdContent)
+            if err == nil {
+                mdContent = utf8Content
+            } else {
+                log.Printf("Warning: Failed to convert from UTF-16 to UTF-8: %v", err)
+            }
+        }
+    }
+
+
+    // Normalize line endings to Unix-style (LF)
 	// Some extensions (e.g., goldmark-gh-alerts) rely on Unix-style line endings
 	mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
 
@@ -353,6 +376,7 @@ func (a *App) ToggleDocClass(thisClass ...string) {
     runtime.EventsEmit(a.ctx, "toggle-doc-class", thisClass)
 }
 
+
 // isBinaryFile checks if a file is binary by reading the first 8192 bytes
 // and using multiple detection methods including UTF-8 validation
 func (a *App) isBinaryFile(filePath string) (bool, error) {
@@ -375,6 +399,13 @@ func (a *App) isBinaryFile(filePath string) (bool, error) {
 
     // Trim buffer to actual read size
     buffer = buffer[:n]
+
+    // Check for UTF-16/UTF-32 BOMs first. If a BOM is present, it's a text file.
+    if (n >= 2 && ((buffer[0] == 0xFE && buffer[1] == 0xFF) || (buffer[0] == 0xFF && buffer[1] == 0xFE))) ||
+        (n >= 4 && ((buffer[0] == 0x00 && buffer[1] == 0x00 && buffer[2] == 0xFE && buffer[3] == 0xFF) ||
+            (buffer[0] == 0xFF && buffer[1] == 0xFE && buffer[2] == 0x00 && buffer[3] == 0x00))) {
+        return false, nil
+    }
 
     // Check for null bytes (but allow some exceptions for UTF-16/UTF-32)
     nullCount := 0
@@ -467,7 +498,8 @@ func (a *App) isLikelyUTF16or32(buffer []byte) bool {
         if total > 0 {
             evenRatio := float64(evenNulls) / float64(total)
             oddRatio := float64(oddNulls) / float64(total)
-            if evenRatio > 0.8 || oddRatio > 0.8 {
+            // Lowered threshold to 0.4 to catch more cases of mixed ASCII/non-ASCII
+            if evenRatio > 0.4 || oddRatio > 0.4 {
                 return true
             }
         }
