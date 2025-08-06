@@ -352,24 +352,21 @@ function Set-NewTag {
     # Check if the tag already exists
     $existingTags = git tag
     if ($existingTags -contains $TagName) {
-        Write-Host "Tag '$TagName' already exists. Please choose a different tag name."
+        Write-Host -ForegroundColor Yellow "Tag '$TagName' already exists. Please choose a different tag name."
         return
     } else {
-
         Write-Host "Creating new tag: $TagName"
-        try {
-            git tag -a "$TagName" -m "$Message"
-        } catch {
-            Write-Host "Failed to create tag '$TagName'. Error: $_"
+        git tag -a "$TagName" -m "$Message"
+        if (! $?) {
+            Write-Host -ForegroundColor Red "   Failed to create tag '$TagName'.`n   Please check the repository status."
             return
         }
-        try {
-            git push origin "$TagName"
-        } catch {
-            Write-Host "Failed to push tag '$TagName' to remote repository. Error: $_"
+        git push origin "$TagName"
+        if (! $?) {
+            Write-Host -ForegroundColor Red "   Failed to push tag '$TagName' to remote repository.`n   Please check the repository status."
             return
         }
-        Write-Host "Tag '$TagName' created and pushed to remote repository."
+        Write-Host -ForegroundColor Green "Tag '$TagName' created and pushed to remote repository."
         git push 2>$null
     }
 }
@@ -578,11 +575,16 @@ function Push-RepositoryCommit {
     #>
     param(
         [Parameter(Mandatory = $true, HelpMessage = "The tag name to commit changes for.")]
-        [string]$TagName
+        [string]$TagName,
+        [Parameter(Mandatory = $false, HelpMessage = "The commit message for the changes.")]
+        [string]$Message
     )
     Push-Location $ProjectRoot -StackName "commitproject"
     # Write-Host -ForegroundColor Yellow "Restoring repository to a clean state..."
 
+    if ([string]::IsNullOrWhiteSpace($Message)) {
+        $Message = "Commit project with tag $TagName"
+    }
     $FileList = @(
         "wails.json",
         "build/windows/installer/project.nsi"
@@ -612,11 +614,15 @@ function Push-RepositoryCommit {
         Confirm-RepositoryIsClean
         return $false
     }
-    try {
-        git commit -a -m "Commit project with tag $TagName" 2>&1 $null
-        git push 2>&1 $null
-    } catch {
-        Write-Host -ForegroundColor Red "Failed to commit changes: $_"
+    git commit -a -m "Commit project with tag $TagName" 2>&1 $null
+    if (! $?) {
+        Write-Host -ForegroundColor Red "Failed to commit changes. Please check the repository status."
+        Pop-Location -StackName "commitproject"
+        return $false
+    }
+    git push 2>&1 $null
+    if (! $?) {
+        Write-Host -ForegroundColor Red "Failed to push changes. Please check the repository status."
         Pop-Location -StackName "commitproject"
         return $false
     }
@@ -674,7 +680,7 @@ function Invoke-NewGitTag {
         }
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
-        if (-not (Push-RepositoryCommit -TagName $newTagName)) {
+        if (-not (Push-RepositoryCommit -TagName $newTagName -Message $Message)) {
             Write-Host -ForegroundColor Red "Failed to commit changes before tagging."
             return
         } else {
