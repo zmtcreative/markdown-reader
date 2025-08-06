@@ -1,5 +1,9 @@
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue'
+import postcssNesting from 'postcss-nesting'
+import autoprefixer from 'autoprefixer'
+
+
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -7,9 +11,17 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@use "./src/assets/scss/index" as *;`, // Modern @use syntax
-        // api: 'modern' // Use modern Sass API
+        api: 'modern',
+        silenceDeprecations: ['legacy-js-api']
       }
+    },
+    postcss: {
+      plugins: [
+        // Use postcss-nesting to handle all nesting, including pseudo-elements.
+        // It correctly transforms `&::before` and other nested syntax.
+        postcssNesting(),
+        autoprefixer()
+      ]
     }
   }
 })
