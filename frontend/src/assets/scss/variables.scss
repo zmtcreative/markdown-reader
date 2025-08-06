@@ -1,0 +1,82 @@
+// ============================================================================
+// SCSS Variables - Consolidated from existing CSS custom properties
+// ============================================================================
+
+// Core Application Colors
+$bg-color-light: #ffffff;
+$bg-color-dark: #2e3440;
+$text-color-light: #2e3440;
+$text-color-dark: #d8dee9;
+$header-bg-light: #f8f9fa;
+$header-bg-dark: #3b4252;
+$border-color-light: #d8dee9;
+$border-color-dark: #4c566a;
+
+// Typography
+$font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+$font-family-code: "MesloLGL Nerd Font", "FiraCode Nerd Font", "Fira Code", "Consolas", "Courier New", Courier, monospace;
+$line-height-tight: 1.3;
+$line-height-base: 1.2;
+
+// Layout & Spacing
+$app-padding: 20px;
+$header-padding: 0px 20px;
+$content-padding: 20px;
+$border-radius: 4px;
+
+// Callout/Alert System
+$callout-border-width: 1px;
+$callout-border-opacity: 1;
+$callout-background-opacity: 0.025;
+$callout-padding: 12px 12px 12px 24px;
+$callout-radius: 10px;
+$callout-title-weight: 700;
+
+// Callout Colors (RGB values for alpha support)
+$callout-info: 8, 109, 221;
+$callout-success: 8, 185, 78;
+$callout-warning: 236, 117, 0;
+$callout-error: 233, 49, 71;
+$callout-tip: 0, 191, 188;
+$callout-important: 127, 0, 255;
+$callout-quote: 158, 158, 158;
+
+// TechDoc Theme Variables
+$td-base-margin: 0rem;
+$td-section-indent: 1rem;
+$td-header-left-indent: -1rem;
+$td-header-right-indent: 0.5rem;
+$td-suffix: ":";
+$td-separator: ".";
+
+// Neutral Colors (for techdoc theme)
+$neutral-50: 250, 250, 250;
+$neutral-100: 245, 245, 245;
+$neutral-200: 229, 229, 229;
+$neutral-300: 212, 212, 212;
+$neutral-400: 163, 163, 163;
+$neutral-500: 115, 115, 115;
+$neutral-600: 82, 82, 82;
+$neutral-700: 64, 64, 64;
+$neutral-800: 38, 38, 38;
+$neutral-900: 23, 23, 23;
+$neutral-950: 10, 10, 10;
+
+// Essential Color Palette (commonly used colors only)
+$color-white: 255, 255, 255;
+$color-black: 0, 0, 0;
+$color-red: 255, 0, 0;
+$color-green: 0, 128, 0;
+$color-blue: 0, 0, 255;
+$color-gray: 128, 128, 128;
+$color-silver: 192, 192, 192;
+
+// Link Colors
+$link-color-light: #5e81ac;
+$link-color-dark: #88c0d0;
+
+// Code Block Colors
+$inline-code-bg-light: rgba(0, 0, 0, 0.05);
+$inline-code-bg-dark: rgba(255, 255, 255, 0.1);
+$codeblock-opacity-light: 0.025;
+$codeblock-opacity-dark: 0.25;
