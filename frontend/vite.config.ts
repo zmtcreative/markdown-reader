@@ -7,7 +7,8 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: `@import "./src/assets/scss/variables.scss";` // Global SCSS variables
+        additionalData: `@use "./src/assets/scss/index" as *;`, // Modern @use syntax
+        // api: 'modern' // Use modern Sass API
       }
     }
   }
