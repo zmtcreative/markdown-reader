@@ -195,13 +195,23 @@ func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) {
         isBinary, err := a.isBinaryFile(selection)
         if err != nil {
             log.Printf("Error checking if file is binary %q: %v", selection, err)
-            runtime.EventsEmit(a.ctx, "error", "Failed to read selected file: "+err.Error())
+            // runtime.EventsEmit(a.ctx, "error", "Failed to read selected file: "+err.Error())
+            runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+                Type:    runtime.ErrorDialog,
+                Title:   "Binary File Check Failed",
+                Message: fmt.Sprintf("File MAY be binary: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(selection)),
+            })
             return
         }
 
         if isBinary {
             log.Printf("User selected a binary file: %s", selection)
-            runtime.EventsEmit(a.ctx, "error", fmt.Sprintf("Cannot open binary file: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(selection)))
+            // Use OS message box instead of event emission
+            runtime.MessageDialog(a.ctx, runtime.MessageDialogOptions{
+                Type:    runtime.ErrorDialog,
+                Title:   "Cannot Open Binary File",
+                Message: fmt.Sprintf("Cannot open binary file: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(selection)),
+            })
             return
         }
 
