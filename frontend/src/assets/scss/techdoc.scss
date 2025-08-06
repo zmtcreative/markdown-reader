@@ -1,0 +1,103 @@
+@use "variables" as *; // Import variables for use in this file
+
+// ============================================================================
+// TechDoc Theme
+// ============================================================================
+
+.techdoc {
+    --td-base-margin: #{$td-base-margin};
+    --td-section-indent: #{$td-section-indent};
+    --td-header-left-indent: #{$td-header-left-indent};
+    --td-header-right-indent: #{$td-header-right-indent};
+    --td-suffix: "#{$td-suffix}";
+    --td-separator: "#{$td-separator}";
+
+    // Neutral colors for techdoc
+    --color-neutral-700: #{$neutral-700};
+
+    .markdown-body {
+        section:first-child {
+            counter-reset: td-h2 0;
+        }
+        section > h1 { font-size: calc(1.375rem + 1.5vw); }
+        section > h2 { font-size: calc(1.325rem + 0.9vw); }
+        section > h3 { font-size: calc(1.3rem + 0.6vw); }
+        section > h4 { font-size: calc(1.275rem + 0.2vw); }
+        section > h5 { font-size: 1.25rem; }
+        section > h6 { font-size: 1.125rem; }
+
+        section > h2,
+        section > h3,
+        section > h4,
+        section > h5,
+        section > h6 {
+            background-color: rgba(var(--color-neutral-700), 1);
+            color: white;
+            margin-top: 0;
+            padding: 5px;
+            margin-left: var(--td-header-left-indent);
+            margin-right: var(--td-base-margin);
+        }
+
+        section:has(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+            margin-left: var(--td-base-margin);
+        }
+
+        // Section indentation
+        section:has(h2):not(h3):not(h4):not(h5):not(h6),
+        section:has(h3):not(h4):not(h5):not(h6),
+        section:has(h4):not(h5):not(h6),
+        section:has(h5):not(h6),
+        section:has(h6) {
+            margin-left: var(--td-section-indent);
+        }
+
+        // Counter resets and numbering
+        section > h1 { counter-reset: td-h2 0; }
+        section > h2 { counter-reset: td-h3 0; }
+        section > h3 { counter-reset: td-h4 0; }
+        section > h4 { counter-reset: td-h5 0; }
+        section > h5 { counter-reset: td-h6 0; }
+
+        section {
+            > h2::before {
+                display: inline-block;
+                counter-increment: td-h2;
+                content: counter(td-h2) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section {
+            > h3::before {
+                display: inline-block;
+                counter-increment: td-h3;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section {
+            > h4::before {
+                display: inline-block;
+                counter-increment: td-h4;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section {
+            > h5::before {
+                display: inline-block;
+                counter-increment: td-h5;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section {
+            > h6::before {
+                display: inline-block;
+                counter-increment: td-h6;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
+            }
+        }
+    }
+}
+

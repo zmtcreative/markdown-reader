@@ -80,3 +80,51 @@ $inline-code-bg-light: rgba(0, 0, 0, 0.05);
 $inline-code-bg-dark: rgba(255, 255, 255, 0.1);
 $codeblock-opacity-light: 0.025;
 $codeblock-opacity-dark: 0.25;
+
+// CSS Custom Properties (for runtime theme switching)
+:root {
+    // Theme Colors
+    --bg-color: #{$bg-color-light};
+    --bg-color-rgb: #{$text-color-light};
+    --text-color: #{$text-color-light};
+    --text-color-rgb: #{$text-color-light};
+    --header-bg-color: #{$header-bg-light};
+    --border-color: #{$border-color-light};
+    --inline-code-bg: #{$inline-code-bg-light};
+    --codeblock-opacity: #{$codeblock-opacity-light};
+
+    // Typography
+    --line-height-tight: #{$line-height-tight};
+
+    // Callouts
+    --callout-border-width: #{$callout-border-width};
+    --callout-border-opacity: #{$callout-border-opacity};
+    --callout-background-opacity: #{$callout-background-opacity};
+    --callout-padding: #{$callout-padding};
+    --callout-radius: #{$callout-radius};
+    --callout-title-weight: #{$callout-title-weight};
+    --callout-info: #{$callout-info};
+    --callout-success: #{$callout-success};
+    --callout-warning: #{$callout-warning};
+    --callout-error: #{$callout-error};
+    --callout-tip: #{$callout-tip};
+    --callout-important: #{$callout-important};
+    --callout-quote: #{$callout-quote};
+
+    // Essential colors
+    --css-color-white: #{$color-white};
+    --css-color-black: #{$color-black};
+}
+
+// Dark theme overrides
+html.dark {
+    --bg-color: #{$bg-color-dark};
+    --bg-color-rgb: #{$bg-color-dark};
+    --text-color: #{$text-color-dark};
+    --text-color-rgb: #{$text-color-dark};
+    --header-bg-color: #{$header-bg-dark};
+    --border-color: #{$border-color-dark};
+    --inline-code-bg: #{$inline-code-bg-dark};
+    --codeblock-opacity: #{$codeblock-opacity-dark};
+}
+
