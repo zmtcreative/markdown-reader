@@ -346,44 +346,39 @@ html.dark .markdown-body a {
 
         // Counter resets and numbering
         section > h1 { counter-reset: td-h2 0; }
-        section > h2 {
-            counter-reset: td-h3 0;
-            &::before {
-                display: inline-block;
-                counter-increment: td-h2;
-                content: counter(td-h2) var(--td-suffix,":")" " !important;
-            }
+        section > h2 { counter-reset: td-h3 0; }
+        section > h3 { counter-reset: td-h4 0; }
+        section > h4 { counter-reset: td-h5 0; }
+        section > h5 { counter-reset: td-h6 0; }
+
+        section > h2::before {
+            display: inline-block;
+            counter-increment: td-h2;
+            content: counter(td-h2) var(--td-suffix,":")" " !important;
         }
-        section > h3 {
-            counter-reset: td-h4 0;
-            &::before {
-                display: inline-block;
-                counter-increment: td-h3;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
-            }
+
+        section > h3::before {
+            display: inline-block;
+            counter-increment: td-h3;
+            content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
         }
-        section > h4 {
-            counter-reset: td-h5 0;
-            &::before {
-                display: inline-block;
-                counter-increment: td-h4;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
-            }
+
+        section > h4::before {
+            display: inline-block;
+            counter-increment: td-h4;
+            content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
         }
-        section > h5 {
-            counter-reset: td-h6 0;
-            &::before {
-                display: inline-block;
-                counter-increment: td-h5;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
-            }
+
+        section > h5::before {
+            display: inline-block;
+            counter-increment: td-h5;
+            content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
         }
-        section > h6 {
-            &::before {
-                display: inline-block;
-                counter-increment: td-h6;
-                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
-            }
+
+        section > h6::before {
+            display: inline-block;
+            counter-increment: td-h6;
+            content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
         }
 
         section:has(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
