@@ -24,7 +24,7 @@ import (
 // App struct
 type App struct {
     ctx context.Context
-    initialFile string
+    currentFile string
 	appName string // Store the application name without extension
 	appNameWithExt string // Store the application name with extension
     stripH1 bool
@@ -63,11 +63,11 @@ func (a *App) startup(ctx context.Context) {
 // domReady is called after the frontend loads the DOM.
 // This is where we load and display the initial Markdown file if provided via CLI.
 func (a *App) domReady(ctx context.Context) {
-	if a.initialFile != "" {
-		log.Printf("Loading initial file from command line: %s", a.initialFile)
-		err := a.LoadAndDisplayMarkdown(a.initialFile)
+	if a.currentFile != "" {
+		log.Printf("Loading initial file from command line: %s", a.currentFile)
+		err := a.LoadAndDisplayMarkdown(a.currentFile)
 		if err != nil {
-			log.Printf("Error loading initial Markdown file %q: %v", a.initialFile, err)
+			log.Printf("Error loading initial Markdown file %q: %v", a.currentFile, err)
 			// Emit an error event to the frontend
 			runtime.EventsEmit(a.ctx, "error", "Failed to load initial file: "+err.Error())
 		}
@@ -186,19 +186,21 @@ func (a *App) OpenFileMenuHandler(_ *menu.CallbackData) {
 	}
 
 	if selection == "" {
-		log.Println("No file selected in dialog.")
-		runtime.EventsEmit(a.ctx, "error", "No file was selected.")
-		return
+		log.Println("No file selected in dialog. Using current file if available.")
+		// runtime.EventsEmit(a.ctx, "error", "No file was selected.")
+		selection = a.currentFile // Fallback to current file if no selection
+	} else {
+		log.Printf("User selected file: %s", selection)
 	}
 
-	log.Printf("User selected file: %s", selection)
+	// log.Printf("User selected file: %s", selection)
 	err = a.LoadAndDisplayMarkdown(selection)
 	if err != nil {
 		log.Printf("Error loading selected Markdown file %q: %v", selection, err)
 		runtime.EventsEmit(a.ctx, "error", "Failed to load selected file: "+err.Error())
 	} else {
 		log.Printf("Successfully loaded Markdown file: %s", selection)
-		a.initialFile = selection // Update initialFile to the newly opened file
+		a.currentFile = selection // Update currentFile to the newly opened file
 	}
 }
 

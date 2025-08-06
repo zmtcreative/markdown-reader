@@ -49,7 +49,7 @@ func main() {
     app := NewApp()
 
 	// Pass the parsed arguments to the app instance
-    app.initialFile = cliArgs.InitialFile
+    app.currentFile = cliArgs.InitialFile
     app.allowInlineHTML = cliArgs.AllowInlineHTML
     app.sanitizeHTML = cliArgs.SanitizeHTML
     app.cmdlineOptions = cliArgs.CmdlineOptions
