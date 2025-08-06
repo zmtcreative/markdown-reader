@@ -666,8 +666,11 @@ function Invoke-NewGitTag {
     # echo "Version Hash: $($versionHash | Out-String)"
 
     if ($newTagName) {
+        $verMessage = $newTagName -ireplace '^v', 'Version '
         if ([string]::IsNullOrWhiteSpace($Message)) {
-            $Message = $newTagName -replace '^v', 'Version '
+            $Message = $verMessage
+        } else {
+            $Message = $Message + " (${verMessage})"
         }
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
