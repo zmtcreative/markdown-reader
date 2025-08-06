@@ -351,7 +351,7 @@ html.dark .markdown-body a {
             &::before {
                 display: inline-block;
                 counter-increment: td-h2;
-                content: counter(td-h2) var(--td-suffix) " " !important;
+                content: counter(td-h2) var(--td-suffix,":")" " !important;
             }
         }
         section > h3 {
@@ -359,10 +359,36 @@ html.dark .markdown-body a {
             &::before {
                 display: inline-block;
                 counter-increment: td-h3;
-                content: counter(td-h2) var(--td-separator) counter(td-h3) var(--td-suffix) " " !important;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-suffix,":")" " !important;
             }
         }
-        // Continue pattern for h4, h5, h6...
+        section > h4 {
+            counter-reset: td-h5 0;
+            &::before {
+                display: inline-block;
+                counter-increment: td-h4;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-suffix,":")" " !important;
+            }
+        }
+        section > h5 {
+            counter-reset: td-h6 0;
+            &::before {
+                display: inline-block;
+                counter-increment: td-h5;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-suffix,":")" " !important;
+            }
+        }
+        section > h6 {
+            &::before {
+                display: inline-block;
+                counter-increment: td-h6;
+                content: counter(td-h2) var(--td-separator,".") counter(td-h3) var(--td-separator,".") counter(td-h4) var(--td-separator,".") counter(td-h5) var(--td-separator,".") counter(td-h6) var(--td-suffix,":")" " !important;
+            }
+        }
+
+        section:has(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+            margin-left: var(--td-base-margin);
+        }
 
         // Section indentation
         section:has(h2):not(h3):not(h4):not(h5):not(h6),
