@@ -1,23 +1,39 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
+	"fmt"
 	"log"
+	"os"
+	"text/template"
 
 	"md-reader/internal/app"
 
+	"md-reader/internal/cli"
+
+	"github.com/tidwall/gjson"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 	"github.com/wailsapp/wails/v2/pkg/menu/keys"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+//go:embed wails.json
+var wailsConfig string
+
+//go:embed frontend/src/assets/html/about.gohtml
+var aboutTemplate string
+
+//go:embed frontend/src/assets/html/license-short.html
+var licenseShort string
+
 // App struct
 type App struct {
     ctx               context.Context
     currentFile       string
-    appName           string // Store the application name without extension
-    appNameWithExt    string // Store the application name with extension
+    appProgName       string // Store the application name without extension
+    appProgNameWithExt    string // Store the application name with extension
     stripH1           bool
     allowInlineHTML   bool
     showHelp          bool   // Flag to indicate if help should be shown
@@ -35,14 +51,55 @@ type App struct {
 }
 
 // NewApp creates a new App application struct
-func NewApp() *App {
+func NewApp(cliArgs *cli.CliArgs) *App {
     return &App{
         frontMatter:     map[string]string{},
         stripH1:         true,
-        allowInlineHTML: true, // Default to true, can be set via CLI flag
-        sanitizeHTML:    true, // Default to true, can be set via CLI flag
-        showHelp:        false, // Default to false, can be set via CLI flag
+        currentFile:     cliArgs.InitialFile,
+        cmdlineOptions:  cliArgs.CmdlineOptions,
+        appProgName:     cliArgs.AppProgName,         // Store the application name without extension
+        appProgNameWithExt: cliArgs.AppProgNameWithExt, // Store the application name with extension
+        allowInlineHTML: cliArgs.AllowInlineHTML, // Default to true, can be set via CLI flag
+        sanitizeHTML:    cliArgs.SanitizeHTML,    // Default to true, can be set via CLI flag
+        showHelp:        cliArgs.ShowHelp,        // Default to false, can be set via CLI flag
+        versionInfo:     setAbout(cliArgs.AppProgNameWithExt), // Set version info using the application name with extension
     }
+}
+
+func setAbout(appProgNameWithExt string) string {
+	var versionText bytes.Buffer
+
+	authorName := gjson.Get(wailsConfig, "author.name").String()
+	// authorEmail := gjson.Get(wailsConfig, "author.email").String()
+	productName := gjson.Get(wailsConfig, "info.productName").String()
+
+	tplData := struct {
+		ProductName string
+		AppName  string
+		Version  string
+		BuildDate string
+		Copyright string
+		License   string
+	}{
+		ProductName: productName,
+		AppName:  appProgNameWithExt,
+		Version:  Version,
+		BuildDate: Date,
+		Copyright: fmt.Sprintf("Copyright 2025 %s", authorName),
+		License:   licenseShort,
+	}
+	tpl, err := template.New("about").Parse(aboutTemplate)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing about template: %v\n", err)
+		os.Exit(1)
+	}
+	err = tpl.Execute(&versionText, tplData)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error executing about template: %v\n", err)
+		os.Exit(1)
+	}
+
+	return versionText.String()
 }
 
 // startup is called when the app starts. The context is created
@@ -121,6 +178,8 @@ func (a *App) menu() *menu.Menu {
 
     return appMenu
 }
+
+
 
 // Delegate methods to managers
 

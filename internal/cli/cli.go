@@ -16,8 +16,8 @@ type CliArgs struct {
     SanitizeHTML    bool
     ShowHelp        bool
     CmdlineOptions  string
-    AppName         string // Store the application name
-    AppNameWithExt  string // Store the application name with extension
+    AppProgName         string // Store the application name
+    AppProgNameWithExt  string // Store the application name with extension
 }
 
 // GetArgs becomes a standalone function that parses flags and returns them.
@@ -69,10 +69,10 @@ func GetArgs() (*CliArgs, error) {
 
     // Build the usage string
     var usageText strings.Builder
-    appNameWithExt := filepath.Base(os.Args[0])
-	appName := strings.TrimSuffix(filepath.Base(os.Args[0]), filepath.Ext(os.Args[0]))
+    appProgNameWithExt := filepath.Base(os.Args[0])
+	appProgName := strings.TrimSuffix(filepath.Base(os.Args[0]), filepath.Ext(os.Args[0]))
     usageText.WriteString("<pre>\n")
-    usageText.WriteString(fmt.Sprintf("Usage: %s [options] [filepath]\n\n", appName))
+    usageText.WriteString(fmt.Sprintf("Usage: %s [options] [filepath]\n\n", appProgName))
 	usageText.WriteString("  filepath        Path to the Markdown file to open\n")
 	usageText.WriteString("                    (if not specified with --file)\n\n")
     usageText.WriteString("Options:\n")
@@ -84,8 +84,8 @@ func GetArgs() (*CliArgs, error) {
 	usageText.WriteString("                    (default: sanitize HTML and URLs)\n")
     usageText.WriteString("</pre>\n")
 
-    args.AppName = appName
-    args.AppNameWithExt = appNameWithExt
+    args.AppProgName = appProgName
+    args.AppProgNameWithExt = appProgNameWithExt
     args.CmdlineOptions = usageText.String()
 
 
