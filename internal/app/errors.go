@@ -1,0 +1,33 @@
+package app
+
+import (
+	"context"
+	"log"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+)
+
+// ErrorHandler centralizes error handling and user notifications
+type ErrorHandler struct {
+    ctx context.Context
+}
+
+// NewErrorHandler creates a new ErrorHandler
+func NewErrorHandler(ctx context.Context) *ErrorHandler {
+    return &ErrorHandler{ctx: ctx}
+}
+
+// HandleError logs the error and optionally shows it to the user
+func (eh *ErrorHandler) HandleError(err error, userMessage string, showDialog bool) {
+    log.Printf("Error: %v", err)
+
+    if showDialog {
+        runtime.MessageDialog(eh.ctx, runtime.MessageDialogOptions{
+            Type:    runtime.ErrorDialog,
+            Title:   "Error",
+            Message: userMessage,
+        })
+    } else {
+        runtime.EventsEmit(eh.ctx, "error", userMessage)
+    }
+}
