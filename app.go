@@ -30,40 +30,56 @@ var licenseShort string
 
 // App struct
 type App struct {
-    ctx               context.Context
-    currentFile       string
-    appProgName       string // Store the application name without extension
-    appProgNameWithExt    string // Store the application name with extension
-    stripH1           bool
-    allowInlineHTML   bool
-    showHelp          bool   // Flag to indicate if help should be shown
-    cmdlineOptions    string // Store command line options here
-    versionInfo       string // Store version information
-    sanitizeHTML      bool   // Flag to control sanitization of HTML and URL links
-    frontMatter       map[string]string // Store frontmatter data here
+    ctx                 context.Context
+    frontMatter         map[string]string // Store frontmatter data here
+    currentFile         string
+    appProgName         string // Store the application name without extension
+    appProgNameWithExt  string // Store the application name with extension
+    stripH1             bool   // Flag to indicate if the first H1 should be stripped
+    allowInlineHTML     bool   // Flag to indicate if inline HTML is allowed
+    sanitizeHTML        bool   // Flag to control sanitization of HTML and URL links
+    showHelp            bool   // Flag to indicate if help should be shown
+    cmdlineOptions      string // Store command line options here
+    versionInfo         string // Store version information
 
     // Managers
-    themeManager      *app.ThemeManager
-    printManager      *app.PrintManager
-    fileManager       *app.FileManager
-    documentProcessor *app.DocumentProcessor
-    binaryDetector    *app.BinaryDetector
+    themeManager        *app.ThemeManager
+    printManager        *app.PrintManager
+    fileManager         *app.FileManager
+    documentProcessor   *app.DocumentProcessor
+    binaryDetector      *app.BinaryDetector
 }
 
 // NewApp creates a new App application struct
 func NewApp(cliArgs *cli.CliArgs) *App {
+    setAboutString := setAbout(cliArgs.AppProgNameWithExt)
     return &App{
-        frontMatter:     map[string]string{},
-        stripH1:         true,
-        currentFile:     cliArgs.InitialFile,
-        cmdlineOptions:  cliArgs.CmdlineOptions,
-        appProgName:     cliArgs.AppProgName,         // Store the application name without extension
-        appProgNameWithExt: cliArgs.AppProgNameWithExt, // Store the application name with extension
-        allowInlineHTML: cliArgs.AllowInlineHTML, // Default to true, can be set via CLI flag
-        sanitizeHTML:    cliArgs.SanitizeHTML,    // Default to true, can be set via CLI flag
-        showHelp:        cliArgs.ShowHelp,        // Default to false, can be set via CLI flag
-        versionInfo:     setAbout(cliArgs.AppProgNameWithExt), // Set version info using the application name with extension
+        frontMatter:        map[string]string{},                                // Initialize an empty map for frontmatter
+        stripH1:            boolFromPtr(&cliArgs.StripH1, true),                // Default to true, can be set via CLI flag
+        currentFile:        stringFromPtr(&cliArgs.InitialFile, ""),            // Default to empty, can be set via CLI flag
+        appProgName:        stringFromPtr(&cliArgs.AppProgName, ""),            // Store the application name without extension
+        appProgNameWithExt: stringFromPtr(&cliArgs.AppProgNameWithExt, ""),     // Store the application name with extension
+        allowInlineHTML:    boolFromPtr(&cliArgs.AllowInlineHTML, true),        // Default to true, can be set via CLI flag
+        sanitizeHTML:       boolFromPtr(&cliArgs.SanitizeHTML, true),           // Default to true, can be set via CLI flag
+        showHelp:           boolFromPtr(&cliArgs.ShowHelp, false),              // Default to false, can be set via CLI flag
+        versionInfo:        stringFromPtr(&setAboutString, Version),            // Set version info using the application name with extension
+        cmdlineOptions:     stringFromPtr(&cliArgs.CmdlineOptions, ""),         // Store the command line options for help display
     }
+}
+
+// boolFromPtr safely dereferences a *bool, returning a default value if the pointer is nil.
+func boolFromPtr(p *bool, defaultValue bool) bool {
+    if p != nil {
+        return *p
+    }
+    return defaultValue
+}
+
+func stringFromPtr(p *string, defaultValue string) string {
+    if p != nil {
+        return *p
+    }
+    return defaultValue
 }
 
 func setAbout(appProgNameWithExt string) string {
