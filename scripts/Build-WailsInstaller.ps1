@@ -477,6 +477,26 @@ function Update-InfoJSON {
     }
 }
 
+function New-FileHashes {
+    param(
+        [Parameter(Mandatory = $false, HelpMessage = "The directory path to create file hashes in.")]
+        [string]$DirectoryPath = "./build/bin",
+        [Parameter(Mandatory = $false, HelpMessage = "The file pattern to match.")]
+        [string]$FilePattern = "*.exe"
+    )
+    Push-Location $DirectoryPath -StackName "NewFileHashes"
+    Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for executable files..."
+    foreach ($file in Get-ChildItem -Path $DirectoryPath -Filter $FilePattern -File -ErrorAction SilentlyContinue) {
+        $sha256Name = $file.Name + ".sha256"
+        $sha1Name = $file.Name + ".sha1"
+        $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
+        $sha1Hash = (Get-FileHash $file -Algorithm SHA1).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha1Name -Encoding utf8
+        "$sha256Hash  $($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
+        "$sha1Hash  $($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
+    }
+    Pop-Location -StackName "NewFileHashes"
+}
+
 function Invoke-WailsBuild {
     <#
     .SYNOPSIS
@@ -578,16 +598,7 @@ function Invoke-WailsBuild {
         Write-Host "$('=' * 78)`n"
 
         # Create SHA1 and SHA256 hashes for the executable files
-        Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for executable files..."
-        Set-Location ./build/bin
-        foreach ($file in Get-ChildItem *.exe -File -ErrorAction SilentlyContinue) {
-            $sha256Name = $file.Name + ".sha256"
-            $sha1Name = $file.Name + ".sha1"
-            $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
-            $sha1Hash = (Get-FileHash $file -Algorithm SHA1).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha1Name -Encoding utf8
-            "$sha256Hash  *$($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
-            "$sha1Hash  *$($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
-        }
+        New-FileHashes -DirectoryPath (Join-Path $ProjectRoot "build" "bin") -FilePattern "*.exe"
 
         Restore-RepositoryToCleanState
     }
