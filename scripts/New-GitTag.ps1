@@ -494,7 +494,8 @@ function Set-NewTag {
         Write-Host -ForegroundColor Yellow "   Tag '$TagName' already exists. Please choose a different tag name."
         return
     } else {
-        Write-Host -NoNewLine -ForegroundColor Cyan "Creating new tag: " ; Write-Host -ForegroundColor Yellow "$TagName"
+        Write-Host -NoNewLine -ForegroundColor Cyan "Creating New Tag: " ; Write-Host -NoNewLine -ForegroundColor Yellow "$TagName"
+        Write-Host -NoNewLine -ForegroundColor Cyan " -- Message: " ; Write-Host -ForegroundColor Yellow "$Message"
         $gitTagResults = (git tag -a "$TagName" -m "$Message" 2>&1)
         if (! $?) {
             Write-Host -ForegroundColor Red "   Failed to create tag '$TagName'.`n   Please check the repository status."
@@ -927,7 +928,7 @@ function Invoke-NewGitTag {
             $Message = $tmpMessage
         }
         Write-Host -ForegroundColor Cyan "New Tag and Message:"
-        Write-Host -NoNewLine -ForegroundColor Green "  New Tag: " ; Write-Host -ForegroundColor Yellow "$newTagName"
+        Write-Host -NoNewLine -ForegroundColor Green "          New Tag: " ; Write-Host -ForegroundColor Yellow "$newTagName"
         Write-Host -NoNewLine -ForegroundColor Green "  Current Message: " ; Write-Host -ForegroundColor Yellow "$Message"
         Write-Host -NoNewline -ForegroundColor Cyan "Do you want to proceed with this tag and message? "
         # Write-Host -NoNewline -ForegroundColor Yellow "(y/N)"
