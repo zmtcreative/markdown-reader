@@ -1,6 +1,6 @@
 {
 	"fixed": {
-		"file_version": "{{.Info.FileVersion}}"
+		"file_version": "0.0.5.10500"
 	},
 	"info": {
 		"0000": {
