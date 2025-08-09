@@ -63,7 +63,11 @@ if ($Build -or $NSIS -or $UPX) {
     $ShowVersionOnly = $false
 }
 
-Set-Location $ProjectRoot
+$FileList = @(
+    "wails.json",
+    "frontend/package.json",
+    "build/windows/installer/project.nsi"
+)
 
 function Get-JsonContent {
     <#
@@ -146,6 +150,24 @@ function Get-DateStamp {
     return int($result)
 }
 
+function Get-MostRecentTag {
+    <#
+    .SYNOPSIS
+        Retrieves the most recent Git tag from the repository.
+    .DESCRIPTION
+        This function uses Git commands to find and return the most recent tag
+        in the current repository.
+    #>
+    $currentTag = git describe --tags --abbrev=0 2>$null
+    if ($currentTag) {
+        # Write-Host "Most recent tag: $currentTag"
+        return $currentTag
+    } else {
+        Write-Host -ForegroundColor Yellow "No tags found in the repository."
+        return $null
+    }
+}
+
 function Confirm-RepositoryIsClean {
     <#
     .SYNOPSIS
@@ -154,36 +176,67 @@ function Confirm-RepositoryIsClean {
         This function checks the status of the Git repository and determines if there are any
         uncommitted changes. It returns $true if the repository is clean, and $false otherwise.
     #>
-    $status = git status --porcelain
+    param(
+        [Parameter(Mandatory = $false)]
+        [Alias("i","ignore")]
+        [switch]$IgnoreFileList,
+        [Parameter(Mandatory = $false)]
+        [Alias("q","s","silent")]
+        [switch]$Quiet
+    )
+    $status = git status --porcelain=v1
     if ($status) {
-        $isClean = $true
+        # $isClean = $true
         $statusList = $status -split "`n"
-        $newStatusList = @()
+        $tmpStatusList = @()
         foreach ($line in $statusList) {
             if ( -not ($line -match $ScriptName) ) {
-                $isClean = $false
-                $newStatusList += $line
+                # $isClean = $false
+                $tmpStatusList += $line
             }
         }
 
-        if ($isClean) { return $true }
+        $newStatusList = @()
+        if ($IgnoreFileList) {
+            foreach ($line in $tmpStatusList) {
+                $found = $false
+                foreach ($file in $FileList) {
+                    $fileRE = [regex]::Escape($file)
+                    # Write-StdErr "Checking line: $line ($fileRE)"
+                    if ($line -match "^\s*[A-Z]\s+$fileRE") {
+                        $found = $true
+                        # git add "$file" 2>&1 | Out-Null
+                        break
+                    }
+                }
+                if (-not $found) {
+                    $newStatusList += $line
+                }
+            }
+        } else {
+            $newStatusList += $tmpStatusList
+        }
 
-        Write-Host ""
-        Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
-        Write-Host ""
-        Write-Host "Uncommitted changes:"
-        Write-Host ""
-        $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
-        Write-Host ""
-        Write-Host "Suggestions:"
-        Write-Host "  - Commit your changes: git commit -m 'Your commit message'"
-        Write-Host "  - Create a new branch: git checkout -b new-branch-name "
-        Write-Host "       and commit your changes to the branch"
-        Write-Host "  - Stash your changes: git stash --all"
-        Write-Host "  - Discard your changes: git reset --hard HEAD"
-        Write-Host ""
-        Write-Host -ForegroundColor Cyan "NOTE: Script ignores changes to the script itself ($ScriptName)"
-        Write-Host ""
+        if ($newStatusList.Count -eq 0) { return $true }
+
+        if (-not $Quiet) {
+            Write-Host ""
+            Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
+            Write-Host ""
+            Write-Host "Uncommitted changes:"
+            Write-Host ""
+            $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
+            Write-Host ""
+            Write-Host "Suggestions:"
+            Write-Host "  - Commit your changes: git commit -m 'Your commit message'"
+            Write-Host "  - Create a new branch: git checkout -b new-branch-name "
+            Write-Host "       and commit your changes to the branch"
+            Write-Host "  - Stash your changes: git stash --all"
+            Write-Host "  - Discard your changes: git reset --hard HEAD"
+            Write-Host ""
+            Write-Host -ForegroundColor Cyan "NOTE: Script ignores changes to the script itself ($ScriptName)"
+            Write-Host ""
+        }
         return $false
     }
     return $true
@@ -202,14 +255,10 @@ function Restore-RepositoryToCleanState {
     #>
     Push-Location $ProjectRoot -StackName "restoreproject"
     Write-Host -ForegroundColor Yellow "Restoring repository to a clean state..."
-    $FileList = @(
-        "wails.json",
-        "build/windows/installer/project.nsi"
-    )
     foreach ($file in $FileList) {
-        if ( (git status --porcelain | Select-String "$file") ) {
-            Write-Host -ForegroundColor Yellow "  Restoring: $file"
-            git restore "$file"
+        if ( (git status --porcelain=v1 | Select-String "$file") ) {
+            Write-Host -NoNewLine -ForegroundColor Green "  Restoring: " ; Write-Host -ForegroundColor Yellow "$file"
+            git restore "$file" 2>&1 | Out-Null
         }
     }
     Pop-Location -StackName "restoreproject"
@@ -315,6 +364,51 @@ function Update-WailsJSON {
     }
 }
 
+function Update-PackageJSON {
+    <#
+    .SYNOPSIS
+        Updates the package.json file with the new version information.
+    .DESCRIPTION
+        This function modifies the specified package.json file to reflect the new version
+        information based on the provided tag name.
+    .PARAMETER PackageJsonPath
+        The path to the package.json file to update.
+    .PARAMETER TagName
+        The tag name to use for the version update.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageJsonPath,
+        [string]$TagName
+    )
+
+    if (-not (Test-Path -Path $PackageJsonPath)) {
+        Write-Host -ForegroundColor Red "package.json file not found at path: $PackageJsonPath"
+        return
+    }
+
+    $tmpVersionHash = Get-VersionHash -TagName $TagName
+    $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
+    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
+        $Version += "-" + $tmpVersionHash.Prerelease
+    }
+
+    Write-Host -ForegroundColor Cyan "Updating package.json with version value: $Version"
+    $PackageData = Get-JsonContent -Path $PackageJsonPath
+
+    if (-not $PackageData) {
+        Write-Host -ForegroundColor Red "  Failed to read package.json or it is empty."
+        return
+    }
+    if ($PackageData.version -ne $Version) {
+        $PackageData.version = $Version
+        Set-JsonContent -Path $PackageJsonPath -Value $PackageData
+        Write-Host -ForegroundColor Green "  Version changed to: $Version"
+    } else {
+        Write-Host -ForegroundColor Yellow "  No changes made to package.json, version is already set to: $Version"
+    }
+}
+
 function Invoke-WailsBuild {
     <#
     .SYNOPSIS
@@ -327,6 +421,7 @@ function Invoke-WailsBuild {
     $UPXOption  = ""
     $ProjectNSI = Join-Path $ProjectRoot "build" "windows" "installer" "project.nsi"
     $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
+    $PackageJsonPath = Join-Path $ProjectRoot "frontend" "package.json"
 
     if ($NSIS) {
         $NSISOption = "-nsis"
@@ -343,6 +438,7 @@ function Invoke-WailsBuild {
     $RC = @("alpha", "beta", "rc", "")
     $Commit = $(git rev-parse --short HEAD)
     $CurrentCommitTag = $(git describe --tags HEAD 2> $null)
+    $CurrentRepoTag = Get-MostRecentTag
     if ( $CurrentCommitTag -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:-(?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
         $Major = $Matches.major
         $Minor = $Matches.minor
@@ -376,15 +472,25 @@ function Invoke-WailsBuild {
         $FileVersion = "0.0.0.${ds}"
     }
 
+    $isRepoClean = Confirm-RepositoryIsClean -Quiet -IgnoreFileList
 
     if ($ShowVersionOnly) {
         $Build = $false
-        Write-Host "   Current App version: $Version"
-        Write-Host "     NSIS File version: $FileVersion"
+        Write-Host -ForegroundColor Cyan "`nCurrent Repository Information:"
+        Write-Host -NoNewline -ForegroundColor Yellow "  Most Recent Repo Tag: " ; Write-Host -ForegroundColor Green "$CurrentRepoTag"
+        Write-Host -NoNewline -ForegroundColor Yellow "   Current Repo Status: "
+        if ($isRepoClean) {
+            Write-Host -ForegroundColor Green "Clean (Safe to build)"
+        } else {
+            Write-Host -ForegroundColor Red "Dirty (Uncommitted changes found)"
+        }
+        Write-Host -ForegroundColor Cyan "`nVersion Values For Next Build:"
+        Write-Host -NoNewLine -ForegroundColor Yellow "      Semantic Version: " ; Write-Host -ForegroundColor Green "$Version"
+        Write-Host -NoNewLine -ForegroundColor Yellow "       Numeric Version: " ; Write-Host -ForegroundColor Green "$FileVersion"
         return
     }
 
-    if (-not (Confirm-RepositoryIsClean)) {
+    if (-not (Confirm-RepositoryIsClean -IgnoreFileList)) {
         return
     }
 
@@ -393,18 +499,18 @@ function Invoke-WailsBuild {
             Update-ProjectNSI -ProjectNSIPath $ProjectNSI -FileVersion $FileVersion
         }
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -Version $Version
+        Update-PackageJSON -PackageJsonPath $PackageJsonPath -TagName $Version
 
-        Push-Location $ProjectRoot -StackName "project-root"
         Write-Host -NoNewLine -ForegroundColor Cyan "Building Wails application with version value: "
         Write-Host -NoNewLine -ForegroundColor Black -BackgroundColor White "$Version"
         Write-Host "`n`n$('=' * 78)"
-        wails build -clean -ldflags "-X main.Version=${Version} -X main.Date=${Date} -X main.Commit=${Commit}" ${NSISOption} ${UPXOption}
+        wails build -clean -ldflags "-X main.Version=${Version} -X main.Date=${Date} -X main.Commit=${Commit} -s -w" ${NSISOption} ${UPXOption}
         Write-Host "$('=' * 78)`n"
 
-        if ($NSIS) {
-            Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for installer files..."
+        # if ($NSIS) {
+            Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for executable files..."
             Set-Location ./build/bin
-            foreach ($file in Get-ChildItem *-installer.exe -File -ErrorAction SilentlyContinue) {
+            foreach ($file in Get-ChildItem *.exe -File -ErrorAction SilentlyContinue) {
                 $sha256Name = $file.Name + ".sha256"
                 $sha1Name = $file.Name + ".sha1"
                 $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
@@ -412,11 +518,12 @@ function Invoke-WailsBuild {
                 "$sha256Hash  *$($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
                 "$sha1Hash  *$($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
             }
-        }
+        # }
 
         Restore-RepositoryToCleanState
-        Pop-Location -StackName "project-root"
     }
 }
 
+Push-Location $ProjectRoot -StackName "ProjectRoot"
 Invoke-WailsBuild
+Pop-Location -StackName "ProjectRoot"
