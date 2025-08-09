@@ -66,6 +66,7 @@ if ($Build -or $NSIS -or $UPX) {
 $FileList = @(
     "wails.json",
     "frontend/package.json",
+    "build/windows/info.json",
     "build/windows/installer/project.nsi"
 )
 
@@ -444,6 +445,42 @@ function Update-PackageJSON {
     }
 }
 
+function Update-InfoJSON {
+    <#
+    .SYNOPSIS
+        Updates the info.json file with the specified version.
+    .DESCRIPTION
+        This function modifies the info.json file to set the correct version.
+    .PARAMETER InfoJsonPath
+        The path to the info.json file to update.
+    .PARAMETER Version
+        The new version to set in the info.json file.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$InfoJsonPath,
+        [Parameter(Mandatory = $true)]
+        [string]$FileVersion
+    )
+
+    if (-not (Test-Path -Path $InfoJsonPath)) {
+        Write-Host -ForegroundColor Red "info.json file not found at path: $InfoJsonPath"
+        return
+    }
+
+    Write-Host -ForegroundColor Cyan "Updating info.json:"
+    $VIData = Get-JsonContent -Path $InfoJsonPath
+
+    if (-not $VIData) {
+        Write-Host -ForegroundColor Red "  Failed to read info.json or it is empty."
+        return
+    }
+    $VIData.fixed.file_version = $FileVersion
+    if (Set-JsonContent -Path $InfoJsonPath -Value $VIData) {
+        Write-Host -ForegroundColor Green "  Updated info.json"
+    }
+}
+
 function Invoke-WailsBuild {
     <#
     .SYNOPSIS
@@ -457,6 +494,7 @@ function Invoke-WailsBuild {
     $ProjectNSI = Join-Path $ProjectRoot "build" "windows" "installer" "project.nsi"
     $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
     $PackageJsonPath = Join-Path $ProjectRoot "frontend" "package.json"
+    $InfoJsonPath = Join-Path $ProjectRoot "build" "windows" "info.json"
 
     if ($NSIS) {
         $NSISOption = "-nsis"
@@ -534,7 +572,8 @@ function Invoke-WailsBuild {
             Update-ProjectNSI -ProjectNSIPath $ProjectNSI -FileVersion $FileVersion
         }
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -Version $Version
-        Update-PackageJSON -PackageJsonPath $PackageJsonPath -TagName $Version
+        Update-PackageJSON -PackageJsonPath $PackageJsonPath -Version $Version
+        Update-InfoJSON -InfoJsonPath $InfoJsonPath -FileVersion $FileVersion
 
         Write-Host -NoNewLine -ForegroundColor Cyan "Building Wails application with version value: "
         Write-Host -NoNewLine -ForegroundColor Black -BackgroundColor White "$Version"
