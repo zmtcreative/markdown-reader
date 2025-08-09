@@ -95,7 +95,49 @@ if (Test-Path -Path "$tmpProjectRoot\wails.json") {
     exit 1
 }
 
+# List of files modified as part of this tag creation process
+$FileList = @(
+    "wails.json",
+    "build/windows/installer/project.nsi"
+)
+
 Set-Location $ProjectRoot
+
+function Write-StdErr {
+    <#
+    .SYNOPSIS
+    Writes text to stderr when running in a regular console window,
+    to the host''s error stream otherwise.
+
+    .DESCRIPTION
+    Writing to true stderr allows you to write a well-behaved CLI
+    as a PS script that can be invoked from a batch file, for instance.
+
+    Note that PS by default sends ALL its streams to *stdout* when invoked from
+    cmd.exe.
+
+    This function acts similarly to Write-Host in that it simply calls
+    .ToString() on its input; to get the default output format, invoke
+    it via a pipeline and precede with Out-String.
+
+    #>
+    param (
+        [Parameter(Mandatory = $false, Position = 0)]
+        [PSObject]$InputObject
+    )
+    $outFunc = if ($Host.Name -eq 'ConsoleHost') {
+        [Console]::Error.WriteLine
+    } else {
+        $host.ui.WriteErrorLine
+    }
+    if ($InputObject) {
+        [void] $outFunc.Invoke($InputObject.ToString())
+    } else {
+        [string[]] $lines = @()
+        $Input | ForEach-Object { $lines += $_.ToString() }
+        [void] $outFunc.Invoke($lines -join "`r`n")
+    }
+}
 
 function Get-JsonContent {
     <#
@@ -363,24 +405,24 @@ function Set-NewTag {
         Write-Host -ForegroundColor Yellow "   Tag '$TagName' already exists. Please choose a different tag name."
         return
     } else {
-        Write-Host "Creating new tag: $TagName"
-        $gitTagResults = $(git tag -a "$TagName" -m "$Message")
+        Write-Host -NoNewLine -ForegroundColor Cyan "Creating new tag: " ; Write-Host -ForegroundColor Yellow "$TagName"
+        $gitTagResults = (git tag -a "$TagName" -m "$Message" 2>&1)
         if (! $?) {
             Write-Host -ForegroundColor Red "   Failed to create tag '$TagName'.`n   Please check the repository status."
             $gitTagResults | ForEach-Object { Write-Host -ForegroundColor Yellow "   $_" }
             return
         }
-        git push origin "$TagName" 2>&1 $null
+        git push origin "$TagName" 2>&1 | Out-Null
         if (! $?) {
-            Write-Host -ForegroundColor Red "   Failed to push tag '$TagName' to remote repository.`n   Please check the repository status."
+            Write-Host -ForegroundColor Red "  Failed to push tag '$TagName' to remote repository.`n   Please check the repository status."
             return
         }
-        Write-Host -ForegroundColor Green "   Tag '$TagName' created and pushed to remote repository."
-        git push 2>&1 $null
+        Write-Host -ForegroundColor Green "  Tag '$TagName' created and pushed to remote repository."
+        git push 2>&1 | Out-Null
     }
 }
 
-function Get-NewTagName {
+function Get-NewTagNamePrompt {
     <#
     .SYNOPSIS
         Prompts the user to enter a new tag name.
@@ -401,16 +443,57 @@ function Get-NewTagName {
 
     while ($true) {
         Write-Host -ForegroundColor Cyan "Enter a new tag name (or press ENTER to use the suggested tag)"
-        $response = Read-Host " [Tag: $SuggestedTagName]"
+        $response = Read-Host "  [Tag: '$SuggestedTagName']"
         if ([string]::IsNullOrWhiteSpace($response)) {
             $NewTagName = $SuggestedTagName
         } else {
             $NewTagName = $response
         }
 
-        $verify = Read-Host "  You entered '$NewTagName'. Is this correct? (N/y/q)"
+        Write-Host -NoNewLine -ForegroundColor Cyan "  You entered: "
+        Write-Host -ForegroundColor Yellow "$NewTagName"
+        $verify = Read-Host "  Is this correct? (N/y/q)"
         if ($verify -eq 'y' -or $verify -eq 'Y') {
             return $NewTagName
+        } elseif ($verify -eq 'q' -or $verify -eq 'Q') {
+            return $null
+        }
+    }
+}
+
+function Get-NewMessagePrompt {
+    <#
+    .SYNOPSIS
+        Prompts the user to confirm the current message or enter a new one.
+    .DESCRIPTION
+        This function allows the user to specify a new message, with the option to use a suggested message.
+    .PARAMETER SuggestedMessage
+        The current message.
+    #>
+    param (
+        [Parameter(Mandatory = $true, HelpMessage = "The current message.")]
+        [string]$SuggestedMessage
+    )
+
+    if (-not $SuggestedMessage) {
+        Write-Host -ForegroundColor Red "No suggested message provided. Please specify a message."
+        return $null
+    }
+
+    while ($true) {
+        Write-Host -ForegroundColor Cyan "Enter a new message (or press ENTER to use the suggested message)"
+        $response = Read-Host "  [Message: '$SuggestedMessage']"
+        if ([string]::IsNullOrWhiteSpace($response)) {
+            $NewMessage = $SuggestedMessage
+        } else {
+            $NewMessage = $response
+        }
+
+        Write-Host -NoNewLine -ForegroundColor Cyan "  You entered: "
+        Write-Host -ForegroundColor Yellow "$NewMessage"
+        $verify = Read-Host "  Is this correct? (N/y/q)"
+        if ($verify -eq 'y' -or $verify -eq 'Y') {
+            return $NewMessage
         } elseif ($verify -eq 'q' -or $verify -eq 'Q') {
             return $null
         }
@@ -536,19 +619,44 @@ function Confirm-RepositoryIsClean {
         This function checks the status of the Git repository and returns $true if there are no uncommitted changes,
         otherwise it returns $false and displays a warning message.
     #>
+    param(
+        [Parameter(Mandatory = $false)]
+        [switch]$IgnoreFileList
+    )
     $status = git status --porcelain
     if ($status) {
-        $isClean = $true
+        # $isClean = $true
         $statusList = $status -split "`n"
-        $newStatusList = @()
+        $tmpStatusList = @()
         foreach ($line in $statusList) {
             if ( -not ($line -match $ScriptName) ) {
-                $isClean = $false
-                $newStatusList += $line
+                # $isClean = $false
+                $tmpStatusList += $line
             }
         }
 
-        if ($isClean) { return $true }
+        $newStatusList = @()
+        if ($IgnoreFileList) {
+            foreach ($line in $tmpStatusList) {
+                $found = $false
+                foreach ($file in $FileList) {
+                    $fileRE = [regex]::Escape($file)
+                    # Write-StdErr "Checking line: $line ($fileRE)"
+                    if ($line -match "^\s*[A-Z]\s+$fileRE") {
+                        $found = $true
+                        # git add "$file" 2>&1 | Out-Null
+                        break
+                    }
+                }
+                if (-not $found) {
+                    $newStatusList += $line
+                }
+            }
+        } else {
+            $newStatusList += $tmpStatusList
+        }
+
+        if ($newStatusList.Count -eq 0) { return $true }
 
         Write-Host ""
         Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
@@ -558,7 +666,7 @@ function Confirm-RepositoryIsClean {
         $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
         Write-Host ""
         Write-Host "Suggestions:"
-        Write-Host "  - Commit your changes: git commit -m 'Your commit message'"
+        Write-Host "  - Commit your changes: git commit -a -m 'Your commit message'"
         Write-Host "  - Create a new branch: git checkout -b new-branch-name "
         Write-Host "       and commit your changes to the branch"
         Write-Host "  - Stash your changes: git stash --all"
@@ -574,9 +682,9 @@ function Confirm-RepositoryIsClean {
 function Push-RepositoryCommit {
     <#
     .SYNOPSIS
-        Commits and pushes the modified wails.json and project.nsi files.
+        Commits and pushes the modified files in $FileList array.
     .DESCRIPTION
-        This function commits the changes made to the wails.json and project.nsi files
+        This function commits the changes made to the files listed in the $FileList array
         in the Git repository. It checks if there are any changes to commit, and if so,
         it commits them with a message that includes the tag name.
     .PARAMETER TagName
@@ -594,11 +702,7 @@ function Push-RepositoryCommit {
     if ([string]::IsNullOrWhiteSpace($Message)) {
         $Message = "Commit project with tag $TagName"
     }
-    $FileList = @(
-        "wails.json",
-        "build/windows/installer/project.nsi"
-    )
-    $status = git status --porcelain
+    $status = git status --porcelain=v1
     if ([string]::IsNullOrWhiteSpace($status)) {
         Write-Host -ForegroundColor Green "Repository is clean. No changes to commit."
         Pop-Location -StackName "commitproject"
@@ -610,8 +714,11 @@ function Push-RepositoryCommit {
     foreach ($line in $statusList) {
         $found = $false
         foreach ($file in $FileList) {
-            if ($line -match "^\s*[A-Z]\s+$file") {
+            $fileRE = [regex]::Escape($file)
+            # Write-StdErr "Checking line: $line ($fileRE)"
+            if ($line -match "^\s*[A-Z]\s+$fileRE") {
                 $found = $true
+                git add "$file" 2>&1 | Out-Null
                 break
             }
         }
@@ -619,28 +726,29 @@ function Push-RepositoryCommit {
             $newStatusList += $line
         }
     }
-    if ($newStatusList.Count -ne 0) {
-        Confirm-RepositoryIsClean
+    if ( ($newStatusList.Count -ne 0) -and (-not (Confirm-RepositoryIsClean -IgnoreFileList)) ) {
+        # Confirm-RepositoryIsClean -IgnoreFileList
+        Pop-Location -StackName "commitproject"
         return $false
     }
     Write-Host -ForegroundColor Cyan "Committing changes to repository with message: $Message"
-    git commit -a -m "$Message" 2>&1 $null
+    git commit -m "$Message" 2>&1 | Out-Null
     if (! $?) {
-        Write-Host -ForegroundColor Red "   Failed to commit changes. Please check the repository status."
+        Write-Host -ForegroundColor Red "  Failed to commit changes. Please check the repository status."
         Pop-Location -StackName "commitproject"
         return $false
     }
     else {
-        Write-Host -ForegroundColor Green "   Changes committed successfully."
+        Write-Host -ForegroundColor Green "  Changes committed successfully."
     }
-    git push 2>&1 $null
+    git push 2>&1 | Out-Null
     if (! $?) {
-        Write-Host -ForegroundColor Red "   Failed to push changes. Please check the repository status."
+        Write-Host -ForegroundColor Red "  Failed to push changes. Please check the repository status."
         Pop-Location -StackName "commitproject"
         return $false
     }
     else {
-        Write-Host -ForegroundColor Green "   Changes pushed successfully."
+        Write-Host -ForegroundColor Green "  Changes pushed successfully."
     }
     Pop-Location -StackName "commitproject"
     return $true
@@ -658,7 +766,7 @@ function Invoke-NewGitTag {
     $ProjectNSI = Join-Path $ProjectRoot "build" "windows" "installer" "project.nsi"
     $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
 
-    if (-not (Confirm-RepositoryIsClean)) {
+    if (-not (Confirm-RepositoryIsClean -IgnoreFileList)) {
         return
     }
 
@@ -667,22 +775,22 @@ function Invoke-NewGitTag {
         if (-not $TagName) {
             # Write-Host "No tag name provided."
             $tmpTagName = "v0.0.1-alpha1"
-            $newTagName = Get-NewTagName -SuggestedTagName $tmpTagName
+            $newTagName = Get-NewTagNamePrompt -SuggestedTagName $tmpTagName
         } else {
-            $newTagName = Get-NewTagName -SuggestedTagName $TagName
+            $newTagName = Get-NewTagNamePrompt -SuggestedTagName $TagName
         }
     } else {
         $versionHash = Get-VersionHash -TagName $currentTag
         Write-Host -ForegroundColor Green "Current (most recent) tag: ${currentTag}"
         if (-not $TagName) {
             $tmpTagName = Get-NextTagName -VersionHash $versionHash
-            $newTagName = Get-NewTagName -SuggestedTagName $tmpTagName
+            $newTagName = Get-NewTagNamePrompt -SuggestedTagName $tmpTagName
         } else {
-            $newTagName = Get-NewTagName -SuggestedTagName $TagName
+            $newTagName = Get-NewTagNamePrompt -SuggestedTagName $TagName
         }
     }
 
-    Write-Host -NoNewLine -ForegroundColor Cyan " Current Tag: " ; Write-Host $currentTag
+    Write-Host -NoNewLine -ForegroundColor Green "  Current Tag: " ; Write-Host -ForegroundColor Yellow "$currentTag"
     # echo "Version Hash: $($versionHash | Out-String)"
 
     if ($newTagName) {
@@ -692,13 +800,32 @@ function Invoke-NewGitTag {
         } else {
             $Message = $Message + " (${newTagName})"
         }
+        $tmpMessage = Get-NewMessagePrompt -SuggestedMessage $Message
+        if ($tmpMessage -ne $Message) {
+            $re = [regex]::Escape($newTagName)
+            if (-not ($tmpMessage -match $re)) {
+                $Message = $tmpMessage + " (${newTagName})"
+            } else {
+                $Message = $tmpMessage
+            }
+        } elseif ($null -eq $tmpMessage) {
+            Write-Host -ForegroundColor Red "No message provided. Exiting."
+            return
+        } else {
+            $Message = $tmpMessage
+        }
+        Write-Host -NoNewLine -ForegroundColor Green "  Current Message: " ; Write-Host -ForegroundColor Yellow "$Message"
+
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
         if (-not (Push-RepositoryCommit -TagName $newTagName -Message $Message)) {
-            Write-Host -ForegroundColor Red "Failed to commit changes before tagging."
+            Write-Host -ForegroundColor Red "Failed to commit changes before tagging. Exiting."
             return
         } else {
-            Write-Host -ForegroundColor Cyan "New Tag Name: $newTagName - Message: $Message"
+            Write-Host -NoNewLine -ForegroundColor Cyan "  New Tag Name: "
+            Write-Host -ForegroundColor Yellow "$newTagName"
+            Write-Host -NoNewLine -ForegroundColor Cyan "       Message: "
+            Write-Host -ForegroundColor Yellow "$Message"
             Set-NewTag -TagName $newTagName -Message $Message
         }
     }
