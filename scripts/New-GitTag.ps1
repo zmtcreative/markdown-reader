@@ -38,17 +38,9 @@
 
 [CmdletBinding(DefaultParameterSetName = "None")]
 param (
-    [Parameter(Mandatory = $false, ParameterSetName = "Default", HelpMessage = "The new Git tag to create.")]
+    [Parameter(Mandatory = $false, HelpMessage = "The new Git tag to create.")]
     [string]$TagName = "",
-    [Parameter(Mandatory = $false, ParameterSetName = "Default", HelpMessage = "The message for the new Git tag.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "SetAlpha", HelpMessage = "Set the tag to alpha.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "SetBeta", HelpMessage = "Set the tag to beta.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "SetReleaseCandidate", HelpMessage = "Set the tag to release candidate.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "IncMajor", HelpMessage = "Increment the major version.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "IncMinor", HelpMessage = "Increment the minor version.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "IncPatch", HelpMessage = "Increment the patch version.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "IncPrerelease", HelpMessage = "Increment the existing prerelease version.")]
-    [Parameter(Mandatory = $false, ParameterSetName = "ReleaseVersion", HelpMessage = "This is a release version (remove prerelease suffix but no increments).")]
+    [Parameter(Mandatory = $false, HelpMessage = "The message for the new Git tag.")]
     [string]$Message = "",
     [Parameter(Mandatory = $false, ParameterSetName = "SetAlpha", HelpMessage = "Set the tag to alpha.")]
     [Parameter(Mandatory = $false, ParameterSetName = "SetBeta", HelpMessage = "Set the tag to beta.")]
@@ -84,24 +76,24 @@ $ScriptFullName = $MyInvocation.MyCommand.Path
 $ScriptRoot = Split-Path -Parent $ScriptFullName
 $ScriptName = Split-Path -Leaf $ScriptFullName
 if ($ScriptRoot -match '[\\/]scripts[\\/]?$') {
+    $ScriptRelativePath = 'scripts/' + $ScriptName ; $ScriptRelativePath | Out-Null
     $tmpProjectRoot = $ScriptRoot -replace '[\\/]scripts[\\/]?', ''
 } else {
     $tmpProjectRoot = $ScriptRoot
 }
-if (Test-Path -Path "$tmpProjectRoot\wails.json") {
+if (Test-Path -Path "$tmpProjectRoot\go.mod") {
     $ProjectRoot = $tmpProjectRoot
 } else {
-    Write-Host -ForegroundColor Red "Could not find wails.json in the expected project root: $tmpProjectRoot"
+    Write-Host -ForegroundColor Red "Could not find go.mod in the expected project root: $tmpProjectRoot"
     exit 1
 }
 
 # List of files modified as part of this tag creation process
 $FileList = @(
     "wails.json",
+    "frontend/package.json",
     "build/windows/installer/project.nsi"
 )
-
-Set-Location $ProjectRoot
 
 function Write-StdErr {
     <#
@@ -323,6 +315,51 @@ function Update-WailsJSON {
     }
 }
 
+function Update-PackageJSON {
+    <#
+    .SYNOPSIS
+        Updates the package.json file with the new version information.
+    .DESCRIPTION
+        This function modifies the specified package.json file to reflect the new version
+        information based on the provided tag name.
+    .PARAMETER PackageJsonPath
+        The path to the package.json file to update.
+    .PARAMETER TagName
+        The tag name to use for the version update.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$PackageJsonPath,
+        [string]$TagName
+    )
+
+    if (-not (Test-Path -Path $PackageJsonPath)) {
+        Write-Host -ForegroundColor Red "package.json file not found at path: $PackageJsonPath"
+        return
+    }
+
+    $tmpVersionHash = Get-VersionHash -TagName $TagName
+    $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
+    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
+        $Version += "-" + $tmpVersionHash.Prerelease
+    }
+
+    Write-Host -ForegroundColor Cyan "Updating package.json with version value: $Version"
+    $PackageData = Get-JsonContent -Path $PackageJsonPath
+
+    if (-not $PackageData) {
+        Write-Host -ForegroundColor Red "  Failed to read package.json or it is empty."
+        return
+    }
+    if ($PackageData.version -ne $Version) {
+        $PackageData.version = $Version
+        Set-JsonContent -Path $PackageJsonPath -Value $PackageData
+        Write-Host -ForegroundColor Green "  Version changed to: $Version"
+    } else {
+        Write-Host -ForegroundColor Yellow "  No changes made to package.json, version is already set to: $Version"
+    }
+}
+
 function Get-MostRecentTag {
     <#
     .SYNOPSIS
@@ -443,19 +480,28 @@ function Get-NewTagNamePrompt {
 
     while ($true) {
         Write-Host -ForegroundColor Cyan "Enter a new tag name (or press ENTER to use the suggested tag)"
-        $response = Read-Host "  [Tag: '$SuggestedTagName']"
+        Write-Host -NoNewline '  [' ; Write-Host -NoNewline -ForegroundColor Yellow 'Tag: '
+        Write-Host -NoNewline -ForegroundColor Green "$SuggestedTagName"
+        $response = Read-Host "]"
         if ([string]::IsNullOrWhiteSpace($response)) {
             $NewTagName = $SuggestedTagName
+        } elseif ($response -imatch '^\s*Q') {
+            return $null
+        } elseif ($response -imatch '^\s*(?:y|yes|n|no)\s*$') {
+            Write-Host -ForegroundColor Red "  Oops! This is not a yes/no prompt! Try again..."
+            Start-Sleep 2
+            continue
         } else {
             $NewTagName = $response
         }
 
         Write-Host -NoNewLine -ForegroundColor Cyan "  You entered: "
         Write-Host -ForegroundColor Yellow "$NewTagName"
-        $verify = Read-Host "  Is this correct? (N/y/q)"
-        if ($verify -eq 'y' -or $verify -eq 'Y') {
+        Write-Host -NoNewline -ForegroundColor Cyan "  Is this correct? "
+        $verify = Read-Host "(y/N/q)"
+        if ($verify -imatch '^\s*y(?:es)?\s*$') {
             return $NewTagName
-        } elseif ($verify -eq 'q' -or $verify -eq 'Q') {
+        } elseif ($verify -imatch '^\s*q(?:uit)?\s*$') {
             return $null
         }
     }
@@ -482,19 +528,28 @@ function Get-NewMessagePrompt {
 
     while ($true) {
         Write-Host -ForegroundColor Cyan "Enter a new message (or press ENTER to use the suggested message)"
-        $response = Read-Host "  [Message: '$SuggestedMessage']"
+        Write-Host -NoNewline '  [' ; Write-Host -NoNewline -ForegroundColor Yellow 'Message: '
+        Write-Host -NoNewline -ForegroundColor Green "$SuggestedMessage"
+        $response = Read-Host "]"
         if ([string]::IsNullOrWhiteSpace($response)) {
             $NewMessage = $SuggestedMessage
+        } elseif ($response -imatch '^\s*Q') {
+            return $null
+        } elseif ($response -imatch '^\s*(?:y|yes|n|no)\s*$') {
+            Write-Host -ForegroundColor Red "  Oops! This is not a yes/no prompt! Try again..."
+            Start-Sleep 2
+            continue
         } else {
             $NewMessage = $response
         }
 
-        Write-Host -NoNewLine -ForegroundColor Cyan "  You entered: "
+        Write-Host -NoNewLine -ForegroundColor Green "  You entered: "
         Write-Host -ForegroundColor Yellow "$NewMessage"
-        $verify = Read-Host "  Is this correct? (N/y/q)"
-        if ($verify -eq 'y' -or $verify -eq 'Y') {
+        Write-Host -NoNewline -ForegroundColor Cyan "  Is this correct? "
+        $verify = Read-Host "(y/N/q)"
+        if ($verify -imatch '^\s*y(?:es)?\s*$') {
             return $NewMessage
-        } elseif ($verify -eq 'q' -or $verify -eq 'Q') {
+        } elseif ($verify -imatch '^\s*q(?:uit)?\s*$') {
             return $null
         }
     }
@@ -765,6 +820,7 @@ function Invoke-NewGitTag {
     $newTagName = ""
     $ProjectNSI = Join-Path $ProjectRoot "build" "windows" "installer" "project.nsi"
     $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
+    $PackageJsonPath = Join-Path $ProjectRoot "frontend" "package.json"
 
     if (-not (Confirm-RepositoryIsClean -IgnoreFileList)) {
         return
@@ -790,9 +846,6 @@ function Invoke-NewGitTag {
         }
     }
 
-    Write-Host -NoNewLine -ForegroundColor Green "  Current Tag: " ; Write-Host -ForegroundColor Yellow "$currentTag"
-    # echo "Version Hash: $($versionHash | Out-String)"
-
     if ($newTagName) {
         $verMessage = $newTagName -ireplace '^v', 'Version '
         if ([string]::IsNullOrWhiteSpace($Message)) {
@@ -801,23 +854,34 @@ function Invoke-NewGitTag {
             $Message = $Message + " (${newTagName})"
         }
         $tmpMessage = Get-NewMessagePrompt -SuggestedMessage $Message
-        if ($tmpMessage -ne $Message) {
+        if ($null -eq $tmpMessage) {
+            Write-Host -ForegroundColor Red "Quit requested. Exiting."
+            return
+        } elseif ($tmpMessage -ne $Message) {
             $re = [regex]::Escape($newTagName)
             if (-not ($tmpMessage -match $re)) {
                 $Message = $tmpMessage + " (${newTagName})"
             } else {
                 $Message = $tmpMessage
             }
-        } elseif ($null -eq $tmpMessage) {
-            Write-Host -ForegroundColor Red "No message provided. Exiting."
-            return
         } else {
             $Message = $tmpMessage
         }
+        Write-Host -ForegroundColor Cyan "New Tag and Message:"
+        Write-Host -NoNewLine -ForegroundColor Green "  New Tag: " ; Write-Host -ForegroundColor Yellow "$newTagName"
         Write-Host -NoNewLine -ForegroundColor Green "  Current Message: " ; Write-Host -ForegroundColor Yellow "$Message"
+        Write-Host -NoNewline -ForegroundColor Cyan "Do you want to proceed with this tag and message? "
+        # Write-Host -NoNewline -ForegroundColor Yellow "(y/N)"
+        $verify = Read-Host -Prompt "(y/N)"
+        if ($verify -inotmatch '^\s*Y') {
+            Write-Host -ForegroundColor Red "Operation cancelled by user."
+            return
+        }
 
         Update-ProjectNSI -ProjectNSIPath $ProjectNSI -TagName $newTagName
         Update-WailsJSON -WailsJsonPath $WailsJsonPath -TagName $newTagName
+        Update-PackageJSON -PackageJsonPath $PackageJsonPath -TagName $newTagName
+
         if (-not (Push-RepositoryCommit -TagName $newTagName -Message $Message)) {
             Write-Host -ForegroundColor Red "Failed to commit changes before tagging. Exiting."
             return
@@ -829,10 +893,16 @@ function Invoke-NewGitTag {
             Set-NewTag -TagName $newTagName -Message $Message
         }
     }
+    elseif ($null -eq $newTagName) {
+        Write-Host -ForegroundColor Red "Quit requested. Exiting."
+        return
+    }
     else {
         Write-Host -ForegroundColor Red "No new tag name provided. Exiting."
         return
     }
 }
 
+Push-Location $ProjectRoot -StackName "ProjectRoot"
 Invoke-NewGitTag
+Pop-Location -StackName "ProjectRoot"
