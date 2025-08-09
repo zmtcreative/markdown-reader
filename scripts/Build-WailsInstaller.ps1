@@ -314,6 +314,7 @@ function Update-ProjectNSI {
     param (
         [Parameter(Mandatory = $true)]
         [string]$ProjectNSIPath,
+        [Parameter(Mandatory = $true)]
         [string]$FileVersion
     )
 
@@ -376,6 +377,7 @@ function Update-WailsJSON {
     param (
         [Parameter(Mandatory = $true)]
         [string]$WailsJsonPath,
+        [Parameter(Mandatory = $true)]
         [string]$Version
     )
 
@@ -403,30 +405,24 @@ function Update-WailsJSON {
 function Update-PackageJSON {
     <#
     .SYNOPSIS
-        Updates the package.json file with the new version information.
+        Updates the package.json file with the specified version.
     .DESCRIPTION
-        This function modifies the specified package.json file to reflect the new version
-        information based on the provided tag name.
+        This function modifies the package.json file to set the correct version.
     .PARAMETER PackageJsonPath
         The path to the package.json file to update.
-    .PARAMETER TagName
-        The tag name to use for the version update.
+    .PARAMETER Version
+        The new version to set in the package.json file.
     #>
     param (
         [Parameter(Mandatory = $true)]
         [string]$PackageJsonPath,
-        [string]$TagName
+        [Parameter(Mandatory = $true)]
+        [string]$Version
     )
 
     if (-not (Test-Path -Path $PackageJsonPath)) {
         Write-Host -ForegroundColor Red "package.json file not found at path: $PackageJsonPath"
         return
-    }
-
-    $tmpVersionHash = Get-VersionHash -TagName $TagName
-    $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
-    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
-        $Version += "-" + $tmpVersionHash.Prerelease
     }
 
     Write-Host -ForegroundColor Cyan "Updating package.json with version value: $Version"
@@ -439,7 +435,7 @@ function Update-PackageJSON {
     if ($PackageData.version -ne $Version) {
         $PackageData.version = $Version
         Set-JsonContent -Path $PackageJsonPath -Value $PackageData
-        Write-Host -ForegroundColor Green "  Version changed to: $Version"
+        Write-Host -ForegroundColor Green "  Updating version to: $Version"
     } else {
         Write-Host -ForegroundColor Yellow "  No changes made to package.json, version is already set to: $Version"
     }
@@ -581,18 +577,17 @@ function Invoke-WailsBuild {
         wails build -clean -ldflags "-X main.Version=${Version} -X main.Date=${Date} -X main.Commit=${Commit} -s -w" ${NSISOption} ${UPXOption}
         Write-Host "$('=' * 78)`n"
 
-        # if ($NSIS) {
-            Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for executable files..."
-            Set-Location ./build/bin
-            foreach ($file in Get-ChildItem *.exe -File -ErrorAction SilentlyContinue) {
-                $sha256Name = $file.Name + ".sha256"
-                $sha1Name = $file.Name + ".sha1"
-                $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
-                $sha1Hash = (Get-FileHash $file -Algorithm SHA1).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha1Name -Encoding utf8
-                "$sha256Hash  *$($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
-                "$sha1Hash  *$($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
-            }
-        # }
+        # Create SHA1 and SHA256 hashes for the executable files
+        Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for executable files..."
+        Set-Location ./build/bin
+        foreach ($file in Get-ChildItem *.exe -File -ErrorAction SilentlyContinue) {
+            $sha256Name = $file.Name + ".sha256"
+            $sha1Name = $file.Name + ".sha1"
+            $sha256Hash = (Get-FileHash $file -Algorithm SHA256).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha256Name -Encoding utf8
+            $sha1Hash = (Get-FileHash $file -Algorithm SHA1).Hash # | ForEach-Object { $_.Hash } | Out-File -FilePath $sha1Name -Encoding utf8
+            "$sha256Hash  *$($file.Name)" | Out-File -FilePath $sha256Name -Encoding utf8
+            "$sha1Hash  *$($file.Name)" | Out-File -FilePath $sha1Name -Encoding utf8
+        }
 
         Restore-RepositoryToCleanState
     }
