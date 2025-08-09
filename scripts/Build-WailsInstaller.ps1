@@ -150,6 +150,41 @@ function Get-DateStamp {
     return int($result)
 }
 
+function Get-VersionHash {
+    <#
+    .SYNOPSIS
+        Retrieves the version hash from a Git tag name structured as a semantic version.
+    .DESCRIPTION
+        This function extracts the version information from the specified Git tag name.
+        It assumes the tag follows the semantic versioning format:
+        vMAJOR.MINOR.PATCH[-PRERELEASE][+AHEAD-HASH].
+    .PARAMETER TagName
+        The name of the Git tag to parse for version information.
+    #>
+    param (
+        [Parameter(Mandatory = $true, HelpMessage = "The tag name to parse for the version hash.")]
+        [string]$TagName
+    )
+
+    $thisVersionHash = @{}
+
+    if (-not $TagName) {
+        Write-Host "No tag name provided. Please specify a tag name."
+        return
+    }
+
+    if ( $TagName -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:[.+-](?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
+        $thisVersionHash["Major"] = $Matches.major
+        $thisVersionHash["Minor"] = $Matches.minor
+        $thisVersionHash["Patch"] = $Matches.patch
+        $thisVersionHash["Prerelease"] = $Matches.prerelease
+        $thisVersionHash["Ahead"] = $Matches.ahead
+        $thisVersionHash["Hash"] = $Matches.hash
+    }
+
+    return $thisVersionHash
+}
+
 function Get-MostRecentTag {
     <#
     .SYNOPSIS
