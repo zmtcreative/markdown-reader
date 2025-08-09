@@ -195,8 +195,6 @@ func (a *App) menu() *menu.Menu {
     return appMenu
 }
 
-
-
 // Delegate methods to managers
 
 // PrintContent prints the current HTML content

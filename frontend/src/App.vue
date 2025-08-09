@@ -1,14 +1,29 @@
 <template>
   <div class="toggle-theme"><button @click="toggleTheme">Toggle Theme</button></div>
-    <header class="app-header">
-      <h1 v-html="docHTMLTitle" class="document-title"></h1>
-      <p v-html="docHTMLDate" class="document-dates"></p>
-      <!-- Display error message if preset -->
-      <p v-if="errorMessage" class="error-message">Error: {{ errorMessage }}</p>
-    </header>
-    <main class="content-area">
-      <article v-html="renderedHTML" id="content" class="markdown-body"></article>
-    </main>
+  <header class="app-header">
+    <h1 v-html="docHTMLTitle" class="document-title"></h1>
+    <p v-html="docHTMLDate" class="document-dates"></p>
+    <!-- Display error message if preset -->
+    <p v-if="errorMessage" class="error-message">Error: {{ errorMessage }}</p>
+  </header>
+  <main class="content-area">
+    <article v-html="renderedHTML" id="content" class="markdown-body"></article>
+  </main>
+  <!-- Help Modal HTML Start -->
+  <Teleport to="body">
+  <div id="help-modal-overlay" class="modal-overlay" v-show="showHelpModal" @click="onModalOverlayClick">
+      <div id="help-modal-content" class="modal-content">
+          <div class="modal-button-bar">
+              <button id="help-modal-close" class="modal-close-button" @click="hideHelpModal">&times;</button>
+          </div>
+          <div class="modal-body">
+              <h3 id="help-modal-title">{{ helpModalTitle }}</h3>
+              <div id="help-modal-text" v-html="helpModalText"></div>
+          </div>
+      </div>
+  </div>
+  </Teleport>
+  <!-- Help Modal HTML End -->
 </template>
 
 <script setup lang="ts">
@@ -22,11 +37,10 @@ const docHTMLTitle = ref('');
 const docHTMLDate = ref('');
 const errorMessage = ref('');
 
-// Get references to the modal elements
-const helpModalOverlay = document.getElementById('help-modal-overlay');
-const helpModalTitle = document.getElementById('help-modal-title');
-const helpModalText = document.getElementById('help-modal-text');
-const helpModalCloseBtn = document.getElementById('help-modal-close');
+// Modal reactive variables
+const showHelpModal = ref(false);
+const helpModalTitle = ref('');
+const helpModalText = ref('');
 
 const currentTheme = ref('light');
 
@@ -85,6 +99,25 @@ function saveAsPDF(filePath: string) {
     // For web browsers, we can trigger print dialog with PDF option
     // The actual file saving needs to be handled differently in Wails
     window.print();
+}
+
+// Function to hide the modal
+function hideHelpModal() {
+    showHelpModal.value = false;
+}
+
+// Function to show the modal
+function showHelpModalDialog(helpTitle: string, helpText: string) {
+    helpModalTitle.value = helpTitle;
+    helpModalText.value = helpText;
+    showHelpModal.value = true;
+}
+
+// Handle clicking on modal overlay (close modal)
+function onModalOverlayClick(event: Event) {
+    if (event.target === event.currentTarget) {
+        hideHelpModal();
+    }
 }
 
 onMounted(async () => {
@@ -148,6 +181,12 @@ onMounted(async () => {
     // Optionally, display the error directly within the main content area for visibility.
     renderedHTML.value = `<div style="color: #dc3545; padding: 20px; font-weight: bold; text-align: center;"><h1>An error occurred:</h1><p>${message}</p><p>Please try opening another file or check the file path.</p></div>`;
   });
+
+  // Listen for an event from the Go backend to show the help dialog
+  EventsOn("show-help", (helpTitle: string, helpText: string) => {
+      console.log('Received show-help event:', helpTitle, helpText); // Debug log
+      showHelpModalDialog(helpTitle, helpText);
+  });
 });
 
 onUnmounted(() => {
@@ -159,43 +198,96 @@ onUnmounted(() => {
   EventsOff('toggle-doc-class');
   EventsOff('print-content');
   EventsOff('save-as-pdf');
-});
-
-// Function to hide the modal
-function hideHelpModal() {
-    if (helpModalOverlay) {
-        helpModalOverlay.style.display = 'none';
-    }
-}
-
-// Function to show the modal
-function showHelpModal(helpTitle: string, helpText: string) {
-    if (helpModalOverlay && helpModalText && helpModalTitle) {
-        helpModalTitle.textContent = helpTitle; // Set the title of the modal
-        helpModalText.innerHTML = helpText;
-        helpModalOverlay.style.display = 'block';
-    }
-}
-
-// Add event listeners to close the modal
-if (helpModalCloseBtn) {
-    helpModalCloseBtn.addEventListener('click', hideHelpModal);
-}
-// Also close if the user clicks on the dark overlay
-if (helpModalOverlay) {
-    helpModalOverlay.addEventListener('click', (event) => {
-        if (event.target === helpModalOverlay) {
-            hideHelpModal();
-        }
-    });
-}
-
-// Listen for an event from the Go backend to show the help dialog
-EventsOn("show-help", (helpTitle, helpText) => {
-    showHelpModal(helpTitle, helpText);
+  EventsOff('show-help');
 });
 
 </script>
 
 <style>
+    .modal-overlay {
+        position: fixed !important;
+        z-index: 9999 !important;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5); /* Dim background */
+    }
+
+    .modal-content {
+        background-color: #2e3440; /* Dark background */
+        color: #d8dee9; /* Light text */
+        margin: 10% auto;
+        /* padding: 20px; */
+        border: 4px solid #4c566a;
+        border-radius: 5px;
+        width: 80%;
+        min-width: 640px;
+        max-width: 800px; /* Control the max width */
+        position: relative;
+    }
+
+    .modal-button-bar {
+        display: block;
+        position: relative;
+        width: 100%;
+        height: 40px;
+        /* border: 1px dotted red; */
+        background-color: black;
+    }
+
+    .modal-body {
+        padding: 0 20px 20px 20px;
+    }
+
+    .modal-body h3 {
+        text-align: center;
+        font-size: 1.5em;
+        margin: 0.5em auto;
+        color: black;
+        background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent background */
+        /* border: 1px dotted red; */
+    }
+
+    .modal-body #help-modal-text {
+        background-color: #3b4252;
+        padding: 5px;
+    }
+
+    .modal-body p a {
+        background-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .modal-content #about-dialog {
+        --noop: true; /* Prevents any unintended styles from being applied */
+    }
+
+    .modal-close-button {
+        color: #aaa;
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        font-size: 32px;
+        font-weight: bold;
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .modal-close-button:hover,
+    .modal-close-button:focus {
+        color: #eceff4;
+        text-decoration: none;
+    }
+
+    /* Use <pre> for pre-formatted text to respect whitespace from Go string */
+    .modal-content pre {
+        white-space: pre-wrap; /* Wrap long lines */
+        word-wrap: break-word;
+        background-color: #3b4252;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: monospace;
+    }
 </style>
