@@ -14,7 +14,7 @@
     "companyName": "ZMT Creative LLC",
     "productName": "Markdown Reader",
     "productVersion": "0.0.5-alpha5",
-    "copyright": "Copyright 2025 ZMT Creative LLC",
+    "copyright": "Copyright 2025 ZMT Creative LLC -- Apache 2.0 License",
     "comments": "A simple Markdown reader for Windows"
   }
 }
