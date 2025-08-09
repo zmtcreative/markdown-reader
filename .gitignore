@@ -36,3 +36,4 @@ go.work.sum
 .lsp/
 
 build/windows/installer/wails_tools.nsh
+resource.syso
