@@ -676,9 +676,13 @@ function Confirm-RepositoryIsClean {
     #>
     param(
         [Parameter(Mandatory = $false)]
-        [switch]$IgnoreFileList
+        [Alias("i","ignore")]
+        [switch]$IgnoreFileList,
+        [Parameter(Mandatory = $false)]
+        [Alias("q","s","silent")]
+        [switch]$Quiet
     )
-    $status = git status --porcelain
+    $status = git status --porcelain=v1
     if ($status) {
         # $isClean = $true
         $statusList = $status -split "`n"
@@ -713,22 +717,24 @@ function Confirm-RepositoryIsClean {
 
         if ($newStatusList.Count -eq 0) { return $true }
 
-        Write-Host ""
-        Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
-        Write-Host ""
-        Write-Host "Uncommitted changes:"
-        Write-Host ""
-        $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
-        Write-Host ""
-        Write-Host "Suggestions:"
-        Write-Host "  - Commit your changes: git commit -a -m 'Your commit message'"
-        Write-Host "  - Create a new branch: git checkout -b new-branch-name "
-        Write-Host "       and commit your changes to the branch"
-        Write-Host "  - Stash your changes: git stash --all"
-        Write-Host "  - Discard your changes: git reset --hard HEAD"
-        Write-Host ""
-        Write-Host -ForegroundColor Cyan "NOTE: Script ignores changes to the script itself ($ScriptName)"
-        Write-Host ""
+        if (-not $Quiet) {
+            Write-Host ""
+            Write-Host -ForegroundColor Red "WARNING: Repository is not clean. Please commit or stash your changes before building."
+            Write-Host ""
+            Write-Host "Uncommitted changes:"
+            Write-Host ""
+            $newStatusList | ForEach-Object { Write-Host -ForegroundColor Yellow "  $_" }
+            Write-Host ""
+            Write-Host "Suggestions:"
+            Write-Host "  - Commit your changes: git commit -a -m 'Your commit message'"
+            Write-Host "  - Create a new branch: git checkout -b new-branch-name "
+            Write-Host "       and commit your changes to the branch"
+            Write-Host "  - Stash your changes: git stash --all"
+            Write-Host "  - Discard your changes: git reset --hard HEAD"
+            Write-Host ""
+            Write-Host -ForegroundColor Cyan "NOTE: Script ignores changes to the script itself ($ScriptName)"
+            Write-Host ""
+        }
         return $false
     }
     return $true
