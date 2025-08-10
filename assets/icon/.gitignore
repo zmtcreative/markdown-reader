@@ -1,0 +1,6 @@
+png/*
+pngtmp/
+!./*.svg
+!./*.png
+!./*.icns
+!./*.ico
