@@ -35,5 +35,9 @@ go.work.sum
 .clj-kondo/
 .lsp/
 
+# Project specific
 build/windows/installer/wails_tools.nsh
-resource.syso
+./*.syso
+frontend/src/assets/scss/**/*.css
+frontend/src/assets/scss/**/*.css.map
+
