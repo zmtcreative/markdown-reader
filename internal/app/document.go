@@ -36,7 +36,10 @@ func NewDocumentProcessor(ctx context.Context, stripH1, allowInlineHTML, sanitiz
         allowInlineHTML: allowInlineHTML,
         sanitizeHTML:    sanitizeHTML,
         docTypes:        []string{},
-        mdConverter:     markdown.CreateGoldmarkInstance(allowInlineHTML, sanitizeHTML),
+        mdConverter:     markdown.CreateGoldmarkInstance(markdown.GoldmarkInstanceOptions{
+            AllowInlineHTML: allowInlineHTML,
+            SanitizeHTML:    sanitizeHTML,
+        }),
     }
 }
 

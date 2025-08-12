@@ -35,8 +35,13 @@ var GlobalAttributeFilter = util.NewBytesFilterString(`accesskey,autocapitalize,
 var CodeBlockAttributeFilter = GlobalAttributeFilter.ExtendString(`nolabel,nolable,label,lable`)
 var dataPrefix = []byte("data-")
 
+type GoldmarkInstanceOptions struct {
+	AllowInlineHTML bool
+	SanitizeHTML    bool
+}
+
 // CreateGoldmarkInstance creates and configures a new Goldmark instance.
-func CreateGoldmarkInstance(allowInlineHTML, sanitizeHTML bool) goldmark.Markdown {
+func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
     myIcons := InitAlertIcons() // Initialize alert icons
     options := []goldmark.Option{
         blockattr.Enable,
@@ -77,7 +82,7 @@ func CreateGoldmarkInstance(allowInlineHTML, sanitizeHTML bool) goldmark.Markdow
         ),
     }
 
-    if allowInlineHTML {
+    if opt.AllowInlineHTML {
         options = append(options,
             goldmark.WithRendererOptions(
                 html.WithUnsafe(), // Allow unsafe HTML rendering
@@ -85,7 +90,7 @@ func CreateGoldmarkInstance(allowInlineHTML, sanitizeHTML bool) goldmark.Markdow
         )
     }
 
-    if sanitizeHTML {
+    if opt.SanitizeHTML {
         options = append(options,
             goldmark.WithExtensions(
                 &htmlsanitize.SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
