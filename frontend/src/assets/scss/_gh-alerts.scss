@@ -1,0 +1,135 @@
+@use "variables" as *;
+
+// ============================================================================
+// GitHub Alerts/Callouts
+// ============================================================================
+
+.gh-alert {
+    overflow: hidden;
+    border-style: solid;
+    border-color: rgba(var(--callout-color), var(--callout-border-opacity));
+    border-width: var(--callout-border-width);
+    border-radius: var(--callout-radius);
+    border-left: calc(var(--callout-radius) * 1.25) solid rgb(var(--callout-color));
+    margin: 1em 0;
+    mix-blend-mode: var(--callout-blend-mode);
+    background-color: rgba(var(--callout-color), var(--callout-background-opacity));
+    padding: var(--callout-padding);
+    --callout-color: var(--callout-info);
+
+    &[data-callout] {
+        --callout-color: var(--callout-default);
+    }
+
+    &[data-callout="info"] {
+        --callout-color: var(--callout-info);
+    }
+
+    &[data-callout="note"] {
+        --callout-color: var(--callout-note);
+    }
+
+    &[data-callout="todo"] {
+        --callout-color: var(--callout-todo);
+    }
+
+    &[data-callout="bug"] {
+        --callout-color: var(--callout-bug);
+    }
+
+    &[data-callout="error"] {
+        --callout-color: var(--callout-error);
+    }
+
+    &[data-callout="caution"] {
+        --callout-color: var(--callout-caution);
+    }
+
+    &[data-callout="danger"] {
+        --callout-color: var(--callout-danger);
+    }
+
+    &[data-callout="failure"],
+    &[data-callout="fail"] {
+        --callout-color: var(--callout-fail);
+    }
+
+    &[data-callout="done"],
+    &[data-callout="check"],
+    &[data-callout="success"] {
+        --callout-color: var(--callout-success);
+    }
+
+    &[data-callout="example"] {
+        --callout-color: var(--callout-example);
+    }
+
+    &[data-callout="important"] {
+        --callout-color: var(--callout-important);
+    }
+
+    &[data-callout="summary"],
+    &[data-callout="tldr"],
+    &[data-callout="scroll"],
+    &[data-callout="history"],
+    &[data-callout="abstract"] {
+        --callout-color: var(--callout-summary);
+    }
+
+    &[data-callout="tip"],
+    &[data-callout="hint"] {
+        --callout-color: var(--callout-tip);
+    }
+    &[data-callout="help"],
+    &[data-callout="faq"],
+    &[data-callout="question"] {
+        --callout-color: var(--callout-question);
+    }
+
+    &[data-callout="warn"],
+    &[data-callout="attention"],
+    &[data-callout="warning"] {
+        --callout-color: var(--callout-warning);
+    }
+
+    &[data-callout="quote"] {
+        --callout-color: var(--callout-quote);
+    }
+
+    &[data-callout="cite"] {
+        --callout-color: var(--callout-cite);
+    }
+
+    .gh-alert-title {
+        padding: var(--callout-title-padding);
+        display: inline-block;
+        gap: 4px;
+        /* align-items: flex-start; */
+        font-size: var(--callout-title-size);
+        color: rgb(var(--callout-color));
+        line-height: var(--line-height-tight);
+        font-weight: var(--callout-title-weight);
+
+        p {
+            display: inline-block;
+            /* flex: 0 0 auto; */
+            margin: 0;
+            margin-bottom: 0.25em;
+            font-size: 1.2em;
+            font-weight: var(--callout-title-weight);
+        }
+
+        svg.lucide {
+            flex: 0 0 auto;
+            display: inline-block;
+            margin-bottom: -0.25em;
+            align-items: center;
+            margin-right: 0.2em;
+        }
+    }
+
+    p:not(:first-child) {
+        padding: var(--callout-content-padding);
+        background-color: var(--callout-content-background);
+    }
+}

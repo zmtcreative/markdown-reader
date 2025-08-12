@@ -4,8 +4,10 @@ go 1.24.5
 
 // replace github.com/ZMT-Creative/goldmark-gh-alerts => ../../Projects/goldmark-gh-alerts
 // replace github.com/ZMT-Creative/gm-block-attributes => ../gm-block-attributes
+replace github.com/ZMT-Creative/gm-fancy-lists => ../gm-fancy-lists
 
 require (
+	github.com/ZMT-Creative/gm-fancy-lists v0.0.0
 	github.com/ZMT-Creative/goldmark-gh-alerts v0.2.0
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
@@ -29,6 +31,7 @@ require (
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/bep/debounce v1.2.1 // indirect
+	github.com/brandenc40/romannumeral v1.1.5 // indirect
 	github.com/dlclark/regexp2 v1.11.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect

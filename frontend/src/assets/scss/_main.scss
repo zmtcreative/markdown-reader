@@ -191,79 +191,18 @@ html.dark .markdown-body a {
     color: $link-color-dark;
 }
 
-// ============================================================================
-// GitHub Alerts/Callouts
-// ============================================================================
-
-.gh-alert {
-    overflow: hidden;
-    border-style: solid;
-    border-color: rgba(var(--callout-color), var(--callout-border-opacity));
-    border-width: var(--callout-border-width);
-    border-radius: var(--callout-radius);
-    border-left: calc(var(--callout-radius) * 1.25) solid rgb(var(--callout-color));
-    margin: 1em 0;
-    background-color: rgba(var(--callout-color), var(--callout-background-opacity));
-    padding: var(--callout-padding);
-    --callout-color: var(--callout-info);
-
-    &[data-callout="success"] {
-        --callout-color: var(--callout-success);
-    }
-
-    &[data-callout="warning"] {
-        --callout-color: var(--callout-warning);
-    }
-
-    &[data-callout="danger"],
-    &[data-callout="error"] {
-        --callout-color: var(--callout-error);
-    }
-
-    &[data-callout="tip"] {
-        --callout-color: var(--callout-tip);
-    }
-
-    &[data-callout="important"] {
-        --callout-color: var(--callout-important);
-    }
-
-    &[data-callout="quote"] {
-        --callout-color: var(--callout-quote);
-    }
-
-    .gh-alert-title {
-        padding: 0;
-        display: inline-block;
-        gap: 4px;
-        color: rgb(var(--callout-color));
-        line-height: var(--line-height-tight);
-        font-weight: var(--callout-title-weight);
-
-        p {
-            display: inline-block;
-            margin: 0 0 0.25em 0;
-            font-size: 1.2em;
-            font-weight: var(--callout-title-weight);
-        }
-
-        svg.lucide {
-            flex: 0 0 auto;
-            display: inline-block;
-            margin: -0.25em 0.2em 0 0;
-            align-items: center;
-        }
-    }
-
-    p:not(:first-child) {
-        padding: 0;
-        background-color: transparent;
-    }
-}
 
 // ============================================================================
 // Utility Classes (Essential Only)
 // ============================================================================
+
+.with-border {
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    border-radius: 0.25rem;
+    padding-top: 5px;
+    padding-right: 10px;
+    padding-bottom: 5px;
+}
 
 .toggle-theme {
     text-align: right;

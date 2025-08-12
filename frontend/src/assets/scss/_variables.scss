@@ -33,13 +33,24 @@ $callout-radius: 10px;
 $callout-title-weight: 700;
 
 // Callout Colors (RGB values for alpha support)
+$callout-default: 8, 109, 221;
 $callout-info: 8, 109, 221;
-$callout-success: 8, 185, 78;
-$callout-warning: 236, 117, 0;
+$callout-note: 8, 109, 221;
+$callout-todo: 8, 109, 221;
+$callout-bug: 233, 49, 71;
 $callout-error: 233, 49, 71;
-$callout-tip: 0, 191, 188;
+$callout-caution: 233, 49, 71;
+$callout-danger: 233, 49, 71;
+$callout-fail: 233, 49, 71;
+$callout-success: 8, 185, 78;
+$callout-example: 120, 82, 238;
 $callout-important: 127, 0, 255;
+$callout-summary: 0, 191, 188;
+$callout-tip: 0, 191, 188;
+$callout-question: 236, 117, 0;
+$callout-warning: 236, 117, 0;
 $callout-quote: 158, 158, 158;
+$callout-cite: 158, 158, 158;
 
 // TechDoc Theme Variables
 $td-base-margin: 0rem;
@@ -103,13 +114,24 @@ $codeblock-opacity-dark: 0.25;
     --callout-padding: #{$callout-padding};
     --callout-radius: #{$callout-radius};
     --callout-title-weight: #{$callout-title-weight};
+    --callout-default: #{$callout-default};
     --callout-info: #{$callout-info};
-    --callout-success: #{$callout-success};
-    --callout-warning: #{$callout-warning};
+    --callout-note: #{$callout-note};
+    --callout-todo: #{$callout-todo};
+    --callout-bug: #{$callout-bug};
     --callout-error: #{$callout-error};
-    --callout-tip: #{$callout-tip};
+    --callout-caution: #{$callout-caution};
+    --callout-danger: #{$callout-danger};
+    --callout-fail: #{$callout-fail};
+    --callout-success: #{$callout-success};
+    --callout-example: #{$callout-example};
     --callout-important: #{$callout-important};
+    --callout-summary: #{$callout-summary};
+    --callout-tip: #{$callout-tip};
+    --callout-question: #{$callout-question};
+    --callout-warning: #{$callout-warning};
     --callout-quote: #{$callout-quote};
+    --callout-cite: #{$callout-quote};
 
     // Essential colors
     --css-color-white: #{$color-white};

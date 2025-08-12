@@ -10,6 +10,7 @@ import (
 	"md-reader/internal/gm-ext/htmlsanitize"
 	"md-reader/internal/gm-ext/sectionwrapper"
 
+	fancylists "github.com/ZMT-Creative/gm-fancy-lists"
 	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	figure "github.com/mangoumbrella/goldmark-figure"
@@ -72,6 +73,7 @@ func CreateGoldmarkInstance(allowInlineHTML, sanitizeHTML bool) goldmark.Markdow
                     chromahtml.Standalone(true),           // Set to false to prevent a full HTML document
                 ),
             ),
+			&fancylists.FancyLists{},
         ),
     }
 

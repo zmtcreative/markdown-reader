@@ -1,0 +1,33 @@
+@use "variables" as *; // Import variables for use in this file
+
+.markdown-body {
+
+    div[data-fence] {
+
+        &.flexrow,
+        &.flexcolumn,
+        &.flexcol {
+            display: flex;
+            gap: 5px 20px;
+            padding: 2px;
+        }
+
+        &.flexrow {
+            flex-flow: row wrap;
+        }
+
+        &.flexcolumn,
+        &.flexcol {
+            flex-flow: column wrap;
+            gap: 20px 10px;
+        }
+
+        &.side-by-side,
+        &.sidebyside,
+        &.sbs {
+            flex: 0 1 auto;
+            display: block;
+            border-radius: 0.5rem;
+        }
+    }
+}
