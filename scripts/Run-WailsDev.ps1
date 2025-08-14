@@ -1,3 +1,10 @@
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false, Position = 0)]
+    [Alias("file","f")]
+    [string]$FilePath
+)
+
 # Set up script and project paths
 $ScriptFullName = $MyInvocation.MyCommand.Path
 $ScriptRoot = Split-Path -Parent $ScriptFullName
@@ -19,11 +26,11 @@ function Invoke-WailsDev {
 
     $sample_file = "${ProjectRoot}\docs\sample.md"
 
-    if ($args.Length -gt 0) {
-        if (Test-Path $args[0] -ErrorAction SilentlyContinue) {
-            $sample_file = $args[0]
+    # if ($args.Length -gt 0) {
+        if (Test-Path $FilePath -ErrorAction SilentlyContinue) {
+            $sample_file = $FilePath
         }
-    }
+    # }
 
     $sample_file = $sample_file.Replace('\', '\\')
 
