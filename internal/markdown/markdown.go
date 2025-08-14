@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"md-reader/internal/gm-ext/htmlsanitize"
-	"md-reader/internal/gm-ext/sectionwrapper"
+	// "md-reader/internal/gm-ext/sectionwrapper"
+	sectionwrapper "github.com/ZMT-Creative/gm-sectionwrapper"
 
 	fancylists "github.com/ZMT-Creative/gm-fancy-lists"
 	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
@@ -67,7 +68,9 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
                 Texter:   anchor.Text("#"),
             },
             &fences.Extender{},
-            &sectionwrapper.SectionWrapperExtension{},
+            sectionwrapper.NewSectionWrapper(
+				sectionwrapper.WithHeadingClass(true),
+			),
             highlighting.NewHighlighting(
                 highlighting.WithStyle("monokailight"),
                 highlighting.WithWrapperRenderer(highlightingCustomWrapperRenderer),
