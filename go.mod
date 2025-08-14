@@ -2,15 +2,15 @@ module md-reader
 
 go 1.24.5
 
-replace github.com/ZMT-Creative/goldmark-gh-alerts => ../goldmark-gh-alerts
+// replace github.com/ZMT-Creative/goldmark-gh-alerts => ../goldmark-gh-alerts
 
 // replace github.com/ZMT-Creative/gm-block-attributes => ../gm-block-attributes
-replace github.com/ZMT-Creative/gm-fancy-lists => ../gm-fancy-lists
+// replace github.com/ZMT-Creative/gm-fancy-lists => ../gm-fancy-lists
 
 // replace github.com/ZMT-Creative/gm-sectionwrapper => ../gm-sectionwrapper
 
 require (
-	github.com/ZMT-Creative/gm-fancy-lists v0.0.0
+	github.com/ZMT-Creative/gm-fancy-lists v0.1.1
 	github.com/ZMT-Creative/gm-sectionwrapper v0.1.0
 	github.com/ZMT-Creative/goldmark-gh-alerts v0.2.1
 	github.com/alecthomas/chroma/v2 v2.14.0
