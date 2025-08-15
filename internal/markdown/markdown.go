@@ -11,8 +11,8 @@ import (
 	// "md-reader/internal/gm-ext/sectionwrapper"
 	sectionwrapper "github.com/ZMT-Creative/gm-sectionwrapper"
 
+	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
 	fancylists "github.com/ZMT-Creative/gm-fancy-lists"
-	alerts "github.com/ZMT-Creative/goldmark-gh-alerts"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	figure "github.com/mangoumbrella/goldmark-figure"
 	blockattr "github.com/mdigger/goldmark-attributes"
@@ -58,7 +58,7 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
             extension.Footnote,
             extension.Typographer,
             &mermaid.Extender{}, // Add Mermaid support for diagrams
-            &alerts.GhAlerts{
+            &alertcallouts.GhAlerts{
                 Icons: myIcons,
             },
             emoji.Emoji,

@@ -2,7 +2,7 @@ module md-reader
 
 go 1.24.5
 
-// replace github.com/ZMT-Creative/goldmark-gh-alerts => ../goldmark-gh-alerts
+replace github.com/ZMT-Creative/gm-alert-callouts => ../gm-alert-callouts
 
 // replace github.com/ZMT-Creative/gm-block-attributes => ../gm-block-attributes
 // replace github.com/ZMT-Creative/gm-fancy-lists => ../gm-fancy-lists
@@ -10,9 +10,9 @@ go 1.24.5
 // replace github.com/ZMT-Creative/gm-sectionwrapper => ../gm-sectionwrapper
 
 require (
+	github.com/ZMT-Creative/gm-alert-callouts v0.0.0-00010101000000-000000000000
 	github.com/ZMT-Creative/gm-fancy-lists v0.1.1
 	github.com/ZMT-Creative/gm-sectionwrapper v0.1.0
-	github.com/ZMT-Creative/goldmark-gh-alerts v0.2.1
 	github.com/alecthomas/chroma/v2 v2.14.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/mangoumbrella/goldmark-figure v1.3.0
