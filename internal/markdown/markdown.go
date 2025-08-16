@@ -42,12 +42,16 @@ var alertCalloutsObsidianData string
 //go:embed assets/alertcallouts-gfmplus.icons
 var alertCalloutsGFMPlusData string
 
+//go:embed assets/alertcallouts-gfm.icons
+var alertCalloutsGFMData string
+
 // Add this line to suppress unused variable warnings
 //   We'll be implementing a configuration option/dialog in the future to select these variables,
 //   but that isn't implemented yet.
 var _ = alertCalloutsObsidianData
 var _ = alertCalloutsCustomData
 var _ = alertCalloutsGFMPlusData
+var _ = alertCalloutsGFMData
 
 var GlobalAttributeFilter = util.NewBytesFilterString(`accesskey,autocapitalize,autofocus,class,contenteditable,dir,draggable,enterkeyhint,hidden,id,inert,inputmode,is,itemid,itemprop,itemref,itemscope,itemtype,lang,part,role,slot,spellcheck,style,tabindex,title,translate`) // nolint:lll
 var CodeBlockAttributeFilter = GlobalAttributeFilter.ExtendString(`nolabel,nolable,label,lable`)
