@@ -58,7 +58,7 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
             extension.Footnote,
             extension.Typographer,
             &mermaid.Extender{}, // Add Mermaid support for diagrams
-            &alertcallouts.AlertCallouts{
+            &alertcallouts.AlertCalloutsOptions{
                 Icons: myIcons,
 				DisableFolding: false,
             },
