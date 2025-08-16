@@ -5,7 +5,7 @@
 // ============================================================================
 
 .gh-alert {
-    overflow: hidden;
+    overflow: auto;
     border-style: solid;
     border-color: rgba(var(--callout-color), var(--callout-border-opacity));
     border-width: var(--callout-border-width);
@@ -102,34 +102,61 @@
 
     .gh-alert-title {
         padding: var(--callout-title-padding);
-        display: inline-block;
+        display: block;
         gap: 4px;
         /* align-items: flex-start; */
         font-size: var(--callout-title-size);
         color: rgb(var(--callout-color));
         line-height: var(--line-height-tight);
         font-weight: var(--callout-title-weight);
+        // border: 1px dotted blue;
 
-        p {
+        p.callout-title-text {
             display: inline-block;
+            position: relative;
             /* flex: 0 0 auto; */
             margin: 0;
-            margin-bottom: 0.25em;
+            padding: 0;
+            margin-bottom: 0.3em;
             font-size: 1.2em;
             font-weight: var(--callout-title-weight);
+            // border: 1px dotted red;
         }
 
-        svg.lucide {
+        svg,
+        .callout-icon {
             flex: 0 0 auto;
             display: inline-block;
-            margin-bottom: -0.25em;
+            position: relative;
+            top: 0em;
+            right: 0em;
+            margin: 0;
+            padding: 0;
+            margin-bottom: -0.3em;
             align-items: center;
             margin-right: 0.2em;
+            //border: 1px dashed green;
         }
     }
 
     p:not(:first-child) {
         padding: var(--callout-content-padding);
         background-color: var(--callout-content-background);
+    }
+
+    > summary {
+        list-style: none;
+
+        &::after {
+            font-size: var(--callout-fold-symbol-size);
+            content: "#{$callout-fold-isclosed}";
+        }
+    }
+    &[open] > summary {
+        list-style: none;
+        &::after {
+            font-size: var(--callout-fold-symbol-size);
+            content: "#{$callout-fold-isopen}";
+        }
     }
 }

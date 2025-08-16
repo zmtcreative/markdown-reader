@@ -31,6 +31,11 @@ $callout-background-opacity: 0.025;
 $callout-padding: 12px 12px 12px 24px;
 $callout-radius: 10px;
 $callout-title-weight: 700;
+// Symbol to use when callout is open
+$callout-fold-isopen: \2BC6;
+// Symbol to use when callout is closed
+$callout-fold-isclosed: \2BC8;
+$callout-fold-symbol-size: 1.2em;
 
 // Callout Colors (RGB values for alpha support)
 $callout-default: 8, 109, 221;
@@ -132,6 +137,10 @@ $codeblock-opacity-dark: 0.25;
     --callout-warning: #{$callout-warning};
     --callout-quote: #{$callout-quote};
     --callout-cite: #{$callout-quote};
+    --callout-fold-isopen: #{$callout-fold-isopen};
+    --callout-fold-isclosed: #{$callout-fold-isclosed};
+    --callout-fold-symbol-size: #{$callout-fold-symbol-size};
+
 
     // Essential colors
     --css-color-white: #{$color-white};
