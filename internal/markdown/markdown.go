@@ -39,15 +39,15 @@ var alertCalloutsCustomData string
 //go:embed assets/alertcallouts-obsidian.icons
 var alertCalloutsObsidianData string
 
-//go:embed assets/alertcallouts-github.icons
-var alertCalloutsGitHubData string
+//go:embed assets/alertcallouts-gfmplus.icons
+var alertCalloutsGFMPlusData string
 
 // Add this line to suppress unused variable warnings
 //   We'll be implementing a configuration option/dialog in the future to select these variables,
 //   but that isn't implemented yet.
 var _ = alertCalloutsObsidianData
 var _ = alertCalloutsCustomData
-var _ = alertCalloutsGitHubData
+var _ = alertCalloutsGFMPlusData
 
 var GlobalAttributeFilter = util.NewBytesFilterString(`accesskey,autocapitalize,autofocus,class,contenteditable,dir,draggable,enterkeyhint,hidden,id,inert,inputmode,is,itemid,itemprop,itemref,itemscope,itemtype,lang,part,role,slot,spellcheck,style,tabindex,title,translate`) // nolint:lll
 var CodeBlockAttributeFilter = GlobalAttributeFilter.ExtendString(`nolabel,nolable,label,lable`)
@@ -60,9 +60,10 @@ type GoldmarkInstanceOptions struct {
 
 // CreateGoldmarkInstance creates and configures a new Goldmark instance.
 func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
-    // myIcons := InitAlertCalloutsIcons(alertCalloutsCustomData) // Initialize using custom alert icons
-	// myIcons := InitAlertCalloutsIcons(alertCalloutsObsidianData) // Initialize using Obsidian alert icons
-	myIcons := InitAlertCalloutsIcons(alertCalloutsGitHubData) // Initialize using GitHub alert icons
+    // myAlertCalloutsIcons := InitAlertCalloutsIcons(alertCalloutsCustomData) // Initialize using custom alert icons
+	// myAlertCalloutsIcons := InitAlertCalloutsIcons(alertCalloutsObsidianData) // Initialize using Obsidian alert icons
+	myAlertCalloutsIcons := InitAlertCalloutsIcons(alertCalloutsGFMPlusData) // Initialize using GitHub alert icons
+	var _ = myAlertCalloutsIcons
     options := []goldmark.Option{
         blockattr.Enable,
         bracketedspan.Enable,
@@ -77,10 +78,10 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
             extension.Footnote,
             extension.Typographer,
             &mermaid.Extender{}, // Add Mermaid support for diagrams
-            &alertcallouts.AlertCalloutsOptions{
-                Icons: myIcons,
-				DisableFolding: false,
-            },
+			alertcallouts.NewAlertCallouts(
+				alertcallouts.WithIcons(myAlertCalloutsIcons),
+				alertcallouts.WithFolding(true),
+			),
             emoji.Emoji,
             figure.Figure.WithSkipNoCaption(),
             &anchor.Extender{
