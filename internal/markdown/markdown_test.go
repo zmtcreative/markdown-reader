@@ -66,3 +66,56 @@ func TestCleanupHTMLContent(t *testing.T) {
         t.Errorf("CleanupHTMLContent() = %q, want %q", string(output), expected)
     }
 }
+
+func TestInitAlertCalloutsIcons(t *testing.T) {
+    icons := InitAlertCalloutsIcons(alertCalloutsCustomData)
+
+    // Test that core icons are present
+    coreIcons := []string{"bug", "danger", "example", "failure", "important", "info", "question", "quote", "success", "summary", "tip", "todo", "warning", "scroll"}
+    for _, icon := range coreIcons {
+        if _, exists := icons[icon]; !exists {
+            t.Errorf("InitAlertIcons() missing core icon: %s", icon)
+        }
+        if len(icons[icon]) == 0 {
+            t.Errorf("InitAlertIcons() core icon %s has empty SVG content", icon)
+        }
+        if !strings.Contains(icons[icon], "<svg") {
+            t.Errorf("InitAlertIcons() core icon %s does not contain SVG content", icon)
+        }
+    }
+
+    // Test that aliases are present and point to correct icons
+    aliasTests := map[string]string{
+        "abstract":  "summary",
+        "attention": "warning",
+        "caution":   "danger",
+        "check":     "success",
+        "cite":      "quote",
+        "done":      "success",
+        "error":     "danger",
+        "fail":      "failure",
+        "faq":       "question",
+        "help":      "question",
+        "hint":      "tip",
+        "history":   "scroll",
+        "missing":   "failure",
+        "note":      "info",
+        "tldr":      "scroll",
+        "warn":      "warning",
+    }
+
+    for alias, primary := range aliasTests {
+        if aliasIcon, exists := icons[alias]; !exists {
+            t.Errorf("InitAlertIcons() missing alias: %s", alias)
+        } else if primaryIcon, exists := icons[primary]; !exists {
+            t.Errorf("InitAlertIcons() missing primary icon for alias %s: %s", alias, primary)
+        } else if aliasIcon != primaryIcon {
+            t.Errorf("InitAlertIcons() alias %s does not match primary %s", alias, primary)
+        }
+    }
+
+    // Test that we have a reasonable number of total icons (core + aliases)
+    if len(icons) < 5 {
+        t.Errorf("InitAlertIcons() returned %d icons, expected at least 5", len(icons))
+    }
+}
