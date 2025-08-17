@@ -21,37 +21,60 @@
         --callout-color: var(--callout-default);
     }
 
-    &[data-callout="info"] {
-        --callout-color: var(--callout-info);
-    }
-
-    &[data-callout="note"] {
+    &[data-callout^="note"],
+    &[data-callout^="info"] {
         --callout-color: var(--callout-note);
     }
 
-    &[data-callout="todo"] {
-        --callout-color: var(--callout-todo);
+    &[data-callout^="tip"],
+    &[data-callout^="hint"] {
+        --callout-color: var(--callout-tip);
     }
 
-    &[data-callout="bug"] {
-        --callout-color: var(--callout-bug);
+    &[data-callout="important"] {
+        --callout-color: var(--callout-important);
     }
 
-    &[data-callout="error"] {
-        --callout-color: var(--callout-error);
+    &[data-callout^="warn"],
+    &[data-callout="attention"] {
+        --callout-color: var(--callout-warning);
     }
 
-    &[data-callout="caution"] {
+    &[data-callout^="caution"]
+    &[data-callout^="danger"],
+    &[data-callout^="error"] {
         --callout-color: var(--callout-caution);
     }
 
-    &[data-callout="danger"] {
-        --callout-color: var(--callout-danger);
+    &[data-callout^="bug"] {
+        --callout-color: var(--callout-bug);
     }
 
-    &[data-callout="failure"],
-    &[data-callout="fail"] {
-        --callout-color: var(--callout-fail);
+    &[data-callout^="example"] {
+        --callout-color: var(--callout-example);
+    }
+
+    &[data-callout^="fail"],
+    &[data-callout="missing"] {
+        --callout-color: var(--callout-failure);
+    }
+
+    &[data-callout^="question"],
+    &[data-callout^="faq"],
+    &[data-callout="help"] {
+        --callout-color: var(--callout-question);
+    }
+
+    &[data-callout^="quote"],
+    &[data-callout^="citation"],
+    &[data-callout="cite"] {
+        --callout-color: var(--callout-quote);
+    }
+
+    &[data-callout^="scroll"],
+    &[data-callout="tldr"],
+    &[data-callout="history"] {
+        --callout-color: var(--callout-scroll);
     }
 
     &[data-callout="done"],
@@ -60,44 +83,19 @@
         --callout-color: var(--callout-success);
     }
 
-    &[data-callout="example"] {
-        --callout-color: var(--callout-example);
-    }
-
-    &[data-callout="important"] {
-        --callout-color: var(--callout-important);
-    }
-
     &[data-callout="summary"],
-    &[data-callout="tldr"],
-    &[data-callout="scroll"],
-    &[data-callout="history"],
-    &[data-callout="abstract"] {
+    &[data-callout^="abstract"],
+    &[data-callout^="overview"] {
         --callout-color: var(--callout-summary);
     }
 
-    &[data-callout="tip"],
-    &[data-callout="hint"] {
-        --callout-color: var(--callout-tip);
-    }
-    &[data-callout="help"],
-    &[data-callout="faq"],
-    &[data-callout="question"] {
-        --callout-color: var(--callout-question);
-    }
-
-    &[data-callout="warn"],
-    &[data-callout="attention"],
-    &[data-callout="warning"] {
-        --callout-color: var(--callout-warning);
-    }
-
-    &[data-callout="quote"] {
-        --callout-color: var(--callout-quote);
-    }
-
-    &[data-callout="cite"] {
-        --callout-color: var(--callout-cite);
+    &[data-callout^="todo"],
+    &[data-callout^="task"],
+    &[data-callout^="list"],
+    &[data-callout^="outline"]
+    &[data-callout="checklist"],
+    &[data-callout="punchlist"] {
+        --callout-color: var(--callout-todo);
     }
 
     .gh-alert-title {
