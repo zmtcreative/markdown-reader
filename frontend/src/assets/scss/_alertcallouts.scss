@@ -40,7 +40,7 @@
         --callout-color: var(--callout-warning);
     }
 
-    &[data-callout^="caution"]
+    &[data-callout^="caution"],
     &[data-callout^="danger"],
     &[data-callout^="error"] {
         --callout-color: var(--callout-caution);
@@ -92,7 +92,7 @@
     &[data-callout^="todo"],
     &[data-callout^="task"],
     &[data-callout^="list"],
-    &[data-callout^="outline"]
+    &[data-callout^="outline"],
     &[data-callout="checklist"],
     &[data-callout="punchlist"] {
         --callout-color: var(--callout-todo);
