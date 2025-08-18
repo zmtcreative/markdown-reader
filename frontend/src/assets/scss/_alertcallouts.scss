@@ -4,7 +4,7 @@
 // GitHub Alerts/Callouts
 // ============================================================================
 
-.gh-alert {
+.callout {
     overflow: auto;
     border-style: solid;
     border-color: rgba(var(--callout-color), var(--callout-border-opacity));
@@ -98,7 +98,7 @@
         --callout-color: var(--callout-todo);
     }
 
-    .gh-alert-title {
+    .callout-title {
         padding: var(--callout-title-padding);
         display: block;
         gap: 4px;
@@ -156,5 +156,9 @@
             font-size: var(--callout-fold-symbol-size);
             content: "#{$callout-fold-isopen}";
         }
+    }
+
+    .callout-body {
+        font-size: inherit;
     }
 }
