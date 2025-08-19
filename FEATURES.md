@@ -105,4 +105,3 @@ as alerts/callouts when you use them.
 
 > [!TODO]
 > Add more details about Mermaid.
-
