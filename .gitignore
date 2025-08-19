@@ -1,7 +1,7 @@
 build/bin
 frontend/dist
 frontend/node_modules
-tmp/
+tmp/**/*
 
 package-lock.json
 package.json.md5
@@ -41,3 +41,5 @@ build/windows/installer/wails_tools.nsh
 frontend/src/assets/scss/**/*.css
 frontend/src/assets/scss/**/*.css.map
 
+# Overrides
+!tmp/.gitkeep
