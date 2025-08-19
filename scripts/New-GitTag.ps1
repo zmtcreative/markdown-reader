@@ -66,7 +66,10 @@ param (
     [Parameter(Mandatory = $false, ParameterSetName = "SetReleaseCandidate", HelpMessage = "Set the tag to release candidate.")]
     [switch]$SetReleaseCandidate,
     [Parameter(Mandatory = $false, ParameterSetName = "ReleaseVersion", HelpMessage = "This is a release version (remove prerelease suffix but no increments).")]
-    [switch]$ReleaseVersion
+    [switch]$ReleaseVersion,
+    [Parameter(Mandatory = $false, ParameterSetName = "ShowCurrentVersion", HelpMessage = "Show the current version without making changes.")]
+    [Alias("show", "current","version")]
+    [switch]$ShowCurrentVersion
 )
 
 # Set-Location $PSScriptRoot
@@ -881,6 +884,17 @@ function Invoke-NewGitTag {
     $WailsJsonPath = Join-Path $ProjectRoot "wails.json"
     $PackageJsonPath = Join-Path $ProjectRoot "frontend" "package.json"
     $InfoJsonPath = Join-Path $ProjectRoot "build" "windows" "info.json"
+
+    if ($ShowCurrentVersion) {
+        Write-Host ""
+        if ($currentTag) {
+            Write-Host -NoNewLine -ForegroundColor Cyan "Current (most recent) tag: "; Write-Host -ForegroundColor Green "$currentTag"
+        } else {
+            Write-Host -ForegroundColor Yellow "No current tag/version found."
+        }
+        Write-Host ""
+        return
+    }
 
     if (-not (Confirm-RepositoryIsClean -IgnoreFileList)) {
         return
