@@ -1,5 +1,7 @@
 github.com/BurntSushi/toml v1.2.1 h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=
 github.com/BurntSushi/toml v1.2.1/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
+github.com/ZMT-Creative/gm-alert-callouts v0.6.0 h1:HxWxis44HrbEWhAnEqdWAMWaiVKttVZ37ZReZ07Rt7A=
+github.com/ZMT-Creative/gm-alert-callouts v0.6.0/go.mod h1:BynWRxhCepG6oa2ODN4fXC/yN06cl79aPA+QAgSRykI=
 github.com/ZMT-Creative/gm-fancy-lists v0.1.1 h1:skEDy/0E45EvsGhmhbUSkBHo7mEtHaGnLe+T5z8AMdY=
 github.com/ZMT-Creative/gm-fancy-lists v0.1.1/go.mod h1:k5y98HlcxmqBE/2pnCftfx/gsxHMx18hQOAbk2BSdE8=
 github.com/ZMT-Creative/gm-sectionwrapper v0.1.0 h1:CMPLHCugRbu+VENbuKcmmK7T0aAK/DfpPXw8SK2oAPM=
