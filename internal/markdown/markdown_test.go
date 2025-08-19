@@ -68,10 +68,10 @@ func TestCleanupHTMLContent(t *testing.T) {
 }
 
 func TestInitAlertCalloutsIcons(t *testing.T) {
-    icons := InitAlertCalloutsIcons(alertCalloutsCustomData)
+    icons := InitAlertCalloutsIcons(alertCalloutsGFMStrictData)
 
     // Test that core icons are present
-    coreIcons := []string{"bug", "danger", "example", "failure", "important", "info", "question", "quote", "success", "summary", "tip", "todo", "warning", "scroll"}
+    coreIcons := []string{"note", "tip", "important", "warning", "caution"}
     for _, icon := range coreIcons {
         if _, exists := icons[icon]; !exists {
             t.Errorf("InitAlertIcons() missing core icon: %s", icon)
@@ -86,22 +86,10 @@ func TestInitAlertCalloutsIcons(t *testing.T) {
 
     // Test that aliases are present and point to correct icons
     aliasTests := map[string]string{
-        "abstract":  "summary",
-        "attention": "warning",
-        "caution":   "danger",
-        "check":     "success",
-        "cite":      "quote",
-        "done":      "success",
-        "error":     "danger",
-        "fail":      "failure",
-        "faq":       "question",
-        "help":      "question",
-        "hint":      "tip",
-        "history":   "scroll",
-        "missing":   "failure",
-        "note":      "info",
-        "tldr":      "scroll",
-        "warn":      "warning",
+        "cautions":  "caution",
+        "tips":      "tip",
+        "notes":     "note",
+        "warnings":  "warning",
     }
 
     for alias, primary := range aliasTests {

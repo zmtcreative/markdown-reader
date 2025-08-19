@@ -1,3 +1,26 @@
+export namespace app {
+	
+	export class Config {
+	    allow_inline_html: boolean;
+	    sanitize_html: boolean;
+	    strip_h1: boolean;
+	    alert_callout_style: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Config(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.allow_inline_html = source["allow_inline_html"];
+	        this.sanitize_html = source["sanitize_html"];
+	        this.strip_h1 = source["strip_h1"];
+	        this.alert_callout_style = source["alert_callout_style"];
+	    }
+	}
+
+}
+
 export namespace keys {
 	
 	export class Accelerator {

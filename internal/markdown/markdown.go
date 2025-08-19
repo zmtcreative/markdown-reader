@@ -10,12 +10,13 @@ import (
 
 	"md-reader/internal/gm-ext/htmlsanitize"
 	// "md-reader/internal/gm-ext/sectionwrapper"
+	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
 	sectionwrapper "github.com/ZMT-Creative/gm-sectionwrapper"
 
-	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
 	fancylists "github.com/ZMT-Creative/gm-fancy-lists"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	figure "github.com/mangoumbrella/goldmark-figure"
+
 	blockattr "github.com/mdigger/goldmark-attributes"
 	bracketedspan "github.com/nemunaire/goldmark-inline-attributes"
 	fences "github.com/stefanfritsch/goldmark-fences"
@@ -33,41 +34,49 @@ import (
 	mermaid "go.abhg.dev/goldmark/mermaid"
 )
 
-//go:embed assets/alertcallouts-custom.icons
-var alertCalloutsCustomData string
+//go:embed assets/alertcallouts-gfmstrict.icons
+var alertCalloutsGFMStrictData string
 
-//go:embed assets/alertcallouts-obsidian.icons
-var alertCalloutsObsidianData string
+var _ = alertCalloutsGFMStrictData
 
-//go:embed assets/alertcallouts-gfmplus.icons
-var alertCalloutsGFMPlusData string
+const (
+	ALERT_NOICONS = iota
+	ALERT_GFM_STRICT
+	ALERT_GFM_WITH_ALIASES
+	ALERT_GFM_PLUS
+	ALERT_OBSIDIAN
+)
 
-//go:embed assets/alertcallouts-gfm.icons
-var alertCalloutsGFMData string
-
-// Add this line to suppress unused variable warnings
-//   We'll be implementing a configuration option/dialog in the future to select these variables,
-//   but that isn't implemented yet.
-var _ = alertCalloutsObsidianData
-var _ = alertCalloutsCustomData
-var _ = alertCalloutsGFMPlusData
-var _ = alertCalloutsGFMData
 
 var GlobalAttributeFilter = util.NewBytesFilterString(`accesskey,autocapitalize,autofocus,class,contenteditable,dir,draggable,enterkeyhint,hidden,id,inert,inputmode,is,itemid,itemprop,itemref,itemscope,itemtype,lang,part,role,slot,spellcheck,style,tabindex,title,translate`) // nolint:lll
 var CodeBlockAttributeFilter = GlobalAttributeFilter.ExtendString(`nolabel,nolable,label,lable`)
 var dataPrefix = []byte("data-")
 
 type GoldmarkInstanceOptions struct {
-	AllowInlineHTML bool
-	SanitizeHTML    bool
+	AllowInlineHTML   bool
+	SanitizeHTML      bool
+	AlertCalloutStyle string
 }
 
 // CreateGoldmarkInstance creates and configures a new Goldmark instance.
 func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
-    // myAlertCalloutsIcons := InitAlertCalloutsIcons(alertCalloutsCustomData) // Initialize using custom alert icons
-	// myAlertCalloutsIcons := InitAlertCalloutsIcons(alertCalloutsObsidianData) // Initialize using Obsidian alert icons
-	myAlertCalloutsIcons := InitAlertCalloutsIcons(alertCalloutsGFMPlusData) // Initialize using GitHub alert icons
-	var _ = myAlertCalloutsIcons
+    // Select alert callout icons based on style
+    alertIconID := ALERT_NOICONS
+    switch opt.AlertCalloutStyle {
+	case "GFMStrict":
+		alertIconID = ALERT_GFM_STRICT
+    case "GFMWithAliases":
+        alertIconID = ALERT_GFM_WITH_ALIASES
+    case "GFMPlus":
+        alertIconID = ALERT_GFM_PLUS
+    case "Obsidian":
+        alertIconID = ALERT_OBSIDIAN
+    default:
+        alertIconID = ALERT_GFM_STRICT // Default to Strict GFM
+    }
+
+    // myAlertCalloutsIcons := InitAlertCalloutsIcons(alertIconData)
+    // var _ = myAlertCalloutsIcons
     options := []goldmark.Option{
         blockattr.Enable,
         bracketedspan.Enable,
@@ -82,11 +91,6 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
             extension.Footnote,
             extension.Typographer,
             &mermaid.Extender{}, // Add Mermaid support for diagrams
-			alertcallouts.NewAlertCallouts(
-				alertcallouts.UseGFMPlusIcons(),
-				alertcallouts.WithFolding(true),
-			),
-			// alertcallouts.AlertCallouts,
             emoji.Emoji,
             figure.Figure.WithSkipNoCaption(),
             &anchor.Extender{
@@ -107,9 +111,64 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
                     chromahtml.Standalone(true),           // Set to false to prevent a full HTML document
                 ),
             ),
-			&fancylists.FancyLists{},
         ),
     }
+
+	// Alert Callouts are always enabled, it's just the icon sets that change
+	if alertIconID != ALERT_NOICONS {
+		// Folding is enabled by default here
+		options = append(options,
+			goldmark.WithExtensions(
+				alertcallouts.NewAlertCallouts(
+					alertcallouts.WithFolding(true),
+				),
+			),
+		)
+
+		// Add alert callouts based on selected style
+		switch alertIconID {
+		case ALERT_GFM_STRICT:
+			// Use strict GFM icons
+			options = append(options,
+				goldmark.WithExtensions(
+					alertcallouts.NewAlertCallouts(
+						alertcallouts.WithIcons(alertcallouts.CreateIconsMap(alertCalloutsGFMStrictData)),
+						alertcallouts.WithFolding(false),
+					),
+				),
+			)
+		case ALERT_GFM_WITH_ALIASES:
+			// Use standard GFM icons but with aliases for similar alert names (e.g., notes->note)
+			options = append(options,
+				goldmark.WithExtensions(
+					alertcallouts.NewAlertCallouts(
+						alertcallouts.UseGFMIcons(),
+						// alertcallouts.WithFolding(true),
+					),
+				),
+			)
+		case ALERT_GFM_PLUS:
+			// Use plus GFM icons
+			options = append(options,
+				goldmark.WithExtensions(
+					alertcallouts.NewAlertCallouts(
+						alertcallouts.UseGFMPlusIcons(),
+						// alertcallouts.WithFolding(true),
+					),
+				),
+			)
+		case ALERT_OBSIDIAN:
+			// Use Obsidian icons
+			options = append(options,
+				goldmark.WithExtensions(
+					alertcallouts.NewAlertCallouts(
+						alertcallouts.UseObsidianIcons(),
+						// alertcallouts.WithFolding(true),
+					),
+				),
+			)
+		}
+	}
 
     if opt.AllowInlineHTML {
         options = append(options,
@@ -119,13 +178,26 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
         )
     }
 
+	// Sanitize HTML
+	// Note to Self: There is some kind of parsing priority issue between the Sanitizer,
+	//               Alert-Callouts and the FancyLists extension (these are all my extensions).
+	//               The load order seems to matter here. Something to debug later.
+	//
+	//               THIS ordering seems to be working properly for now.
     if opt.SanitizeHTML {
         options = append(options,
             goldmark.WithExtensions(
                 &htmlsanitize.SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
+				&fancylists.FancyListsOptions{},
             ),
         )
-    }
+    } else {
+        options = append(options,
+            goldmark.WithExtensions(
+				&fancylists.FancyListsOptions{},
+            ),
+        )
+	}
 
     return goldmark.New(options...)
 }
