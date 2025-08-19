@@ -20,25 +20,33 @@ import (
 
 // DocumentProcessor handles document processing and rendering
 type DocumentProcessor struct {
-    ctx             context.Context
-    stripH1         bool
-    allowInlineHTML bool
-    sanitizeHTML    bool
-    docTypes        []string
-    mdConverter     goldmark.Markdown
+    ctx               context.Context
+    stripH1           bool
+    allowInlineHTML   bool
+    sanitizeHTML      bool
+    alertCalloutStyle string
+    docTypes          []string
+    mdConverter       goldmark.Markdown
 }
 
 // NewDocumentProcessor creates a new DocumentProcessor
 func NewDocumentProcessor(ctx context.Context, stripH1, allowInlineHTML, sanitizeHTML bool) *DocumentProcessor {
+    return NewDocumentProcessorWithStyle(ctx, stripH1, allowInlineHTML, sanitizeHTML, "GFMStrict")
+}
+
+// NewDocumentProcessorWithStyle creates a new DocumentProcessor with specified alert callout style
+func NewDocumentProcessorWithStyle(ctx context.Context, stripH1, allowInlineHTML, sanitizeHTML bool, alertCalloutStyle string) *DocumentProcessor {
     return &DocumentProcessor{
-        ctx:             ctx,
-        stripH1:         stripH1,
-        allowInlineHTML: allowInlineHTML,
-        sanitizeHTML:    sanitizeHTML,
-        docTypes:        []string{},
-        mdConverter:     markdown.CreateGoldmarkInstance(markdown.GoldmarkInstanceOptions{
-            AllowInlineHTML: allowInlineHTML,
-            SanitizeHTML:    sanitizeHTML,
+        ctx:               ctx,
+        stripH1:           stripH1,
+        allowInlineHTML:   allowInlineHTML,
+        sanitizeHTML:      sanitizeHTML,
+        alertCalloutStyle: alertCalloutStyle,
+        docTypes:          []string{},
+        mdConverter:       markdown.CreateGoldmarkInstance(markdown.GoldmarkInstanceOptions{
+            AllowInlineHTML:   allowInlineHTML,
+            SanitizeHTML:      sanitizeHTML,
+            AlertCalloutStyle: alertCalloutStyle,
         }),
     }
 }

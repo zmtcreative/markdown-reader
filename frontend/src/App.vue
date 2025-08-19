@@ -24,12 +24,20 @@
   </div>
   </Teleport>
   <!-- Help Modal HTML End -->
+
+  <!-- Settings Dialog -->
+  <Settings
+    :show="showSettingsDialog"
+    @close="hideSettingsDialog"
+    @saved="onSettingsSaved"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, watch, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { GetTheme, SetTheme } from '../wailsjs/go/main/App';
+import Settings from './components/Settings.vue';
 import mermaid from 'mermaid';
 
 const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
@@ -41,6 +49,9 @@ const errorMessage = ref('');
 const showHelpModal = ref(false);
 const helpModalTitle = ref('');
 const helpModalText = ref('');
+
+// Settings dialog reactive variables
+const showSettingsDialog = ref(false);
 
 const currentTheme = ref('light');
 
@@ -111,6 +122,21 @@ function showHelpModalDialog(helpTitle: string, helpText: string) {
     helpModalTitle.value = helpTitle;
     helpModalText.value = helpText;
     showHelpModal.value = true;
+}
+
+// Settings dialog functions
+function hideSettingsDialog() {
+    showSettingsDialog.value = false;
+}
+
+function openSettingsDialog() {
+    showSettingsDialog.value = true;
+}
+
+function onSettingsSaved() {
+    // Settings have been saved successfully
+    // You might want to emit an event or update the UI here
+    console.log('Settings saved successfully');
 }
 
 // Handle clicking on modal overlay (close modal)
@@ -187,6 +213,12 @@ onMounted(async () => {
       console.log('Received show-help event:', helpTitle, helpText); // Debug log
       showHelpModalDialog(helpTitle, helpText);
   });
+
+  // Listen for settings dialog events from Go backend
+  EventsOn("show-settings", () => {
+    console.log('Received show-settings event'); // Debug log
+    openSettingsDialog();
+  });
 });
 
 onUnmounted(() => {
@@ -199,6 +231,7 @@ onUnmounted(() => {
   EventsOff('print-content');
   EventsOff('save-as-pdf');
   EventsOff('show-help');
+  EventsOff('show-settings');
 });
 
 </script>

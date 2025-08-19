@@ -48,22 +48,36 @@ type App struct {
     fileManager         *app.FileManager
     documentProcessor   *app.DocumentProcessor
     binaryDetector      *app.BinaryDetector
+    configManager       *app.ConfigManager
 }
 
 // NewApp creates a new App application struct
 func NewApp(cliArgs *cli.CliArgs) *App {
-    setAboutString := setAbout(cliArgs.AppProgNameWithExt)
+    // Initialize configuration manager first
+    configManager := app.NewConfigManager()
+
+    // Apply CLI overrides to configuration
+    configManager.ApplyCliOverrides(cliArgs.AllowInlineHTML, cliArgs.SanitizeHTML, cliArgs.StripH1)
+
+    // Get final configuration after overrides
+    finalConfig := configManager.GetConfig()
+
+    // Handle app name
+    appProgNameWithExt := stringFromPtr(cliArgs.AppProgNameWithExt, "md-reader")
+    setAboutString := setAbout(appProgNameWithExt)
+
     return &App{
         frontMatter:        map[string]string{},                                // Initialize an empty map for frontmatter
-        stripH1:            boolFromPtr(&cliArgs.StripH1, true),                // Default to true, can be set via CLI flag
-        currentFile:        stringFromPtr(&cliArgs.InitialFile, ""),            // Default to empty, can be set via CLI flag
-        appProgName:        stringFromPtr(&cliArgs.AppProgName, ""),            // Store the application name without extension
-        appProgNameWithExt: stringFromPtr(&cliArgs.AppProgNameWithExt, ""),     // Store the application name with extension
-        allowInlineHTML:    boolFromPtr(&cliArgs.AllowInlineHTML, true),        // Default to true, can be set via CLI flag
-        sanitizeHTML:       boolFromPtr(&cliArgs.SanitizeHTML, true),           // Default to true, can be set via CLI flag
-        showHelp:           boolFromPtr(&cliArgs.ShowHelp, false),              // Default to false, can be set via CLI flag
-        versionInfo:        stringFromPtr(&setAboutString, Version),            // Set version info using the application name with extension
-        cmdlineOptions:     stringFromPtr(&cliArgs.CmdlineOptions, ""),         // Store the command line options for help display
+        stripH1:            finalConfig.StripH1,                               // Use config value (with CLI overrides)
+        currentFile:        stringFromPtr(cliArgs.InitialFile, ""),            // Default to empty, can be set via CLI flag
+        appProgName:        stringFromPtr(cliArgs.AppProgName, "md-reader"),   // Store the application name without extension
+        appProgNameWithExt: appProgNameWithExt,                                // Store the application name with extension
+        allowInlineHTML:    finalConfig.AllowInlineHTML,                       // Use config value (with CLI overrides)
+        sanitizeHTML:       finalConfig.SanitizeHTML,                          // Use config value (with CLI overrides)
+        showHelp:           boolFromPtr(cliArgs.ShowHelp, false),              // Default to false, can be set via CLI flag
+        versionInfo:        setAboutString,                                     // Set version info using the application name with extension
+        cmdlineOptions:     stringFromPtr(cliArgs.CmdlineOptions, ""),         // Store the command line options for help display
+        configManager:      configManager,                                     // Store the config manager
     }
 }
 
@@ -127,7 +141,10 @@ func (a *App) startup(ctx context.Context) {
     a.themeManager = app.NewThemeManager(ctx)
     a.printManager = app.NewPrintManager(ctx)
     a.binaryDetector = app.NewBinaryDetector()
-    a.documentProcessor = app.NewDocumentProcessor(ctx, a.stripH1, a.allowInlineHTML, a.sanitizeHTML)
+
+    // Get the current configuration for document processor
+    config := a.configManager.GetConfig()
+    a.documentProcessor = app.NewDocumentProcessorWithStyle(ctx, a.stripH1, a.allowInlineHTML, a.sanitizeHTML, config.AlertCalloutStyle)
     a.fileManager = app.NewFileManager(ctx, a.binaryDetector, a.documentProcessor)
 }
 
@@ -175,6 +192,10 @@ func (a *App) menu() *menu.Menu {
     // fileMenu.AddText("Save as PDF", keys.CmdOrCtrl("e"), func(_ *menu.CallbackData) {
     //     a.printManager.PrintContentToPDF()
     // })
+    fileMenu.AddSeparator()
+    fileMenu.AddText("Settings", keys.CmdOrCtrl("comma"), func(_ *menu.CallbackData) {
+        runtime.EventsEmit(a.ctx, "show-settings")
+    })
     fileMenu.AddSeparator()
     fileMenu.AddText("Exit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
         runtime.Quit(a.ctx)
@@ -226,6 +247,21 @@ func (a *App) LoadAndDisplayMarkdown(filePath string) error {
     return err
 }
 
+// ReloadCurrentDocument reloads and regenerates the currently opened markdown document
+func (a *App) ReloadCurrentDocument() error {
+    if a.currentFile == "" {
+        return fmt.Errorf("no document currently loaded")
+    }
+
+    // Reload the current file using the updated settings
+    err := a.documentProcessor.LoadAndDisplayMarkdown(a.currentFile)
+    if err != nil {
+        return fmt.Errorf("failed to reload document %s: %w", a.currentFile, err)
+    }
+
+    return nil
+}
+
 // AddDocClass adds the class to html and body elements
 func (a *App) AddDocClass(thisClass ...string) {
     a.documentProcessor.AddDocClass(thisClass...)
@@ -244,4 +280,51 @@ func (a *App) ToggleDocClass(thisClass ...string) {
 // OpenFileMenuHandler handles the File > Open menu action
 func (a *App) OpenFileMenuHandler(data *menu.CallbackData) {
     a.fileManager.OpenFileMenuHandler(data, &a.currentFile)
+}
+
+// Settings-related methods
+
+// GetSettings returns the current application settings
+func (a *App) GetSettings() *app.Config {
+    return a.configManager.GetConfig()
+}
+
+// GetAlertCalloutStyles returns the available alert callout styles
+func (a *App) GetAlertCalloutStyles() []string {
+    return app.AlertCalloutStyles
+}
+
+// SaveSettings saves the provided settings configuration
+func (a *App) SaveSettings(settings *app.Config) error {
+    // Validate the alert callout style
+    settings.AlertCalloutStyle = a.configManager.ValidateAlertCalloutStyle(settings.AlertCalloutStyle)
+
+    // Update the configuration
+    a.configManager.SetConfig(settings)
+
+    // Save to file
+    if err := a.configManager.SaveConfig(); err != nil {
+        return err
+    }
+
+    // Update the current app settings
+    a.allowInlineHTML = settings.AllowInlineHTML
+    a.sanitizeHTML = settings.SanitizeHTML
+    a.stripH1 = settings.StripH1
+
+    // Recreate the document processor with new settings
+    a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.stripH1, a.allowInlineHTML, a.sanitizeHTML, settings.AlertCalloutStyle)
+
+    // Update the file manager with the new document processor
+    a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
+
+    // Automatically reload the current document to apply new settings
+    if a.currentFile != "" {
+        if reloadErr := a.ReloadCurrentDocument(); reloadErr != nil {
+            log.Printf("Warning: Failed to reload document after settings change: %v", reloadErr)
+            // Don't return the reload error, as settings were successfully saved
+        }
+    }
+
+    return nil
 }

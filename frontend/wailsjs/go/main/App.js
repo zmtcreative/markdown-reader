@@ -6,6 +6,14 @@ export function AddDocClass(arg1) {
   return window['go']['main']['App']['AddDocClass'](arg1);
 }
 
+export function GetAlertCalloutStyles() {
+  return window['go']['main']['App']['GetAlertCalloutStyles']();
+}
+
+export function GetSettings() {
+  return window['go']['main']['App']['GetSettings']();
+}
+
 export function GetTheme() {
   return window['go']['main']['App']['GetTheme']();
 }
@@ -26,8 +34,16 @@ export function PrintContentToPDF() {
   return window['go']['main']['App']['PrintContentToPDF']();
 }
 
+export function ReloadCurrentDocument() {
+  return window['go']['main']['App']['ReloadCurrentDocument']();
+}
+
 export function RemoveDocClass(arg1) {
   return window['go']['main']['App']['RemoveDocClass'](arg1);
+}
+
+export function SaveSettings(arg1) {
+  return window['go']['main']['App']['SaveSettings'](arg1);
 }
 
 export function SetTheme(arg1) {
