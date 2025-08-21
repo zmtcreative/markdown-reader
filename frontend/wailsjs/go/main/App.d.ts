@@ -5,7 +5,7 @@ import {menu} from '../models';
 
 export function AddDocClass(arg1:Array<string>):Promise<void>;
 
-export function GetAlertCalloutStyles():Promise<Array<string>>;
+export function GetAlertCalloutStyles():Promise<Record<string, string>>;
 
 export function GetSettings():Promise<app.Config>;
 
@@ -24,6 +24,8 @@ export function ReloadCurrentDocument():Promise<void>;
 export function RemoveDocClass(arg1:Array<string>):Promise<void>;
 
 export function SaveSettings(arg1:app.Config):Promise<void>;
+
+export function SaveSettingsSessionOnly(arg1:app.Config):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;
 

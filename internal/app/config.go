@@ -9,12 +9,40 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Config represents the application configuration
+// Config represents the tabs in the settings dialog
 type Config struct {
-	AllowInlineHTML    bool   `mapstructure:"allow_inline_html" json:"allow_inline_html"`
-	SanitizeHTML       bool   `mapstructure:"sanitize_html" json:"sanitize_html"`
-	StripH1            bool   `mapstructure:"strip_h1" json:"strip_h1"`
-	AlertCalloutStyle  string `mapstructure:"alert_callout_style" json:"alert_callout_style"`
+	Application        ApplicationOptions   `mapstructure:"application" json:"application"`         // Application
+	Markdown           MarkdownOptions      `mapstructure:"markdown" json:"markdown"`               // Markdown Features
+	AlertCallouts      AlertCalloutOptions  `mapstructure:"alert_callouts" json:"alert_callouts"`   // Alert Callouts
+}
+
+// Application-Specific Settings
+type ApplicationOptions struct {
+	UseInlineHTML      bool   `mapstructure:"use_inline_html" json:"use_inline_html"`         // Inline HTML support (allow inline HTML in Markdown)
+	UseSanitize        bool   `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`     // HTML Sanitization (remove unsafe elements and links)
+	StripH1            bool   `mapstructure:"strip_h1" json:"strip_h1"`                       // Strip First H1 and Use as Title
+	UseFrontmatter     bool   `mapstructure:"use_frontmatter" json:"use_frontmatter"`         // Parse Frontmatter
+}
+
+// Markdown-Specific Settings
+type MarkdownOptions struct {
+	UseGFM             bool   `mapstructure:"use_gfm" json:"use_gfm"`                         // GitHub Flavored Markdown and PHP Markdown Extensions
+	UseEmoji           bool   `mapstructure:"use_emoji" json:"use_emoji"`                     // Emoji Support
+	UseMermaid         bool   `mapstructure:"use_mermaid" json:"use_mermaid"`                 // Mermaid Diagrams Support
+	UseFigure          bool   `mapstructure:"use_figure" json:"use_figure"`                   // Image Figure Wrapping Support
+	UseAnchor          bool   `mapstructure:"use_anchor" json:"use_anchor"`                   // Anchor Links on Headings
+	UseFences          bool   `mapstructure:"use_fences" json:"use_fences"`                   // Fenced DIVs
+	UseSections        bool   `mapstructure:"use_sections" json:"use_sections"`               // Wrap Headings in SECTION Elements
+	UseHighlighting    bool   `mapstructure:"use_highlighting" json:"use_highlighting"`       // Fenced Code Highlighting
+	UseFancyLists      bool   `mapstructure:"use_fancylists" json:"use_fancylists"`           // Allow Pandoc-Style Fancy Lists
+	UseAttributes      bool   `mapstructure:"use_attributes" json:"use_attributes"`           // Allow Custom Attributes (using '{.myclass}' syntax)
+	UseTypographic     bool   `mapstructure:"use_typographic" json:"use_typographic"`         // Typographic Extensions to Use Fancy Quotes
+}
+
+// Alert Callouts Settings
+type AlertCalloutOptions struct {
+	UseAlertCallouts   bool   `mapstructure:"use_alertcallouts" json:"use_alertcallouts"`     // GitHub and/or Obsidian Alert/Callouts
+	AlertCalloutStyle  string `mapstructure:"alertcallout_style" json:"alertcallout_style"`   // Select Alert Callout Style
 }
 
 // ConfigManager handles configuration loading and saving
@@ -26,7 +54,12 @@ type ConfigManager struct {
 
 // AlertCalloutStyles defines the available alert callout styles
 // (Note to self: Do NOT change "GFMStrict" if you can help it -- this is being used as the fallback default)
-var AlertCalloutStyles = []string{"GFMStrict", "GFMWithAliases", "GFMPlus", "Obsidian"}
+var AlertCalloutStyles = map[string]string{
+	"GFMStrict":     "GFM Alerts (Standard 5 Alert Types)",
+	"GFMWithAliases": "GFM Alerts (GFM + Aliases [e.g., notes = note])",
+	"GFMPlus":       "GFM Alerts Plus (GFM + Some Obsidian-Style Callouts)",
+	"Obsidian":      "Obsidian-Style (Obsidian Icons and Callout Names)",
+}
 
 // getAppNameFromExecutable extracts the application name from the executable path
 // without the file extension
@@ -64,11 +97,28 @@ func NewConfigManager() *ConfigManager {
 	v.SetConfigName(appName)
 	v.SetConfigType("json")
 
-	// Set default values
-	v.SetDefault("allow_inline_html", true)
-	v.SetDefault("sanitize_html", true)
-	v.SetDefault("strip_h1", true)
-	v.SetDefault("alert_callout_style", "GFMPlus")
+	// Set default values for Application section
+	v.SetDefault("application.use_inline_html", true)
+	v.SetDefault("application.use_sanitize_html", true)
+	v.SetDefault("application.strip_h1", true)
+	v.SetDefault("application.use_frontmatter", true)
+
+	// Set default values for Markdown section
+	v.SetDefault("markdown.use_gfm", true)
+	v.SetDefault("markdown.use_emoji", true)
+	v.SetDefault("markdown.use_mermaid", true)
+	v.SetDefault("markdown.use_figure", true)
+	v.SetDefault("markdown.use_anchor", true)
+	v.SetDefault("markdown.use_fences", true)
+	v.SetDefault("markdown.use_sections", true)
+	v.SetDefault("markdown.use_highlighting", true)
+	v.SetDefault("markdown.use_fancylists", true)
+	v.SetDefault("markdown.use_attributes", true)
+	v.SetDefault("markdown.use_typographic", true)
+
+	// Set default values for Alert Callouts section
+	v.SetDefault("alert_callouts.use_alertcallouts", true)
+	v.SetDefault("alert_callouts.alertcallout_style", "GFMPlus")
 
 	// Get configuration directory
 	configDir := getConfigDir(appName)
@@ -133,10 +183,29 @@ func (cm *ConfigManager) loadConfig() {
 		fmt.Printf("Error unmarshaling config: %v\n", err)
 		// Use defaults if unmarshal fails
 		cm.config = &Config{
-			AllowInlineHTML:   true,
-			SanitizeHTML:      true,
-			StripH1:           true,
-			AlertCalloutStyle: "GFMStrict",
+			Application: ApplicationOptions{
+				UseInlineHTML:  true,
+				UseSanitize:    true,
+				StripH1:        true,
+				UseFrontmatter: true,
+			},
+			Markdown: MarkdownOptions{
+				UseGFM:          true,
+				UseEmoji:        true,
+				UseMermaid:      true,
+				UseFigure:       true,
+				UseAnchor:       true,
+				UseFences:       true,
+				UseSections:     true,
+				UseHighlighting: true,
+				UseFancyLists:   true,
+				UseAttributes:   true,
+				UseTypographic:  true,
+			},
+			AlertCallouts: AlertCalloutOptions{
+				UseAlertCallouts:  true,
+				AlertCalloutStyle: "GFMPlus",
+			},
 		}
 	}
 }
@@ -153,11 +222,28 @@ func (cm *ConfigManager) SetConfig(newConfig *Config) {
 
 // SaveConfig saves the current configuration to file
 func (cm *ConfigManager) SaveConfig() error {
-	// Update viper with current config values
-	cm.viper.Set("allow_inline_html", cm.config.AllowInlineHTML)
-	cm.viper.Set("sanitize_html", cm.config.SanitizeHTML)
-	cm.viper.Set("strip_h1", cm.config.StripH1)
-	cm.viper.Set("alert_callout_style", cm.config.AlertCalloutStyle)
+	// Update viper with current config values for Application section
+	cm.viper.Set("application.use_inline_html", cm.config.Application.UseInlineHTML)
+	cm.viper.Set("application.use_sanitize_html", cm.config.Application.UseSanitize)
+	cm.viper.Set("application.strip_h1", cm.config.Application.StripH1)
+	cm.viper.Set("application.use_frontmatter", cm.config.Application.UseFrontmatter)
+
+	// Update viper with current config values for Markdown section
+	cm.viper.Set("markdown.use_gfm", cm.config.Markdown.UseGFM)
+	cm.viper.Set("markdown.use_emoji", cm.config.Markdown.UseEmoji)
+	cm.viper.Set("markdown.use_mermaid", cm.config.Markdown.UseMermaid)
+	cm.viper.Set("markdown.use_figure", cm.config.Markdown.UseFigure)
+	cm.viper.Set("markdown.use_anchor", cm.config.Markdown.UseAnchor)
+	cm.viper.Set("markdown.use_fences", cm.config.Markdown.UseFences)
+	cm.viper.Set("markdown.use_sections", cm.config.Markdown.UseSections)
+	cm.viper.Set("markdown.use_highlighting", cm.config.Markdown.UseHighlighting)
+	cm.viper.Set("markdown.use_fancylists", cm.config.Markdown.UseFancyLists)
+	cm.viper.Set("markdown.use_attributes", cm.config.Markdown.UseAttributes)
+	cm.viper.Set("markdown.use_typographic", cm.config.Markdown.UseTypographic)
+
+	// Update viper with current config values for Alert Callouts section
+	cm.viper.Set("alert_callouts.use_alertcallouts", cm.config.AlertCallouts.UseAlertCallouts)
+	cm.viper.Set("alert_callouts.alertcallout_style", cm.config.AlertCallouts.AlertCalloutStyle)
 
 	// Write configuration to file
 	if err := cm.viper.WriteConfigAs(cm.configPath); err != nil {
@@ -170,23 +256,102 @@ func (cm *ConfigManager) SaveConfig() error {
 // ApplyCliOverrides applies command-line argument overrides to the configuration
 func (cm *ConfigManager) ApplyCliOverrides(allowInlineHTML, sanitizeHTML, stripH1 *bool) {
 	if allowInlineHTML != nil {
-		cm.config.AllowInlineHTML = *allowInlineHTML
+		cm.config.Application.UseInlineHTML = *allowInlineHTML
 	}
 	if sanitizeHTML != nil {
-		cm.config.SanitizeHTML = *sanitizeHTML
+		cm.config.Application.UseSanitize = *sanitizeHTML
 	}
 	if stripH1 != nil {
-		cm.config.StripH1 = *stripH1
+		cm.config.Application.StripH1 = *stripH1
 	}
 }
 
 // ValidateAlertCalloutStyle validates and returns a valid alert callout style
 func (cm *ConfigManager) ValidateAlertCalloutStyle(style string) string {
-	for _, validStyle := range AlertCalloutStyles {
-		if style == validStyle {
-			return style
-		}
+	if _, exists := AlertCalloutStyles[style]; exists {
+		return style
 	}
 	// Return default if invalid
-	return "GFMStrict"
+	return "GFMPlus"
+}
+
+// GetApplicationConfig returns application configuration for markdown processing
+func (cm *ConfigManager) GetApplicationConfig() (useInlineHTML, useSanitize bool) {
+	return cm.config.Application.UseInlineHTML, cm.config.Application.UseSanitize
+}
+
+// GetAlertCalloutConfig returns the alert callout style configuration
+func (cm *ConfigManager) GetAlertCalloutConfig() string {
+	return cm.config.AlertCallouts.AlertCalloutStyle
+}
+
+// Application-specific configuration getters
+func (cm *ConfigManager) UseInlineHTML() bool {
+	return cm.config.Application.UseInlineHTML
+}
+
+func (cm *ConfigManager) UseSanitize() bool {
+	return cm.config.Application.UseSanitize
+}
+
+func (cm *ConfigManager) StripH1() bool {
+	return cm.config.Application.StripH1
+}
+
+func (cm *ConfigManager) UseFrontmatter() bool {
+	return cm.config.Application.UseFrontmatter
+}
+
+// Markdown-specific configuration getters
+func (cm *ConfigManager) UseGFM() bool {
+	return cm.config.Markdown.UseGFM
+}
+
+func (cm *ConfigManager) UseEmoji() bool {
+	return cm.config.Markdown.UseEmoji
+}
+
+func (cm *ConfigManager) UseMermaid() bool {
+	return cm.config.Markdown.UseMermaid
+}
+
+func (cm *ConfigManager) UseFigure() bool {
+	return cm.config.Markdown.UseFigure
+}
+
+func (cm *ConfigManager) UseAnchor() bool {
+	return cm.config.Markdown.UseAnchor
+}
+
+func (cm *ConfigManager) UseFences() bool {
+	return cm.config.Markdown.UseFences
+}
+
+func (cm *ConfigManager) UseSections() bool {
+	return cm.config.Markdown.UseSections
+}
+
+func (cm *ConfigManager) UseHighlighting() bool {
+	return cm.config.Markdown.UseHighlighting
+}
+
+func (cm *ConfigManager) UseFancyLists() bool {
+	return cm.config.Markdown.UseFancyLists
+}
+
+func (cm *ConfigManager) UseAttributes() bool {
+	return cm.config.Markdown.UseAttributes
+}
+
+func (cm *ConfigManager) UseTypographic() bool {
+	return cm.config.Markdown.UseTypographic
+}
+
+// Alert callouts configuration getters
+func (cm *ConfigManager) UseAlertCallouts() bool {
+	return cm.config.AlertCallouts.UseAlertCallouts
+}
+
+func (cm *ConfigManager) AlertCalloutStyle() string {
+	return cm.config.AlertCallouts.AlertCalloutStyle
 }

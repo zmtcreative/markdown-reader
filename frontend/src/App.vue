@@ -9,21 +9,13 @@
   <main class="content-area">
     <article v-html="renderedHTML" id="content" class="markdown-body"></article>
   </main>
-  <!-- Help Modal HTML Start -->
-  <Teleport to="body">
-  <div id="help-modal-overlay" class="modal-overlay" v-show="showHelpModal" @click="onModalOverlayClick">
-      <div id="help-modal-content" class="modal-content">
-          <div class="modal-button-bar">
-              <button id="help-modal-close" class="modal-close-button" @click="hideHelpModal">&times;</button>
-          </div>
-          <div class="modal-body">
-              <h3 id="help-modal-title">{{ helpModalTitle }}</h3>
-              <div id="help-modal-text" v-html="helpModalText"></div>
-          </div>
-      </div>
-  </div>
-  </Teleport>
-  <!-- Help Modal HTML End -->
+
+  <!-- Help Dialog -->
+  <Help
+    ref="helpRef"
+    :show="showHelpModal"
+    @close="hideHelpModal"
+  />
 
   <!-- Settings Dialog -->
   <Settings
@@ -38,6 +30,7 @@ import { ref, watch, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { GetTheme, SetTheme } from '../wailsjs/go/main/App';
 import Settings from './components/Settings.vue';
+import Help from './components/Help.vue';
 import mermaid from 'mermaid';
 
 const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
@@ -47,11 +40,12 @@ const errorMessage = ref('');
 
 // Modal reactive variables
 const showHelpModal = ref(false);
-const helpModalTitle = ref('');
-const helpModalText = ref('');
 
 // Settings dialog reactive variables
 const showSettingsDialog = ref(false);
+
+// Help component reference
+const helpRef = ref<InstanceType<typeof Help>>();
 
 const currentTheme = ref('light');
 
@@ -119,9 +113,10 @@ function hideHelpModal() {
 
 // Function to show the modal
 function showHelpModalDialog(helpTitle: string, helpText: string) {
-    helpModalTitle.value = helpTitle;
-    helpModalText.value = helpText;
-    showHelpModal.value = true;
+    if (helpRef.value) {
+        helpRef.value.showHelpModalDialog(helpTitle, helpText);
+        showHelpModal.value = true;
+    }
 }
 
 // Settings dialog functions
@@ -137,13 +132,6 @@ function onSettingsSaved() {
     // Settings have been saved successfully
     // You might want to emit an event or update the UI here
     console.log('Settings saved successfully');
-}
-
-// Handle clicking on modal overlay (close modal)
-function onModalOverlayClick(event: Event) {
-    if (event.target === event.currentTarget) {
-        hideHelpModal();
-    }
 }
 
 onMounted(async () => {
@@ -237,90 +225,4 @@ onUnmounted(() => {
 </script>
 
 <style>
-    .modal-overlay {
-        position: fixed !important;
-        z-index: 9999 !important;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.5); /* Dim background */
-    }
-
-    .modal-content {
-        background-color: #2e3440; /* Dark background */
-        color: #d8dee9; /* Light text */
-        margin: 10% auto;
-        /* padding: 20px; */
-        border: 4px solid #4c566a;
-        border-radius: 5px;
-        width: 80%;
-        min-width: 640px;
-        max-width: 800px; /* Control the max width */
-        position: relative;
-    }
-
-    .modal-button-bar {
-        display: block;
-        position: relative;
-        width: 100%;
-        height: 40px;
-        /* border: 1px dotted red; */
-        background-color: black;
-    }
-
-    .modal-body {
-        padding: 0 20px 20px 20px;
-    }
-
-    .modal-body h3 {
-        text-align: center;
-        font-size: 1.5em;
-        margin: 0.5em auto;
-        color: black;
-        background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent background */
-        /* border: 1px dotted red; */
-    }
-
-    .modal-body #help-modal-text {
-        background-color: #3b4252;
-        padding: 5px;
-    }
-
-    .modal-body p a {
-        background-color: rgba(255, 255, 255, 0.5);
-    }
-
-    .modal-content #about-dialog {
-        --noop: true; /* Prevents any unintended styles from being applied */
-    }
-
-    .modal-close-button {
-        color: #aaa;
-        position: absolute;
-        top: 3px;
-        right: 3px;
-        font-size: 32px;
-        font-weight: bold;
-        background: none;
-        border: none;
-        cursor: pointer;
-    }
-
-    .modal-close-button:hover,
-    .modal-close-button:focus {
-        color: #eceff4;
-        text-decoration: none;
-    }
-
-    /* Use <pre> for pre-formatted text to respect whitespace from Go string */
-    .modal-content pre {
-        white-space: pre-wrap; /* Wrap long lines */
-        word-wrap: break-word;
-        background-color: #3b4252;
-        padding: 15px;
-        border-radius: 4px;
-        font-family: monospace;
-    }
 </style>

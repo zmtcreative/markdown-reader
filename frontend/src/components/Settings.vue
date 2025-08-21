@@ -36,10 +36,18 @@
             <button
               type="button"
               class="tab-button"
+              :class="{ 'active': activeTab === 'application' }"
+              @click="activeTab = 'application'"
+            >
+              🏠 Application
+            </button>
+            <button
+              type="button"
+              class="tab-button"
               :class="{ 'active': activeTab === 'markdown' }"
               @click="activeTab = 'markdown'"
             >
-              📝 Markdown Processing
+              📝 Markdown Options
             </button>
             <button
               type="button"
@@ -55,16 +63,16 @@
             <!-- Tab Content Area -->
             <div class="tab-content">
 
-              <!-- Markdown Processing Tab -->
-              <div v-show="activeTab === 'markdown'" class="tab-panel">
+              <!-- Application Tab -->
+              <div v-show="activeTab === 'application'" class="tab-panel">
                 <fieldset class="settings-section">
-                  <legend>Markdown Processing</legend>
+                  <legend>Application Settings</legend>
 
                   <div class="setting-group">
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
-                        v-model="localSettings.allow_inline_html"
+                        v-model="localSettings.application.use_inline_html"
                       />
                       <span class="checkbox-custom"></span>
                       Allow Inline HTML
@@ -78,7 +86,7 @@
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
-                        v-model="localSettings.sanitize_html"
+                        v-model="localSettings.application.use_sanitize_html"
                       />
                       <span class="checkbox-custom"></span>
                       Sanitize HTML
@@ -92,13 +100,188 @@
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
-                        v-model="localSettings.strip_h1"
+                        v-model="localSettings.application.strip_h1"
                       />
                       <span class="checkbox-custom"></span>
                       Strip First H1 Heading
                     </label>
                     <p class="setting-description">
                       Remove the first H1 heading from markdown and use it as the document title.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.application.use_frontmatter"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Parse Frontmatter
+                    </label>
+                    <p class="setting-description">
+                      Extract and parse YAML frontmatter from markdown files.
+                    </p>
+                  </div>
+                </fieldset>
+              </div>
+
+              <!-- Markdown Options Tab -->
+              <div v-show="activeTab === 'markdown'" class="tab-panel">
+                <fieldset class="settings-section">
+                  <legend>Markdown Processing Options</legend>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_gfm"
+                      />
+                      <span class="checkbox-custom"></span>
+                      GitHub Flavored Markdown
+                    </label>
+                    <p class="setting-description">
+                      Enable GitHub Flavored Markdown and PHP Markdown Extensions.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_emoji"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Emoji Support
+                    </label>
+                    <p class="setting-description">
+                      Convert emoji codes (like :smile:) to emoji characters.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_mermaid"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Mermaid Diagrams
+                    </label>
+                    <p class="setting-description">
+                      Enable Mermaid diagram rendering for charts and graphs.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_figure"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Image Figure Wrapping
+                    </label>
+                    <p class="setting-description">
+                      Wrap images in figure elements with captions.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_anchor"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Anchor Links on Headings
+                    </label>
+                    <p class="setting-description">
+                      Add clickable anchor links to heading elements.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_fences"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Fenced DIVs
+                    </label>
+                    <p class="setting-description">
+                      Enable fenced div blocks for custom content containers.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_sections"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Wrap Headings in SECTION Elements
+                    </label>
+                    <p class="setting-description">
+                      Wrap headings and their content in HTML section elements.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_highlighting"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Fenced Code Highlighting
+                    </label>
+                    <p class="setting-description">
+                      Enable syntax highlighting for code blocks.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_fancylists"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Pandoc-Style Fancy Lists
+                    </label>
+                    <p class="setting-description">
+                      Allow advanced list formatting with custom numbering.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_attributes"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Custom Attributes
+                    </label>
+                    <p class="setting-description">
+                      Allow custom attributes using '{.myclass}' syntax.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_typographic"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Typographic Extensions
+                    </label>
+                    <p class="setting-description">
+                      Use fancy quotes and typographic enhancements.
                     </p>
                   </div>
                 </fieldset>
@@ -110,20 +293,34 @@
                   <legend>Alert Callouts</legend>
 
                   <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.alert_callouts.use_alertcallouts"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Enable Alert Callouts
+                    </label>
+                    <p class="setting-description">
+                      Enable GitHub and/or Obsidian style alert/callout blocks.
+                    </p>
+                  </div>
+
+                  <div class="setting-group">
                     <label for="alert-callout-style" class="select-label">
                       Alert Callout Style:
                     </label>
                     <select
                       id="alert-callout-style"
-                      v-model="localSettings.alert_callout_style"
+                      v-model="localSettings.alert_callouts.alertcallout_style"
                       class="setting-select"
                     >
                       <option
-                        v-for="style in alertCalloutStyles"
-                        :key="style"
-                        :value="style"
+                        v-for="(description, key) in alertCalloutStyles"
+                        :key="key"
+                        :value="key"
                       >
-                        {{ style }}
+                        {{ description }}
                       </option>
                     </select>
                     <p class="setting-description">
@@ -143,8 +340,11 @@
               <button type="button" @click="closeDialog" class="button button-secondary">
                 Cancel
               </button>
+              <button type="button" @click="saveSettingsSessionOnly" class="button button-info">
+                Apply for Session
+              </button>
               <button type="submit" class="button button-primary">
-                Save Settings
+                Save to Disk
               </button>
             </div>
           </form>
@@ -156,7 +356,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
-import { GetSettings, GetAlertCalloutStyles, SaveSettings } from '../../wailsjs/go/main/App';
+import { GetSettings, GetAlertCalloutStyles, SaveSettings, SaveSettingsSessionOnly } from '../../wailsjs/go/main/App';
 import { app } from '../../wailsjs/go/models';
 
 // Define the settings interface to match the generated TypeScript model
@@ -173,19 +373,42 @@ const emit = defineEmits<{
   saved: [];
 }>();
 
-// Reactive state
-const localSettings = ref<Settings>(app.Config.createFrom({
-  allow_inline_html: true,
-  sanitize_html: true,
-  strip_h1: true,
-  alert_callout_style: 'GFMPlus'
-}));
+// Create default settings structure matching the new nested format
+const createDefaultSettings = (): Settings => {
+  return app.Config.createFrom({
+    application: {
+      use_inline_html: true,
+      use_sanitize_html: true,
+      strip_h1: true,
+      use_frontmatter: true
+    },
+    markdown: {
+      use_gfm: true,
+      use_emoji: true,
+      use_mermaid: true,
+      use_figure: true,
+      use_anchor: true,
+      use_fences: true,
+      use_sections: true,
+      use_highlighting: true,
+      use_fancylists: true,
+      use_attributes: true,
+      use_typographic: true
+    },
+    alert_callouts: {
+      use_alertcallouts: true,
+      alertcallout_style: 'GFMPlus'
+    }
+  });
+};
 
-const alertCalloutStyles = ref<string[]>([]);
+// Reactive state
+const localSettings = ref<Settings>(createDefaultSettings());
+const alertCalloutStyles = ref<Record<string, string>>({});
 const loading = ref(false);
 
-// Tab functionality
-const activeTab = ref<'markdown' | 'alerts'>('markdown'); // Default to markdown tab
+// Tab functionality - Default to application tab
+const activeTab = ref<'application' | 'markdown' | 'alerts'>('application');
 
 // Dialog window functionality
 const settingsWindow = ref<HTMLElement>();
@@ -196,7 +419,7 @@ const dragOffset = ref({ x: 0, y: 0 });
 watch(() => props.show, async (newShow) => {
   if (newShow) {
     // Reset to the first tab when dialog opens
-    activeTab.value = 'markdown';
+    activeTab.value = 'application';
     await loadSettings();
   }
 });
@@ -239,14 +462,29 @@ async function saveSettings() {
   }
 }
 
+// Save settings for session only (don't write to disk)
+async function saveSettingsSessionOnly() {
+  try {
+    loading.value = true;
+
+    // Create proper Config object before saving
+    const configToSave = app.Config.createFrom(localSettings.value);
+    await SaveSettingsSessionOnly(configToSave);
+
+    emit('saved');
+    closeDialog();
+  } catch (error) {
+    console.error('Error applying settings for session:', error);
+    // You might want to show an error message to the user here
+    alert('Error applying settings for session: ' + error);
+  } finally {
+    loading.value = false;
+  }
+}
+
 // Reset to default values
 function resetToDefaults() {
-  localSettings.value = app.Config.createFrom({
-    allow_inline_html: true,
-    sanitize_html: true,
-    strip_h1: true,
-    alert_callout_style: 'GFMPlus'
-  });
+  localSettings.value = createDefaultSettings();
 }
 
 // Close dialog
@@ -292,6 +530,21 @@ loadSettings();
 </script>
 
 <style scoped>
+/* CSS Variables - Define all the custom properties used in this component */
+/* .settings-overlay {
+  --dialog-color-bg-primary: #ffffff;
+  --dialog-color-bg-secondary: #f8fafc;
+  --dialog-color-bg-tertiary: #f1f5f9;
+  --dialog-color-bg-hover: #f8fafc;
+  --dialog-color-border: #e2e8f0;
+  --dialog-color-border-light: #f1f5f9;
+  --dialog-color-text-primary: #1e293b;
+  --dialog-color-text-secondary: #64748b;
+  --dialog-color-accent: #3b82f6;
+  --dialog-color-accent-hover: #2563eb;
+  --font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+} */
+
 /* Settings overlay - covers the entire screen transparently */
 .settings-overlay {
   position: fixed;
@@ -299,280 +552,385 @@ loadSettings();
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 9999;
-  background-color: transparent;
-  pointer-events: all;
-  font-size: 85%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
 }
 
 /* Settings dialog window */
 .settings-dialog {
-  position: fixed;
-  top: 50px;
-  left: 100px;
-  width: 640px;
-  max-height: 90vh;
-  overflow: hidden;
-  background-color: #2e3440;
-  color: #d8dee9;
-  border: 1px solid #4c566a;
+  background: var(--dialog-color-bg-primary);
+  border: 1px solid var(--dialog-color-border);
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  pointer-events: all;
-  resize: both;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   min-width: 500px;
-  min-height: 300px;
+  max-width: 700px;
+  width: 90vw;
+  max-height: 85vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--dialog-font-family-sans);
 }
 
-/* Settings titlebar */
+/* Titlebar */
 .settings-titlebar {
-  background-color: #2e3440;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  border-bottom: 1px solid #4c566a;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--dialog-color-bg-secondary);
+  border-bottom: 1px solid var(--dialog-color-border);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  cursor: move;
   user-select: none;
 }
 
 .window-title {
+  color: var(--dialog-color-text-primary);
   font-weight: 600;
-  color: #d8dee9;
-  font-size: 0.9rem;
-  cursor: move;
+  font-size: 14px;
   flex: 1;
+  cursor: move;
 }
 
 .window-controls {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .window-control-button {
   background: none;
   border: none;
-  color: #d8dee9;
-  font-size: 16px;
+  color: var(--dialog-color-text-secondary);
+  font-size: 18px;
   width: 24px;
   height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .window-control-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background: var(--dialog-color-bg-tertiary);
+  color: var(--dialog-color-text-primary);
 }
 
-.settings-close-button.window-control-button:hover {
-  background-color: #e74c3c;
+.settings-close-button:hover {
+  background: #e74c3c;
   color: white;
 }
 
 /* Settings body */
 .settings-body {
-  padding: 0 20px 20px 20px;
-  max-height: calc(90vh - 100px);
+  padding: 20px;
   overflow-y: auto;
+  flex: 1;
 }
 
-/* Tab Navigation */
+#settings-title {
+  margin: 0 0 20px 0;
+  color: var(--dialog-color-text-primary);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Tab navigation */
 .tab-navigation {
   display: flex;
-  margin: 1rem 0;
-  border-bottom: 2px solid #4c566a;
-  gap: 2px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--dialog-color-border);
+  gap: 1px;
 }
 
 .tab-button {
-  background-color: #3b4252;
+  background: var(--dialog-color-bg-secondary);
   border: none;
-  color: #d8dee9;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
-  font-weight: 500;
+  color: var(--dialog-color-text-secondary);
+  padding: 12px 16px;
   cursor: pointer;
-  border-radius: 6px 6px 0 0;
-  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.2s ease;
+  border-radius: 6px 6px 0 0;
   position: relative;
-  top: 2px; /* Align with border-bottom */
+  bottom: -1px;
 }
 
 .tab-button:hover {
-  background-color: #434c5e;
-  color: #eceff4;
+  background: var(--dialog-color-bg-tertiary);
+  color: var(--dialog-color-text-primary);
 }
 
 .tab-button.active {
-  background-color: #5e81ac;
-  color: white;
-  border-bottom-color: #5e81ac;
+  background: var(--dialog-color-bg-primary);
+  color: var(--dialog-color-tab-accent);
+  border: 2px solid var(--dialog-color-bg-secondary);
+  border-bottom: 2px solid var(--dialog-color-accent);
+
 }
 
-/* Tab Content */
+/* Tab content */
 .tab-content {
-  min-height: 200px;
+  min-height: 300px;
 }
 
 .tab-panel {
-  animation: fadeIn 0.2s ease-in;
+  animation: fadeIn 0.2s ease-in-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
+/* Settings form */
 .settings-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  height: 100%;
 }
 
 .settings-section {
-  border: 1px solid #4c566a;
+  border: 1px solid var(--dialog-color-border);
   border-radius: 6px;
-  padding: 1rem;
-  margin: 0;
-  background-color: #3b4252;
+  margin-bottom: 20px;
+  padding: 0;
+  background: var(--dialog-color-bg-primary);
 }
 
 .settings-section legend {
-  font-weight: bold;
-  font-size: 1.1em;
-  color: #d8dee9;
-  padding: 0 0.5rem;
+  color: var(--dialog-color-text-primary);
+  font-weight: 600;
+  font-size: 16px;
+  padding: 0 12px;
+  margin-left: 8px;
 }
 
+.settings-section > div:first-of-type {
+  padding-top: 16px;
+}
+
+.settings-section > div:last-of-type {
+  padding-bottom: 16px;
+}
+
+/* Setting groups */
 .setting-group {
-  margin-bottom: 0.5rem;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--dialog-color-border-light);
 }
 
 .setting-group:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
 }
 
+.setting-group:hover {
+  background: var(--dialog-color-bg-hover);
+}
+
+/* Checkbox styling */
 .checkbox-label {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  color: var(--dialog-color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 0.9rem;
-  color: #d8dee9;
-  line-height: 1.5;
+  gap: 12px;
+  line-height: 1.4;
 }
 
 .checkbox-label input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
+  display: none;
 }
 
 .checkbox-custom {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #4c566a;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--dialog-color-border);
   border-radius: 3px;
-  background-color: #2e3440;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
+  background: var(--dialog-color-bg-primary);
+  position: relative;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
-  background-color: #5e81ac;
-  border-color: #5e81ac;
+  background: var(--dialog-color-accent);
+  border-color: var(--dialog-color-accent);
+}
+
+.checkbox-custom::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  top: 1px;
+  left: 5px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
-  content: '✓';
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
+  opacity: 1;
 }
 
-.checkbox-label:hover .checkbox-custom {
-  border-color: #5e81ac;
+.checkbox-custom:hover {
+  border-color: var(--dialog-color-tab-accent);
 }
 
+/* Select styling */
 .select-label {
   display: block;
-  margin-bottom: 0.5rem;
+  color: var(--dialog-color-text-primary);
+  font-size: 14px;
   font-weight: 500;
-  color: #d8dee9;
+  margin-bottom: 8px;
 }
 
 .setting-select {
   width: 100%;
-  max-width: 200px;
-  padding: 0.5rem;
-  border: 2px solid #4c566a;
+  padding: 8px 12px;
+  border: 1px solid var(--dialog-color-border);
   border-radius: 4px;
-  background-color: #2e3440;
-  color: #d8dee9;
-  font-size: 0.85rem;
-  margin-bottom: 0.25rem;
+  background: var(--dialog-color-bg-primary);
+  color: var(--dialog-color-text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.setting-select:hover {
+  border-color: var(--dialog-color-accent);
 }
 
 .setting-select:focus {
   outline: none;
-  border-color: #5e81ac;
+  border-color: var(--dialog-color-accent);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
+/* Setting descriptions */
 .setting-description {
-  font-size: 0.875rem;
-  color: #a3be8c;
-  margin: 0.25rem 0 0 1.75rem;
-  line-height: 1.1;
+  margin: 8px 0 0 30px;
+  color: var(--dialog-color-text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
+/* Buttons */
 .settings-buttons {
   display: flex;
-  gap: 1rem;
+  gap: 12px;
   justify-content: flex-end;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #4c566a;
+  padding-top: 20px;
+  border-top: 1px solid var(--dialog-color-border);
+  margin-top: auto;
 }
 
 .button {
-  padding: 0.7rem 1.25rem;
+  padding: 10px 20px;
   border: none;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-weight: 600;
+  min-width: 80px;
 }
 
 .button-primary {
-  background-color: #5e81ac;
+  background: var(--dialog-color-accent);
   color: white;
 }
 
 .button-primary:hover {
-  background-color: #4c729a;
+  background: var(--dialog-color-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
 }
 
 .button-secondary {
-  background-color: #4c566a;
-  color: #d8dee9;
+  background: var(--dialog-color-bg-secondary);
+  color: var(--dialog-color-text-primary);
+  border: 1px solid var(--dialog-color-border);
 }
 
 .button-secondary:hover {
-  background-color: #5d6b83;
+  background: var(--dialog-color-bg-tertiary);
+  transform: translateY(-1px);
 }
 
-.button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.button-info {
+  background: #10b981;
+  color: white;
+  border: 1px solid #059669;
+}
+
+.button-info:hover {
+  background: #059669;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+/* Scrollbar styling */
+.settings-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-body::-webkit-scrollbar-track {
+  background: var(--dialog-color-bg-secondary);
+  border-radius: 4px;
+}
+
+.settings-body::-webkit-scrollbar-thumb {
+  background: var(--dialog-color-border);
+  border-radius: 4px;
+}
+
+.settings-body::-webkit-scrollbar-thumb:hover {
+  background: var(--dialog-color-text-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .settings-dialog {
+    min-width: unset;
+    width: 95vw;
+    margin: 20px;
+  }
+
+  .tab-navigation {
+    flex-direction: column;
+  }
+
+  .tab-button {
+    border-radius: 4px;
+    margin-bottom: 2px;
+  }
+
+  .settings-buttons {
+    flex-direction: column-reverse;
+  }
+
+  .button {
+    width: 100%;
+  }
 }
 </style>

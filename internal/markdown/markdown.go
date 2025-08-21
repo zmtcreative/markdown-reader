@@ -52,17 +52,41 @@ var GlobalAttributeFilter = util.NewBytesFilterString(`accesskey,autocapitalize,
 var CodeBlockAttributeFilter = GlobalAttributeFilter.ExtendString(`nolabel,nolable,label,lable`)
 var dataPrefix = []byte("data-")
 
-type GoldmarkInstanceOptions struct {
-	AllowInlineHTML   bool
-	SanitizeHTML      bool
-	AlertCalloutStyle string
+// ConfigProvider interface to avoid circular imports
+type ConfigProvider interface {
+    // Legacy methods for backward compatibility
+    GetApplicationConfig() (useInlineHTML, useSanitize bool)
+    GetAlertCalloutConfig() string
+
+    // Application-specific configuration getters
+    UseInlineHTML() bool
+    UseSanitize() bool
+    StripH1() bool
+    UseFrontmatter() bool
+
+    // Markdown-specific configuration getters
+    UseGFM() bool
+    UseEmoji() bool
+    UseMermaid() bool
+    UseFigure() bool
+    UseAnchor() bool
+    UseFences() bool
+    UseSections() bool
+    UseHighlighting() bool
+    UseFancyLists() bool
+    UseAttributes() bool
+    UseTypographic() bool
+
+    // Alert callouts configuration getters
+    UseAlertCallouts() bool
+    AlertCalloutStyle() string
 }
 
 // CreateGoldmarkInstance creates and configures a new Goldmark instance.
-func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
+func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
     // Select alert callout icons based on style
     alertIconID := ALERT_NOICONS
-    switch opt.AlertCalloutStyle {
+    switch configProvider.AlertCalloutStyle() {
 	case "GFMStrict":
 		alertIconID = ALERT_GFM_STRICT
     case "GFMWithAliases":
@@ -75,47 +99,141 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
         alertIconID = ALERT_GFM_STRICT // Default to Strict GFM
     }
 
-    // myAlertCalloutsIcons := InitAlertCalloutsIcons(alertIconData)
-    // var _ = myAlertCalloutsIcons
-    options := []goldmark.Option{
-        blockattr.Enable,
-        bracketedspan.Enable,
-        goldmark.WithParserOptions(
-            parser.WithAutoHeadingID(), // Automatically generate IDs for headings
-            parser.WithAttribute(),      // Enable attributes for nodes
-        ),
-        goldmark.WithExtensions(
-            &frontmatter.Extender{}, // Add the frontmatter extension
-            extension.GFM,
-            extension.DefinitionList,
-            extension.Footnote,
-            extension.Typographer,
-            &mermaid.Extender{}, // Add Mermaid support for diagrams
-            emoji.Emoji,
-            figure.Figure.WithSkipNoCaption(),
-            &anchor.Extender{
-                Position: anchor.Before,
-                Texter:   anchor.Text("#"),
-            },
-            &fences.Extender{},
-            sectionwrapper.NewSectionWrapper(
-				sectionwrapper.WithHeadingClass(true),
-			),
-            highlighting.NewHighlighting(
-                highlighting.WithStyle("monokailight"),
-                highlighting.WithWrapperRenderer(highlightingCustomWrapperRenderer),
-                highlighting.WithFormatOptions(
-                    chromahtml.WithClasses(false),
-                    chromahtml.PreventSurroundingPre(true), // Let WithWrapperRenderer handle the <pre> tag
-                    chromahtml.WithAllClasses(false),      // Use all classes for syntax highlighting
-                    chromahtml.Standalone(true),           // Set to false to prevent a full HTML document
-                ),
-            ),
-        ),
-    }
+	// Initialize Goldmark options with bare defaults
+	options := []goldmark.Option{
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(), // Automatically generate IDs for headings
+		),
+		goldmark.WithExtensions(),
+		goldmark.WithRendererOptions(),
+	}
 
-	// Alert Callouts are always enabled, it's just the icon sets that change
-	if alertIconID != ALERT_NOICONS {
+	// Enable inline HTML rendering if configured
+	if configProvider.UseInlineHTML() {
+		options = append(options,
+			goldmark.WithRendererOptions(
+				html.WithUnsafe(),
+			),
+		)
+	}
+
+	// Enable GitHub Flavored Markdown (GFM) extensions and PHP Markdown extensions if configured
+	if configProvider.UseGFM() {
+		options = append(options,
+			goldmark.WithExtensions(
+				extension.GFM,
+				extension.DefinitionList,
+				extension.Footnote,
+			),
+		)
+	}
+
+	// Enable Typographic extensions if configured (for better typography -- fancy quote symbols)
+	if configProvider.UseTypographic() {
+		options = append(options,
+			goldmark.WithExtensions(
+				extension.Typographer,
+			),
+		)
+	}
+
+	// Enable Frontmatter extensions if configured (parses frontmatter metadata)
+	if configProvider.UseFrontmatter() {
+		options = append(options,
+			goldmark.WithExtensions(
+				&frontmatter.Extender{},
+			),
+		)
+	}
+
+	// Enable Mermaid extensions if configured (for Mermaid diagrams/charts)
+	if configProvider.UseMermaid() {
+		options = append(options,
+			goldmark.WithExtensions(
+				&mermaid.Extender{},
+			),
+		)
+	}
+
+	// Enable Emoji extensions if configured
+	if configProvider.UseEmoji() {
+		options = append(options,
+			goldmark.WithExtensions(
+				emoji.Emoji,
+			),
+		)
+	}
+
+	// Enable Figure extensions if configured (adds <figure> and <figcaption> elements)
+	if configProvider.UseFigure() {
+		options = append(options,
+			goldmark.WithExtensions(
+				figure.Figure.WithSkipNoCaption(),
+			),
+		)
+	}
+
+	// Enable Anchor extensions if configured (adds '#' anchor links to headings)
+	if configProvider.UseAnchor() {
+		options = append(options,
+			goldmark.WithExtensions(
+				&anchor.Extender{
+					Position: anchor.After,
+					Texter: anchor.Text("#"),
+				},
+			),
+		)
+	}
+
+	// Enable Fences extensions (Fenced Divs) if configured
+	if configProvider.UseFences() {
+		options = append(options,
+			goldmark.WithExtensions(
+				&fences.Extender{},
+			),
+		)
+	}
+
+	// Enable section wrapper if configured (nested wrapping of heading sections using <section> elements)
+	if configProvider.UseSections() {
+		options = append(options,
+			goldmark.WithExtensions(
+				sectionwrapper.NewSectionWrapper(
+					sectionwrapper.WithHeadingClass(true),
+				),
+			),
+		)
+	}
+
+	// Enable syntax highlighting if configured
+	if configProvider.UseHighlighting() {
+		options = append(options,
+			goldmark.WithExtensions(
+				highlighting.NewHighlighting(
+					highlighting.WithStyle("monokailight"),
+					highlighting.WithWrapperRenderer(highlightingCustomWrapperRenderer),
+					highlighting.WithFormatOptions(
+						chromahtml.WithClasses(false),
+						chromahtml.PreventSurroundingPre(true), // Let WithWrapperRenderer handle the <pre> tag
+						chromahtml.WithAllClasses(false),      // Use all classes for syntax highlighting
+						chromahtml.Standalone(true),           // Set to false to prevent a full HTML document
+					),
+				),
+			),
+		)
+	}
+
+	// Enable Fancy Lists extensions if configured
+	if configProvider.UseFancyLists() {
+		options = append(options,
+			goldmark.WithExtensions(
+				&fancylists.FancyListsOptions{},
+			),
+		)
+	}
+
+	// Enable Alert Callouts extensions if configured
+	if configProvider.UseAlertCallouts() {
 		// Folding is enabled by default here
 		options = append(options,
 			goldmark.WithExtensions(
@@ -128,7 +246,7 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
 		// Add alert callouts based on selected style
 		switch alertIconID {
 		case ALERT_GFM_STRICT:
-			// Use strict GFM icons
+			// Use strict GFM icons supplied by the embedded icon set
 			options = append(options,
 				goldmark.WithExtensions(
 					alertcallouts.NewAlertCallouts(
@@ -139,44 +257,36 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
 			)
 		case ALERT_GFM_WITH_ALIASES:
 			// Use standard GFM icons but with aliases for similar alert names (e.g., notes->note)
+			// (this one is built in to the gm-alert-callouts extension)
 			options = append(options,
 				goldmark.WithExtensions(
 					alertcallouts.NewAlertCallouts(
 						alertcallouts.UseGFMIcons(),
-						// alertcallouts.WithFolding(true),
 					),
 				),
 			)
 		case ALERT_GFM_PLUS:
-			// Use plus GFM icons
+			// Use GFM Plus icons (GFM + Obsidian-style callouts but with GFM and custom icons)
+			// (this one is built in to the gm-alert-callouts extension)
 			options = append(options,
 				goldmark.WithExtensions(
 					alertcallouts.NewAlertCallouts(
 						alertcallouts.UseGFMPlusIcons(),
-						// alertcallouts.WithFolding(true),
 					),
 				),
 			)
 		case ALERT_OBSIDIAN:
-			// Use Obsidian icons
+			// Use Obsidian icons (Obsidian-style callouts using Obsidian's icon set)
+			// (this one is built in to the gm-alert-callouts extension)
 			options = append(options,
 				goldmark.WithExtensions(
 					alertcallouts.NewAlertCallouts(
 						alertcallouts.UseObsidianIcons(),
-						// alertcallouts.WithFolding(true),
 					),
 				),
 			)
 		}
 	}
-
-    if opt.AllowInlineHTML {
-        options = append(options,
-            goldmark.WithRendererOptions(
-                html.WithUnsafe(), // Allow unsafe HTML rendering
-            ),
-        )
-    }
 
 	// Sanitize HTML
 	// Note to Self: There is some kind of parsing priority issue between the Sanitizer,
@@ -184,20 +294,25 @@ func CreateGoldmarkInstance(opt GoldmarkInstanceOptions) goldmark.Markdown {
 	//               The load order seems to matter here. Something to debug later.
 	//
 	//               THIS ordering seems to be working properly for now.
-    if opt.SanitizeHTML {
+    if configProvider.UseSanitize() {
         options = append(options,
             goldmark.WithExtensions(
                 &htmlsanitize.SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
-				&fancylists.FancyListsOptions{},
             ),
         )
-    } else {
-        options = append(options,
-            goldmark.WithExtensions(
-				&fancylists.FancyListsOptions{},
-            ),
-        )
+    }
+
+	// Enable Attributes extensions if configured (to use {.myclass #myid} attribute syntax)
+	if configProvider.UseAttributes() {
+		options = append(options,
+			goldmark.WithParserOptions(
+				parser.WithAttribute(),     // Enable attributes for nodes
+			),
+			blockattr.Enable, // Enable block attributes
+			bracketedspan.Enable, // Enable bracketed span
+		)
 	}
+
 
     return goldmark.New(options...)
 }
@@ -230,7 +345,8 @@ func CleanupHTMLContent(htmlContent []byte) []byte {
     htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
 
     re = regexp.MustCompile("(?si)" + `(?:(?:</body>|</html>)?\s)+(</code>)`)
-    htmlString = re.ReplaceAllString(htmlString, "\r\n$1")
+    // htmlString = re.ReplaceAllString(htmlString, "\r\n$1")  // we do NOT want extra CRLF before closing </code>
+    htmlString = re.ReplaceAllString(htmlString, "$1")
 
     re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)(<code[^>]*>)(?:<html>)`)
     htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
@@ -238,8 +354,9 @@ func CleanupHTMLContent(htmlContent []byte) []byte {
     re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)\s*(?:<body[^>]*>)`)
     htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
 
-    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)(\S+)`)
-    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2\r\n$3")
+    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)(?:\r\n|\n)*(\S+)`)
+    // htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2\r\n$3") // we do NOT want extra CRLF after opening <code>
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2$3")
 
     re = regexp.MustCompile("(?si)" + `(>)\s*(<section[^>]*>)`)
     htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")

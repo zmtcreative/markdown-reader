@@ -2,6 +2,7 @@ build/bin
 frontend/dist
 frontend/node_modules
 tmp/**/*
+scratch/**/*
 
 package-lock.json
 package.json.md5
@@ -43,3 +44,4 @@ frontend/src/assets/scss/**/*.css.map
 
 # Overrides
 !tmp/.gitkeep
+!scratch/.gitkeep

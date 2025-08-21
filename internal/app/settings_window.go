@@ -38,7 +38,7 @@ func (swm *SettingsWindowManager) GetSettings() *Config {
 // SaveSettings saves the provided settings configuration
 func (swm *SettingsWindowManager) SaveSettings(settings *Config) error {
 	// Validate the alert callout style
-	settings.AlertCalloutStyle = swm.configManager.ValidateAlertCalloutStyle(settings.AlertCalloutStyle)
+	settings.AlertCallouts.AlertCalloutStyle = swm.configManager.ValidateAlertCalloutStyle(settings.AlertCallouts.AlertCalloutStyle)
 
 	// Update the configuration
 	swm.configManager.SetConfig(settings)
@@ -55,6 +55,6 @@ func (swm *SettingsWindowManager) SaveSettings(settings *Config) error {
 }
 
 // GetAlertCalloutStyles returns available alert callout styles
-func (swm *SettingsWindowManager) GetAlertCalloutStyles() []string {
+func (swm *SettingsWindowManager) GetAlertCalloutStyles() map[string]string {
 	return AlertCalloutStyles
 }
