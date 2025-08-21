@@ -21,33 +21,23 @@ import (
 // DocumentProcessor handles document processing and rendering
 type DocumentProcessor struct {
     ctx               context.Context
-    stripH1           bool
-    allowInlineHTML   bool
-    sanitizeHTML      bool
-    alertCalloutStyle string
+    configManager     *ConfigManager
     docTypes          []string
     mdConverter       goldmark.Markdown
 }
 
 // NewDocumentProcessor creates a new DocumentProcessor
-func NewDocumentProcessor(ctx context.Context, stripH1, allowInlineHTML, sanitizeHTML bool) *DocumentProcessor {
-    return NewDocumentProcessorWithStyle(ctx, stripH1, allowInlineHTML, sanitizeHTML, "GFMStrict")
+func NewDocumentProcessor(ctx context.Context, configManager *ConfigManager) *DocumentProcessor {
+    return NewDocumentProcessorWithStyle(ctx, configManager)
 }
 
-// NewDocumentProcessorWithStyle creates a new DocumentProcessor with specified alert callout style
-func NewDocumentProcessorWithStyle(ctx context.Context, stripH1, allowInlineHTML, sanitizeHTML bool, alertCalloutStyle string) *DocumentProcessor {
+// NewDocumentProcessorWithStyle creates a new DocumentProcessor with configuration manager
+func NewDocumentProcessorWithStyle(ctx context.Context, configManager *ConfigManager) *DocumentProcessor {
     return &DocumentProcessor{
         ctx:               ctx,
-        stripH1:           stripH1,
-        allowInlineHTML:   allowInlineHTML,
-        sanitizeHTML:      sanitizeHTML,
-        alertCalloutStyle: alertCalloutStyle,
+        configManager:     configManager,
         docTypes:          []string{},
-        mdConverter:       markdown.CreateGoldmarkInstance(markdown.GoldmarkInstanceOptions{
-            AllowInlineHTML:   allowInlineHTML,
-            SanitizeHTML:      sanitizeHTML,
-            AlertCalloutStyle: alertCalloutStyle,
-        }),
+        mdConverter:       markdown.CreateGoldmarkInstance(configManager),
     }
 }
 
@@ -89,7 +79,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
 
     // Extract the document title from the H1 heading element if present
     var thisDocumentTitle string
-    if dp.stripH1 {
+    if dp.configManager.StripH1() {
         thisDocumentTitle, mdContent, _ = markdown.ExtractH1(string(mdContent))
     }
 

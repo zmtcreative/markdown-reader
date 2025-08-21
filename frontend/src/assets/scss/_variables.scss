@@ -1,16 +1,27 @@
+@use "sass:color";
+
 // ============================================================================
 // SCSS Variables - Consolidated from existing CSS custom properties
 // ============================================================================
 
 // Core Application Colors
 $bg-color-light: #ffffff;
+$bg-color-light-rgb: 255, 255, 255;
 $bg-color-dark: #2e3440;
+$bg-color-dark-rgb: 46, 52, 64;
 $text-color-light: #2e3440;
+$text-color-light-rgb: 46, 52, 64;
 $text-color-dark: #d8dee9;
+$text-color-dark-rgb: 216, 222, 233;
 $header-bg-light: #f8f9fa;
+$header-bg-light-rgb: 248, 249, 250;
 $header-bg-dark: #3b4252;
+$header-bg-dark-rgb: 59, 66, 82;
 $border-color-light: #d8dee9;
+$border-color-light-rgb: 216, 222, 233;
 $border-color-dark: #4c566a;
+$border-color-dark-rgb: 76, 86, 106;
+$dialog-color-accent: #3b82f6;
 
 // Typography
 $font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -103,9 +114,9 @@ $codeblock-opacity-dark: 0.25;
 :root {
     // Theme Colors
     --bg-color: #{$bg-color-light};
-    --bg-color-rgb: #{$text-color-light};
+    --bg-color-rgb: #{$bg-color-light-rgb};
     --text-color: #{$text-color-light};
-    --text-color-rgb: #{$text-color-light};
+    --text-color-rgb: #{$text-color-light-rgb};
     --header-bg-color: #{$header-bg-light};
     --border-color: #{$border-color-light};
     --inline-code-bg: #{$inline-code-bg-light};
@@ -145,6 +156,20 @@ $codeblock-opacity-dark: 0.25;
     --callout-fold-isclosed: #{$callout-fold-isclosed};
     --callout-fold-symbol-size: #{$callout-fold-symbol-size};
 
+    // Dialog Settings
+    --dialog-color-bg-primary: #{$bg-color-light};
+    --dialog-color-bg-secondary: #{color.adjust($bg-color-light, $lightness: -10%)};
+    --dialog-color-bg-tertiary: #{color.adjust($bg-color-light, $lightness: -20%)};
+    --dialog-color-bg-hover: var(--dialog-color-bg-secondary);
+    --dialog-color-border: #{color.adjust($bg-color-light, $lightness: -15%)}; // #e2e8f0;
+    --dialog-color-border-light: var(--dialog-color-bg-tertiary);
+    --dialog-color-text-primary: #{$text-color-light};
+    --dialog-color-text-secondary: #{color.adjust($text-color-light, $lightness: 20%)};
+    --dialog-color-accent: #{$dialog-color-accent};
+    --dialog-color-accent-hover: #2563eb;
+    --dialog-color-tab-accent: #{$dialog-color-accent};
+    --dialog-font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+
 
     // Essential colors
     --css-color-white: #{$color-white};
@@ -161,5 +186,16 @@ html.dark {
     --border-color: #{$border-color-dark};
     --inline-code-bg: #{$inline-code-bg-dark};
     --codeblock-opacity: #{$codeblock-opacity-dark};
+    --dialog-color-bg-primary: #{$bg-color-dark};
+    --dialog-color-bg-secondary: #{color.adjust($bg-color-dark, $lightness: -10%)};
+    --dialog-color-bg-tertiary: #{color.adjust($bg-color-dark, $lightness: -20%)};
+    --dialog-color-bg-hover: var(--dialog-color-bg-secondary);
+    --dialog-color-border: #{color.adjust($bg-color-dark, $lightness: -15%)}; // #e2e8f0;
+    --dialog-color-border-light: var(--dialog-color-bg-tertiary);
+    --dialog-color-text-primary: #{$text-color-dark};
+    --dialog-color-text-secondary: #{color.adjust($text-color-dark, $lightness: 20%)};
+    --dialog-color-accent: #{$dialog-color-accent};
+    --dialog-color-tab-accent: #{color.adjust($bg-color-dark, $lightness: 50%)};
+    --dialog-color-accent-hover: #2563eb;
 }
 

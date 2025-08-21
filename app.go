@@ -57,10 +57,12 @@ func NewApp(cliArgs *cli.CliArgs) *App {
     configManager := app.NewConfigManager()
 
     // Apply CLI overrides to configuration
-    configManager.ApplyCliOverrides(cliArgs.AllowInlineHTML, cliArgs.SanitizeHTML, cliArgs.StripH1)
+    //   (Removed these from CliArgs [2025-08-20])
+    //   No need to deal with overrides for now -- leave as is in case we need it in the future
+    // configManager.ApplyCliOverrides(cliArgs.AllowInlineHTML, cliArgs.SanitizeHTML, cliArgs.StripH1)
 
     // Get final configuration after overrides
-    finalConfig := configManager.GetConfig()
+    // finalConfig := configManager.GetConfig()
 
     // Handle app name
     appProgNameWithExt := stringFromPtr(cliArgs.AppProgNameWithExt, "md-reader")
@@ -68,12 +70,12 @@ func NewApp(cliArgs *cli.CliArgs) *App {
 
     return &App{
         frontMatter:        map[string]string{},                                // Initialize an empty map for frontmatter
-        stripH1:            finalConfig.StripH1,                               // Use config value (with CLI overrides)
+        // stripH1:            finalConfig.Application.StripH1,                    // Use config value (with CLI overrides)
         currentFile:        stringFromPtr(cliArgs.InitialFile, ""),            // Default to empty, can be set via CLI flag
         appProgName:        stringFromPtr(cliArgs.AppProgName, "md-reader"),   // Store the application name without extension
         appProgNameWithExt: appProgNameWithExt,                                // Store the application name with extension
-        allowInlineHTML:    finalConfig.AllowInlineHTML,                       // Use config value (with CLI overrides)
-        sanitizeHTML:       finalConfig.SanitizeHTML,                          // Use config value (with CLI overrides)
+        // allowInlineHTML:    finalConfig.Application.UseInlineHTML,             // Use config value (with CLI overrides)
+        // sanitizeHTML:       finalConfig.Application.UseSanitize,               // Use config value (with CLI overrides)
         showHelp:           boolFromPtr(cliArgs.ShowHelp, false),              // Default to false, can be set via CLI flag
         versionInfo:        setAboutString,                                     // Set version info using the application name with extension
         cmdlineOptions:     stringFromPtr(cliArgs.CmdlineOptions, ""),         // Store the command line options for help display
@@ -143,8 +145,7 @@ func (a *App) startup(ctx context.Context) {
     a.binaryDetector = app.NewBinaryDetector()
 
     // Get the current configuration for document processor
-    config := a.configManager.GetConfig()
-    a.documentProcessor = app.NewDocumentProcessorWithStyle(ctx, a.stripH1, a.allowInlineHTML, a.sanitizeHTML, config.AlertCalloutStyle)
+    a.documentProcessor = app.NewDocumentProcessorWithStyle(ctx, a.configManager)
     a.fileManager = app.NewFileManager(ctx, a.binaryDetector, a.documentProcessor)
 }
 
@@ -290,14 +291,14 @@ func (a *App) GetSettings() *app.Config {
 }
 
 // GetAlertCalloutStyles returns the available alert callout styles
-func (a *App) GetAlertCalloutStyles() []string {
+func (a *App) GetAlertCalloutStyles() map[string]string {
     return app.AlertCalloutStyles
 }
 
 // SaveSettings saves the provided settings configuration
 func (a *App) SaveSettings(settings *app.Config) error {
     // Validate the alert callout style
-    settings.AlertCalloutStyle = a.configManager.ValidateAlertCalloutStyle(settings.AlertCalloutStyle)
+    settings.AlertCallouts.AlertCalloutStyle = a.configManager.ValidateAlertCalloutStyle(settings.AlertCallouts.AlertCalloutStyle)
 
     // Update the configuration
     a.configManager.SetConfig(settings)
@@ -308,12 +309,12 @@ func (a *App) SaveSettings(settings *app.Config) error {
     }
 
     // Update the current app settings
-    a.allowInlineHTML = settings.AllowInlineHTML
-    a.sanitizeHTML = settings.SanitizeHTML
-    a.stripH1 = settings.StripH1
+    a.allowInlineHTML = settings.Application.UseInlineHTML
+    a.sanitizeHTML = settings.Application.UseSanitize
+    a.stripH1 = settings.Application.StripH1
 
     // Recreate the document processor with new settings
-    a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.stripH1, a.allowInlineHTML, a.sanitizeHTML, settings.AlertCalloutStyle)
+    a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
 
     // Update the file manager with the new document processor
     a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
@@ -323,6 +324,36 @@ func (a *App) SaveSettings(settings *app.Config) error {
         if reloadErr := a.ReloadCurrentDocument(); reloadErr != nil {
             log.Printf("Warning: Failed to reload document after settings change: %v", reloadErr)
             // Don't return the reload error, as settings were successfully saved
+        }
+    }
+
+    return nil
+}
+
+// SaveSettingsSessionOnly applies the provided settings to the current session without saving to disk
+func (a *App) SaveSettingsSessionOnly(settings *app.Config) error {
+    // Validate the alert callout style
+    settings.AlertCallouts.AlertCalloutStyle = a.configManager.ValidateAlertCalloutStyle(settings.AlertCallouts.AlertCalloutStyle)
+
+    // Update the configuration in memory only (do NOT call SaveConfig)
+    a.configManager.SetConfig(settings)
+
+    // Update the current app settings
+    a.allowInlineHTML = settings.Application.UseInlineHTML
+    a.sanitizeHTML = settings.Application.UseSanitize
+    a.stripH1 = settings.Application.StripH1
+
+    // Recreate the document processor with new settings
+    a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
+
+    // Update the file manager with the new document processor
+    a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
+
+    // Automatically reload the current document to apply new settings
+    if a.currentFile != "" {
+        if reloadErr := a.ReloadCurrentDocument(); reloadErr != nil {
+            log.Printf("Warning: Failed to reload document after settings change: %v", reloadErr)
+            // Don't return the reload error, as settings were successfully applied
         }
     }
 

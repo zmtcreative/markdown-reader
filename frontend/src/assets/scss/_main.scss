@@ -111,7 +111,7 @@ body[class] {
         border-radius: $border-radius;
     }
 
-    pre[language] {
+    pre {
         border: 1px solid black;
         position: relative;
         padding-top: inherit;
@@ -121,6 +121,23 @@ body[class] {
         > code {
             display: block;
             padding: 0.75rem 0.5rem;
+            line-height: 1.15;
+            overflow-x: auto;
+            font-size: 14px;
+            background-color: inherit;
+        }
+    }
+
+    pre[language] {
+        border: 1px solid black;
+        position: relative;
+        padding-top: inherit;
+        height: auto;
+        background-color: rgba(var(--css-color-black), var(--codeblock-opacity));
+
+        > code {
+            display: block;
+            padding: 1.75rem 0.5rem 0.75rem 0.5rem;
             line-height: 1.15;
             overflow-x: auto;
             font-size: 14px;
@@ -157,10 +174,29 @@ body[class] {
             content: attr(label);
         }
 
+        &[lable]:has(code)::before {
+            content: attr(lable);
+        }
+
         &.nolabel:has(code)::before,
+        &.nolable:has(code)::before,
+        &[nolable]:has(code)::before,
         &[nolabel]:has(code)::before {
             content: "";
             display: none;
+
+            & > code.chroma {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+
+        &.nolabel:has(code),
+        &.nolable:has(code),
+        &[nolable]:has(code),
+        &[nolabel]:has(code) {
+            > code.chroma {
+                padding: 0.75rem 0.5rem;
+            }
         }
     }
 
@@ -183,6 +219,75 @@ body[class] {
 
         th {
             font-weight: 600;
+        }
+    }
+
+    // GFM Task Lists Style
+    ul:has(li) {
+        margin: 0;
+        margin-top: 0.15rem;
+
+        li:has(input) {
+            list-style-type: none;
+            margin: 0;
+            margin-left: -1rem;
+            padding: 0;
+
+            input[disabled][type=checkbox] {
+                appearance: none;
+                height: 15px;
+                width: 15px;
+                border: 1px solid var(--text-color);
+                display: inline-block;
+                border-radius: 3px;
+                position: relative;
+                margin-bottom: -0.05rem;
+                margin-top: 0.25rem;
+
+                &:checked {
+                    &::before {
+                        content: '\2714';
+                        position: absolute;
+                        top: -3px;
+                        left: 1px;
+                        font-size: 13px;
+                        font-weight: 900;
+                        color: var(--text-color);
+                    }
+                }
+            }
+        }
+    }
+
+    // PHP Markdown Definition Lists Style
+    dl {
+        text-align: left;
+        margin-left: 0.5rem;
+        dt {
+            font-weight: bold;
+        }
+        dd {
+            margin-left: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    // PHP Markdown Footnotes Style
+    sup[id^="fnref"] {
+        font-size: 0.8em;
+        font-weight: 500;
+        // color: var(--text-color);
+        vertical-align: super;
+        line-height: 1;
+        padding-left: 0.05rem;
+
+        & > a {
+            text-decoration: underline;
+            // color: var(--bg-color);
+            // border: 1px solid var(--text-color);
+            // padding: 0 0.0625rem;
+            // background-color: rgba(var(--text-color-rgb), 0.85);
+            // border-radius: 6px;
         }
     }
 

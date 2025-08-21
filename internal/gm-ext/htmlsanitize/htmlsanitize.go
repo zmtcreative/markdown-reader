@@ -238,10 +238,14 @@ func filterNodeList(nodes []*gohtml.Node) []*gohtml.Node {
 // filterNode applies security filters to an HTML node
 func filterNode(node *gohtml.Node) *gohtml.Node {
 	// Remove forbidden elements and their contents
+	// Note to Self: 'input' used to be on this list, but it was removed to ensure it doesn't break
+	//                 things like the Task List GFM extension (which uses bare input checkboxes). The 'input'
+	//                 element will still be removed if it's inside a 'form' (or one of the other
+	//                 elements on the list below)
 	if node.Type == gohtml.ElementNode {
 		forbiddenTags := []string{
 			"script", "dialog", "embed", "iframe",
-			"form", "button", "input", "select",
+			"form", "button", "select",
 		}
 		for _, tag := range forbiddenTags {
 			if strings.EqualFold(node.Data, tag) {

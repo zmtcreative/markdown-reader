@@ -46,6 +46,10 @@ export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
 }
 
+export function SaveSettingsSessionOnly(arg1) {
+  return window['go']['main']['App']['SaveSettingsSessionOnly'](arg1);
+}
+
 export function SetTheme(arg1) {
   return window['go']['main']['App']['SetTheme'](arg1);
 }
