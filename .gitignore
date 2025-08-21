@@ -45,3 +45,4 @@ frontend/src/assets/scss/**/*.css.map
 # Overrides
 !tmp/.gitkeep
 !scratch/.gitkeep
+WARP.md
