@@ -1,0 +1,348 @@
+package main
+
+import (
+	"strings"
+	"testing"
+
+	"md-reader/internal/cli"
+)
+
+func TestBoolFromPtr(t *testing.T) {
+	tests := []struct {
+		name         string
+		ptr          *bool
+		defaultValue bool
+		expected     bool
+	}{
+		{
+			name:         "nil pointer with true default",
+			ptr:          nil,
+			defaultValue: true,
+			expected:     true,
+		},
+		{
+			name:         "nil pointer with false default",
+			ptr:          nil,
+			defaultValue: false,
+			expected:     false,
+		},
+		{
+			name:         "non-nil pointer with true value",
+			ptr:          boolPtr(true),
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			name:         "non-nil pointer with false value",
+			ptr:          boolPtr(false),
+			defaultValue: true,
+			expected:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := boolFromPtr(tt.ptr, tt.defaultValue)
+			if result != tt.expected {
+				t.Errorf("boolFromPtr() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestStringFromPtr(t *testing.T) {
+	tests := []struct {
+		name         string
+		ptr          *string
+		defaultValue string
+		expected     string
+	}{
+		{
+			name:         "nil pointer with default",
+			ptr:          nil,
+			defaultValue: "default",
+			expected:     "default",
+		},
+		{
+			name:         "nil pointer with empty default",
+			ptr:          nil,
+			defaultValue: "",
+			expected:     "",
+		},
+		{
+			name:         "non-nil pointer with value",
+			ptr:          stringPtr("test"),
+			defaultValue: "default",
+			expected:     "test",
+		},
+		{
+			name:         "non-nil pointer with empty value",
+			ptr:          stringPtr(""),
+			defaultValue: "default",
+			expected:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := stringFromPtr(tt.ptr, tt.defaultValue)
+			if result != tt.expected {
+				t.Errorf("stringFromPtr() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestSetAbout(t *testing.T) {
+	tests := []struct {
+		name                string
+		appProgNameWithExt  string
+		expectedContains    []string
+		expectedNotContains []string
+	}{
+		{
+			name:               "standard app name",
+			appProgNameWithExt: "md-reader.exe",
+			expectedContains: []string{
+				"md-reader.exe",
+				"Copyright 2025",
+				"Version",
+				Date, // Use the actual variable instead of "BuildDate"
+			},
+			expectedNotContains: []string{},
+		},
+		{
+			name:               "custom app name",
+			appProgNameWithExt: "markdown-viewer",
+			expectedContains: []string{
+				"markdown-viewer",
+				"Copyright 2025",
+			},
+			expectedNotContains: []string{},
+		},
+		{
+			name:               "empty app name",
+			appProgNameWithExt: "",
+			expectedContains: []string{
+				"Copyright 2025",
+				"Version",
+			},
+			expectedNotContains: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := setAbout(tt.appProgNameWithExt)
+
+			// Check that result is not empty
+			if result == "" {
+				t.Error("setAbout() returned empty string")
+			}
+
+			// Check expected content
+			for _, expected := range tt.expectedContains {
+				if !strings.Contains(result, expected) {
+					t.Errorf("setAbout() result missing expected content: %q", expected)
+				}
+			}
+
+			// Check content that should not be present
+			for _, notExpected := range tt.expectedNotContains {
+				if strings.Contains(result, notExpected) {
+					t.Errorf("setAbout() result contains unexpected content: %q", notExpected)
+				}
+			}
+
+			// Check that it looks like HTML (basic sanity check)
+			if !strings.Contains(result, "<") || !strings.Contains(result, ">") {
+				t.Error("setAbout() result does not appear to be HTML")
+			}
+		})
+	}
+}
+
+func TestNewApp(t *testing.T) {
+	tests := []struct {
+		name     string
+		cliArgs  *cli.CliArgs
+		validate func(t *testing.T, app *App)
+	}{
+		{
+			name: "default values",
+			cliArgs: &cli.CliArgs{
+				InitialFile:         nil,
+				ShowHelp:            nil,
+				CmdlineOptions:      stringPtr("test options"),
+				AppProgName:         stringPtr("md-reader"),
+				AppProgNameWithExt:  stringPtr("md-reader.exe"),
+			},
+			validate: func(t *testing.T, app *App) {
+				if app.currentFile != "" {
+					t.Errorf("NewApp() currentFile = %q, want empty string", app.currentFile)
+				}
+				if app.showHelp != false {
+					t.Errorf("NewApp() showHelp = %v, want false", app.showHelp)
+				}
+				if app.appProgName != "md-reader" {
+					t.Errorf("NewApp() appProgName = %q, want %q", app.appProgName, "md-reader")
+				}
+				if app.appProgNameWithExt != "md-reader.exe" {
+					t.Errorf("NewApp() appProgNameWithExt = %q, want %q", app.appProgNameWithExt, "md-reader.exe")
+				}
+				if app.cmdlineOptions != "test options" {
+					t.Errorf("NewApp() cmdlineOptions = %q, want %q", app.cmdlineOptions, "test options")
+				}
+			},
+		},
+		{
+			name: "with initial file and help",
+			cliArgs: &cli.CliArgs{
+				InitialFile:         stringPtr("test.md"),
+				ShowHelp:            boolPtr(true),
+				CmdlineOptions:      stringPtr("help text"),
+				AppProgName:         stringPtr("custom-reader"),
+				AppProgNameWithExt:  stringPtr("custom-reader"),
+			},
+			validate: func(t *testing.T, app *App) {
+				if app.currentFile != "test.md" {
+					t.Errorf("NewApp() currentFile = %q, want %q", app.currentFile, "test.md")
+				}
+				if app.showHelp != true {
+					t.Errorf("NewApp() showHelp = %v, want true", app.showHelp)
+				}
+				if app.appProgName != "custom-reader" {
+					t.Errorf("NewApp() appProgName = %q, want %q", app.appProgName, "custom-reader")
+				}
+			},
+		},
+		{
+			name: "nil values",
+			cliArgs: &cli.CliArgs{
+				InitialFile:         nil,
+				ShowHelp:            nil,
+				CmdlineOptions:      nil,
+				AppProgName:         nil,
+				AppProgNameWithExt:  nil,
+			},
+			validate: func(t *testing.T, app *App) {
+				if app.currentFile != "" {
+					t.Errorf("NewApp() currentFile = %q, want empty string", app.currentFile)
+				}
+				if app.showHelp != false {
+					t.Errorf("NewApp() showHelp = %v, want false", app.showHelp)
+				}
+				if app.appProgName != "md-reader" {
+					t.Errorf("NewApp() appProgName = %q, want %q", app.appProgName, "md-reader")
+				}
+				if app.appProgNameWithExt != "md-reader" {
+					t.Errorf("NewApp() appProgNameWithExt = %q, want %q", app.appProgNameWithExt, "md-reader")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := NewApp(tt.cliArgs)
+
+			if app == nil {
+				t.Fatal("NewApp() returned nil")
+			}
+
+			// Check that frontMatter map is initialized
+			if app.frontMatter == nil {
+				t.Error("NewApp() frontMatter map is nil")
+			}
+
+			// Check that configManager is initialized
+			if app.configManager == nil {
+				t.Error("NewApp() configManager is nil")
+			}
+
+			// Check that versionInfo is not empty
+			if app.versionInfo == "" {
+				t.Error("NewApp() versionInfo is empty")
+			}
+
+			// Run specific validation
+			if tt.validate != nil {
+				tt.validate(t, app)
+			}
+		})
+	}
+}
+
+func TestAppConfigDelegation(t *testing.T) {
+	// Create a basic app instance for testing delegation methods
+	cliArgs := &cli.CliArgs{
+		AppProgName:        stringPtr("test-app"),
+		AppProgNameWithExt: stringPtr("test-app.exe"),
+	}
+
+	app := NewApp(cliArgs)
+	if app == nil {
+		t.Fatal("NewApp() returned nil")
+	}
+
+	// Test GetSettings delegation
+	settings := app.GetSettings()
+	if settings == nil {
+		t.Error("GetSettings() returned nil")
+	}
+
+	// Test GetAlertCalloutStyles delegation
+	styles := app.GetAlertCalloutStyles()
+	if styles == nil {
+		t.Error("GetAlertCalloutStyles() returned nil")
+	}
+
+	// Should contain expected alert callout styles
+	expectedKeys := []string{"GFMStrict", "GFMWithAliases", "GFMPlus", "Obsidian"}
+	for _, key := range expectedKeys {
+		if _, exists := styles[key]; !exists {
+			t.Errorf("GetAlertCalloutStyles() missing key: %s", key)
+		}
+	}
+
+	// Skip GetTheme() test since it requires context initialization
+	// which happens in the startup() method, not in NewApp()
+}
+
+func TestAppVersionInfo(t *testing.T) {
+	cliArgs := &cli.CliArgs{
+		AppProgName:        stringPtr("test-md-reader"),
+		AppProgNameWithExt: stringPtr("test-md-reader.exe"),
+	}
+
+	app := NewApp(cliArgs)
+	if app == nil {
+		t.Fatal("NewApp() returned nil")
+	}
+
+	versionInfo := app.versionInfo
+	if versionInfo == "" {
+		t.Error("App versionInfo is empty")
+	}
+
+	// Check that version info contains expected elements
+	expectedElements := []string{
+		"test-md-reader.exe",
+		"Copyright 2025",
+	}
+
+	for _, element := range expectedElements {
+		if !strings.Contains(versionInfo, element) {
+			t.Errorf("versionInfo missing expected element: %q", element)
+		}
+	}
+}
+
+// Helper functions
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+func stringPtr(s string) *string {
+	return &s
+}

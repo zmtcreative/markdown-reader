@@ -31,14 +31,11 @@ var licenseShort string
 // App struct
 type App struct {
     ctx                 context.Context
-    frontMatter         map[string]string // Store frontmatter data here
     currentFile         string
     appProgName         string // Store the application name without extension
     appProgNameWithExt  string // Store the application name with extension
-    stripH1             bool   // Flag to indicate if the first H1 should be stripped
-    allowInlineHTML     bool   // Flag to indicate if inline HTML is allowed
-    sanitizeHTML        bool   // Flag to control sanitization of HTML and URL links
     showHelp            bool   // Flag to indicate if help should be shown
+    frontMatter         map[string]string // Store frontmatter data
     cmdlineOptions      string // Store command line options here
     versionInfo         string // Store version information
 
@@ -70,12 +67,9 @@ func NewApp(cliArgs *cli.CliArgs) *App {
 
     return &App{
         frontMatter:        map[string]string{},                                // Initialize an empty map for frontmatter
-        // stripH1:            finalConfig.Application.StripH1,                    // Use config value (with CLI overrides)
         currentFile:        stringFromPtr(cliArgs.InitialFile, ""),            // Default to empty, can be set via CLI flag
         appProgName:        stringFromPtr(cliArgs.AppProgName, "md-reader"),   // Store the application name without extension
         appProgNameWithExt: appProgNameWithExt,                                // Store the application name with extension
-        // allowInlineHTML:    finalConfig.Application.UseInlineHTML,             // Use config value (with CLI overrides)
-        // sanitizeHTML:       finalConfig.Application.UseSanitize,               // Use config value (with CLI overrides)
         showHelp:           boolFromPtr(cliArgs.ShowHelp, false),              // Default to false, can be set via CLI flag
         versionInfo:        setAboutString,                                     // Set version info using the application name with extension
         cmdlineOptions:     stringFromPtr(cliArgs.CmdlineOptions, ""),         // Store the command line options for help display
@@ -263,25 +257,30 @@ func (a *App) ReloadCurrentDocument() error {
     return nil
 }
 
-// AddDocClass adds the class to html and body elements
-func (a *App) AddDocClass(thisClass ...string) {
-    a.documentProcessor.AddDocClass(thisClass...)
-}
-
-// RemoveDocClass removes the class from html and body elements
-func (a *App) RemoveDocClass(thisClass ...string) {
-    a.documentProcessor.RemoveDocClass(thisClass...)
-}
-
-// ToggleDocClass toggles the class on html and body elements
-func (a *App) ToggleDocClass(thisClass ...string) {
-    a.documentProcessor.ToggleDocClass(thisClass...)
-}
-
-// OpenFileMenuHandler handles the File > Open menu action
-func (a *App) OpenFileMenuHandler(data *menu.CallbackData) {
-    a.fileManager.OpenFileMenuHandler(data, &a.currentFile)
-}
+// TODO: CLEANUP - These wrapper methods are never called from the frontend
+// The frontend uses its own JavaScript functions instead
+//
+// Probably don't need these any longer, but leave them commented out for now.
+//
+// // AddDocClass adds the class to html and body elements
+// func (a *App) AddDocClass(thisClass ...string) {
+//     a.documentProcessor.AddDocClass(thisClass...)
+// }
+//
+// // RemoveDocClass removes the class from html and body elements
+// func (a *App) RemoveDocClass(thisClass ...string) {
+//     a.documentProcessor.RemoveDocClass(thisClass...)
+// }
+//
+// // ToggleDocClass toggles the class on html and body elements
+// func (a *App) ToggleDocClass(thisClass ...string) {
+//     a.documentProcessor.ToggleDocClass(thisClass...)
+// }
+//
+// // OpenFileMenuHandler handles the File > Open menu action
+// func (a *App) OpenFileMenuHandler(data *menu.CallbackData) {
+//     a.fileManager.OpenFileMenuHandler(data, &a.currentFile)
+// }
 
 // Settings-related methods
 
@@ -309,9 +308,6 @@ func (a *App) SaveSettings(settings *app.Config) error {
     }
 
     // Update the current app settings
-    a.allowInlineHTML = settings.Application.UseInlineHTML
-    a.sanitizeHTML = settings.Application.UseSanitize
-    a.stripH1 = settings.Application.StripH1
 
     // Recreate the document processor with new settings
     a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
@@ -339,9 +335,6 @@ func (a *App) SaveSettingsSessionOnly(settings *app.Config) error {
     a.configManager.SetConfig(settings)
 
     // Update the current app settings
-    a.allowInlineHTML = settings.Application.UseInlineHTML
-    a.sanitizeHTML = settings.Application.UseSanitize
-    a.stripH1 = settings.Application.StripH1
 
     // Recreate the document processor with new settings
     a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
