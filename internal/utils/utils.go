@@ -12,19 +12,23 @@ func GetValueFromMap(m map[string]string, key string) string {
 	if v, ok := m[key]; ok {
 		return v
 	}
-	key = strings.ToLower(key)
-	if v, ok := m[key]; ok {
+
+	lowerKey := strings.ToLower(key)
+	if v, ok := m[lowerKey]; ok {
 		return v
 	}
-	key = strings.ToUpper(key)
-	if v, ok := m[key]; ok {
+
+	upperKey := strings.ToUpper(key)
+	if v, ok := m[upperKey]; ok {
 		return v
 	}
+
 	caser := cases.Title(language.English, cases.Compact)
-	key = caser.String(key)
-	if v, ok := m[key]; ok {
+	titleKey := caser.String(key)
+	if v, ok := m[titleKey]; ok {
 		return v
 	}
+
 	return ""
 }
 
