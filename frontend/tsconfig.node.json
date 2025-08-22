@@ -3,9 +3,12 @@
     "composite": true,
     "module": "ESNext",
     "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "types": ["node", "@playwright/test"]
   },
   "include": [
-    "vite.config.ts"
+    "vite.config.ts",
+    "playwright.config.ts",
+    "tests/**/*.ts"
   ]
 }
