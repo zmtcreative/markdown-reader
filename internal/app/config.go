@@ -18,10 +18,11 @@ type Config struct {
 
 // Application-Specific Settings
 type ApplicationOptions struct {
-	UseInlineHTML      bool   `mapstructure:"use_inline_html" json:"use_inline_html"`         // Inline HTML support (allow inline HTML in Markdown)
-	UseSanitize        bool   `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`     // HTML Sanitization (remove unsafe elements and links)
-	StripH1            bool   `mapstructure:"strip_h1" json:"strip_h1"`                       // Strip First H1 and Use as Title
-	UseFrontmatter     bool   `mapstructure:"use_frontmatter" json:"use_frontmatter"`         // Parse Frontmatter
+	UseInlineHTML       bool   `mapstructure:"use_inline_html" json:"use_inline_html"`             // Inline HTML support (allow inline HTML in Markdown)
+	UseSanitize         bool   `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`         // HTML Sanitization (remove unsafe elements and links)
+	StripH1             bool   `mapstructure:"strip_h1" json:"strip_h1"`                           // Strip First H1 and Use as Title
+	// UseFrontmatter      bool   `mapstructure:"use_frontmatter" json:"use_frontmatter"`             // Parse Frontmatter
+	UseFrontmatterTitle bool   `mapstructure:"use_frontmatter_title" json:"use_frontmatter_title"` // Always Use Frontmatter Title if Available
 }
 
 // Markdown-Specific Settings
@@ -101,7 +102,7 @@ func NewConfigManager() *ConfigManager {
 	v.SetDefault("application.use_inline_html", true)
 	v.SetDefault("application.use_sanitize_html", true)
 	v.SetDefault("application.strip_h1", true)
-	v.SetDefault("application.use_frontmatter", true)
+	v.SetDefault("application.use_frontmatter_title", true)
 
 	// Set default values for Markdown section
 	v.SetDefault("markdown.use_gfm", true)
@@ -187,7 +188,7 @@ func (cm *ConfigManager) loadConfig() {
 				UseInlineHTML:  true,
 				UseSanitize:    true,
 				StripH1:        true,
-				UseFrontmatter: true,
+				UseFrontmatterTitle: true,
 			},
 			Markdown: MarkdownOptions{
 				UseGFM:          true,
@@ -226,7 +227,7 @@ func (cm *ConfigManager) SaveConfig() error {
 	cm.viper.Set("application.use_inline_html", cm.config.Application.UseInlineHTML)
 	cm.viper.Set("application.use_sanitize_html", cm.config.Application.UseSanitize)
 	cm.viper.Set("application.strip_h1", cm.config.Application.StripH1)
-	cm.viper.Set("application.use_frontmatter", cm.config.Application.UseFrontmatter)
+	cm.viper.Set("application.use_frontmatter_title", cm.config.Application.UseFrontmatterTitle)
 
 	// Update viper with current config values for Markdown section
 	cm.viper.Set("markdown.use_gfm", cm.config.Markdown.UseGFM)
@@ -298,8 +299,8 @@ func (cm *ConfigManager) StripH1() bool {
 	return cm.config.Application.StripH1
 }
 
-func (cm *ConfigManager) UseFrontmatter() bool {
-	return cm.config.Application.UseFrontmatter
+func (cm *ConfigManager) UseFrontmatterTitle() bool {
+	return cm.config.Application.UseFrontmatterTitle
 }
 
 // Markdown-specific configuration getters

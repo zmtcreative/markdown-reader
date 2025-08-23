@@ -33,8 +33,8 @@ func TestNewConfigManager(t *testing.T) {
 	if !config.Application.StripH1 {
 		t.Error("Default StripH1 should be true")
 	}
-	if !config.Application.UseFrontmatter {
-		t.Error("Default UseFrontmatter should be true")
+	if !config.Application.UseFrontmatterTitle {
+		t.Error("Default UseFrontmatterTitle should be true")
 	}
 
 	// Test Markdown defaults
@@ -83,7 +83,7 @@ func TestConfigManagerGettersAndSetters(t *testing.T) {
 			UseInlineHTML:  false,
 			UseSanitize:    false,
 			StripH1:        false,
-			UseFrontmatter: false,
+			UseFrontmatterTitle: false,
 		},
 		Markdown: MarkdownOptions{
 			UseGFM:          false,
@@ -306,7 +306,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 			UseInlineHTML:  false,
 			UseSanitize:    false,
 			StripH1:        false,
-			UseFrontmatter: false,
+			UseFrontmatterTitle: false,
 		},
 		Markdown: MarkdownOptions{
 			UseGFM:   false,

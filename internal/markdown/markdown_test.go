@@ -40,13 +40,13 @@ func TestExtractH1(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            title, body, err := ExtractH1(tt.input) // Renamed 'found' to 'err' for clarity
+            title, err := ExtractH1(tt.input) // Renamed 'found' to 'err' for clarity
             if title != tt.expectedTitle {
                 t.Errorf("ExtractH1() title = %q, want %q", title, tt.expectedTitle)
             }
-            if strings.TrimSpace(string(body)) != strings.TrimSpace(tt.expectedBody) {
-                t.Errorf("ExtractH1() body = %q, want %q", string(body), tt.expectedBody)
-            }
+            // if strings.TrimSpace(string(body)) != strings.TrimSpace(tt.expectedBody) {
+            //     t.Errorf("ExtractH1() body = %q, want %q", string(body), tt.expectedBody)
+            // }
 
             // Check if an error was returned, which indicates whether the H1 was found.
             h1Found := err == nil
@@ -54,15 +54,6 @@ func TestExtractH1(t *testing.T) {
                 t.Errorf("ExtractH1() found = %v, want %v (error: %v)", h1Found, tt.expectFound, err)
             }
         })
-    }
-}
-
-func TestCleanupHTMLContent(t *testing.T) {
-    input := `<p>Line 1</p><p>Line 2</p>`
-    expected := "<p>Line 1</p>\r\n<p>Line 2</p>"
-    output := CleanupHTMLContent([]byte(input))
-    if string(output) != expected {
-        t.Errorf("CleanupHTMLContent() = %q, want %q", string(output), expected)
     }
 }
 
@@ -104,70 +95,6 @@ func TestInitAlertCalloutsIcons(t *testing.T) {
     // Test that we have a reasonable number of total icons (core + aliases)
     if len(icons) < 5 {
         t.Errorf("InitAlertIcons() returned %d icons, expected at least 5", len(icons))
-    }
-}
-
-func TestCleanupHTMLContentExtended(t *testing.T) {
-    tests := []struct {
-        name     string
-        input    string
-        expected string
-    }{
-        {
-            name:     "simple paragraph separation",
-            input:    `<p>Line 1</p><p>Line 2</p>`,
-            expected: "<p>Line 1</p>\r\n<p>Line 2</p>",
-        },
-        {
-            name:     "multiple paragraphs",
-            input:    `<p>First</p><p>Second</p><p>Third</p>`,
-            expected: "<p>First</p>\r\n<p>Second</p>\r\n<p>Third</p>",
-        },
-        {
-            name:     "paragraph with attributes",
-            input:    `<p class="test">Line 1</p><p id="test">Line 2</p>`,
-            expected: "<p class=\"test\">Line 1</p>\r\n<p id=\"test\">Line 2</p>",
-        },
-        {
-            name:     "pre and code elements",
-            input:    `<pre><code>console.log('hello');</code></pre>`,
-            expected: "<pre>\r\n<code>console.log('hello');</code></pre>",
-        },
-        {
-            name:     "pre with attributes",
-            input:    `<pre class="highlight"><code class="js">var x = 1;</code></pre>`,
-            expected: "<pre class=\"highlight\">\r\n<code class=\"js\">var x = 1;</code></pre>",
-        },
-        {
-            name:     "section elements",
-            input:    `<div><section>Content</section></div>`,
-            expected: "<div>\r\n<section>Content</section></div>",
-        },
-        {
-            name:     "mixed content",
-            input:    `<p>Para 1</p><section><p>Para 2</p></section>`,
-            expected: "<p>Para 1</p>\r\n<section>\r\n<p>Para 2</p></section>",
-        },
-        {
-            name:     "empty input",
-            input:    "",
-            expected: "",
-        },
-        {
-            name:     "no matching patterns",
-            input:    `<div>Simple content</div>`,
-            expected: "<div>Simple content</div>",
-        },
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            output := CleanupHTMLContent([]byte(tt.input))
-            result := string(output)
-            if result != tt.expected {
-                t.Errorf("CleanupHTMLContent() = %q, want %q", result, tt.expected)
-            }
-        })
     }
 }
 
@@ -267,13 +194,13 @@ func TestExtractH1Extended(t *testing.T) {
 
     for _, tt := range tests {
         t.Run(tt.name, func(t *testing.T) {
-            title, body, err := ExtractH1(tt.input)
+            title, err := ExtractH1(tt.input)
             if title != tt.expectedTitle {
                 t.Errorf("ExtractH1() title = %q, want %q", title, tt.expectedTitle)
             }
-            if strings.TrimSpace(string(body)) != strings.TrimSpace(tt.expectedBody) {
-                t.Errorf("ExtractH1() body = %q, want %q", string(body), tt.expectedBody)
-            }
+            // if strings.TrimSpace(string(body)) != strings.TrimSpace(tt.expectedBody) {
+            //     t.Errorf("ExtractH1() body = %q, want %q", string(body), tt.expectedBody)
+            // }
 
             // Check if an error was returned, which indicates whether the H1 was found.
             h1Found := err == nil
@@ -406,16 +333,6 @@ func BenchmarkExtractH1(b *testing.B) {
     b.ResetTimer()
     for i := 0; i < b.N; i++ {
         ExtractH1(markdown)
-    }
-}
-
-func BenchmarkCleanupHTMLContent(b *testing.B) {
-    html := `<p>Paragraph 1</p><p>Paragraph 2</p><pre><code>some code</code></pre><section><p>Section content</p></section>`
-    input := []byte(html)
-
-    b.ResetTimer()
-    for i := 0; i < b.N; i++ {
-        CleanupHTMLContent(input)
     }
 }
 

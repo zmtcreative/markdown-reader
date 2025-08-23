@@ -18,7 +18,7 @@ export namespace app {
 	    use_inline_html: boolean;
 	    use_sanitize_html: boolean;
 	    strip_h1: boolean;
-	    use_frontmatter: boolean;
+	    use_frontmatter_title: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ApplicationOptions(source);
@@ -29,7 +29,7 @@ export namespace app {
 	        this.use_inline_html = source["use_inline_html"];
 	        this.use_sanitize_html = source["use_sanitize_html"];
 	        this.strip_h1 = source["strip_h1"];
-	        this.use_frontmatter = source["use_frontmatter"];
+	        this.use_frontmatter_title = source["use_frontmatter_title"];
 	    }
 	}
 	export class MarkdownOptions {
