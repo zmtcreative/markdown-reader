@@ -1,14 +1,24 @@
 <template>
-  <div class="toggle-theme"><button @click="toggleTheme">Toggle Theme</button></div>
-  <header class="app-header">
-    <h1 v-html="docHTMLTitle" class="document-title"></h1>
-    <p v-html="docHTMLDate" class="document-dates"></p>
-    <!-- Display error message if preset -->
-    <p v-if="errorMessage" class="error-message">Error: {{ errorMessage }}</p>
-  </header>
-  <main class="content-area">
-    <article v-html="renderedHTML" id="content" class="markdown-body"></article>
-  </main>
+  <div class="app-container">
+    <!-- Application Toolbar -->
+    <Toolbar
+      :currentTheme="currentTheme"
+      @toggleTheme="toggleTheme"
+    />
+
+    <!-- Fixed Header -->
+    <header class="app-header">
+      <h1 v-html="docHTMLTitle" class="document-title"></h1>
+      <p v-html="docHTMLDate" class="document-dates"></p>
+      <!-- Display error message if preset -->
+      <p v-if="errorMessage" class="error-message">Error: {{ errorMessage }}</p>
+    </header>
+
+    <!-- Scrollable Main Content Area -->
+    <main class="content-area">
+      <article v-html="renderedHTML" id="content" class="markdown-body"></article>
+    </main>
+  </div>
 
   <!-- Help Dialog -->
   <Help
@@ -31,6 +41,7 @@ import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
 import { GetTheme, SetTheme } from '../wailsjs/go/main/App';
 import Settings from './components/Settings.vue';
 import Help from './components/Help.vue';
+import Toolbar from './components/Toolbar.vue';
 import mermaid from 'mermaid';
 
 const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
@@ -47,7 +58,7 @@ const showSettingsDialog = ref(false);
 // Help component reference
 const helpRef = ref<InstanceType<typeof Help>>();
 
-const currentTheme = ref('light');
+const currentTheme = ref<'light' | 'dark'>('light');
 
 // Function to add class to html and body elements
 function addDocClass(thisClass: string) {
@@ -136,11 +147,11 @@ function onSettingsSaved() {
 
 onMounted(async () => {
   // Get initial theme from Go backend
-  currentTheme.value = await GetTheme();
+  currentTheme.value = (await GetTheme()) as 'light' | 'dark';
 
   // Listen for theme changes initiated from the backend
   EventsOn('theme:changed', (newTheme: string) => {
-    if (newTheme) {
+    if (newTheme && (newTheme === 'light' || newTheme === 'dark')) {
       currentTheme.value = newTheme;
     }
   });
@@ -225,4 +236,78 @@ onUnmounted(() => {
 </script>
 
 <style>
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  /* Fixed header below toolbar */
+  flex-shrink: 0; /* Prevent header from shrinking */
+  padding: 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: var(--header-bg, inherit);
+  position: relative;
+  z-index: 100;
+}
+
+.content-area {
+  /* Scrollable content area */
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  background-color: var(--content-bg, inherit);
+}
+
+/* Ensure markdown content doesn't have conflicting margins at top */
+.content-area .markdown-body {
+  margin-top: 0;
+}
+
+/* Theme-specific header styling */
+.dark .app-header {
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--header-bg-dark, inherit);
+}
+
+.light .app-header {
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--header-bg-light, inherit);
+}
+
+/* Optional: Add subtle background differentiation */
+.dark {
+  --header-bg-dark: rgba(45, 55, 72, 0.8);
+  --content-bg: inherit;
+}
+
+.light {
+  --header-bg-light: rgba(248, 249, 250, 0.8);
+  --content-bg: inherit;
+}
+
+/* Print-specific overrides to ensure proper printing */
+@media print {
+  .app-container {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .app-header {
+    position: static !important;
+    z-index: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .content-area {
+    flex: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
 </style>

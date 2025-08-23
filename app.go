@@ -260,7 +260,10 @@ func (a *App) ReloadCurrentDocument() error {
 // TODO: CLEANUP - These wrapper methods are never called from the frontend
 // The frontend uses its own JavaScript functions instead
 //
-// Probably don't need these any longer, but leave them commented out for now.
+// Analysis shows these methods exist but are never invoked from the Vue.js frontend.
+// The frontend handles DOM class manipulation directly via JavaScript.
+// These can be safely removed in a future cleanup since the functionality
+// is handled by the DocumentProcessor methods directly.
 //
 // // AddDocClass adds the class to html and body elements
 // func (a *App) AddDocClass(thisClass ...string) {

@@ -18,12 +18,25 @@
         display: block !important;
     }
 
+    // Hide the toolbar completely in print
+    .app-toolbar {
+        display: none !important;
+    }
+
+    // Ensure app-container displays correctly for print
+    .app-container {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
     .content-area {
         overflow: visible !important;
         height: auto !important;
         max-height: none !important;
-        padding: 0 !important;
+        padding: 20px !important; // Keep some padding for readability
         margin: 0 !important;
+        flex: none !important; // Remove flex properties
     }
 
     .app-header {
@@ -33,6 +46,8 @@
         box-shadow: none !important;
         page-break-after: avoid;
         position: static !important;
+        flex-shrink: 0 !important; // Keep this to prevent shrinking
+        padding: 20px !important; // Keep some padding for readability
     }
 
     .toggle-theme {
@@ -45,6 +60,8 @@
         margin: 0 !important;
         background-color: white !important;
         color: black !important;
+        overflow: visible !important;
+        height: auto !important;
 
         pre[language] {
             background-color: #f8f9fa !important;
@@ -75,7 +92,7 @@
         }
 
         h1 {
-            page-break-before: always;
+            page-break-before: auto; // Changed from always to auto
 
             &:first-child {
                 page-break-before: avoid;
@@ -91,8 +108,11 @@
             color: #333 !important;
         }
 
-        > * {
-            page-break-inside: avoid;
+        // Remove the overly restrictive page-break-inside rule for all elements
+        // This was likely causing content to be cut off
+        p, div, li, dd, dt {
+            orphans: 3;
+            widows: 3;
         }
     }
 
@@ -108,5 +128,27 @@
 
     .mermaid {
         display: none !important;
+    }
+
+    // Hide all modal dialogs during print
+    .modal, .dialog, [role="dialog"] {
+        display: none !important;
+    }
+
+    // Hide any Vue transition elements
+    .v-enter-active, .v-leave-active, .v-enter-to, .v-leave-to {
+        display: none !important;
+    }
+
+    // Ensure article content displays properly
+    article {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    // Page break controls
+    @page {
+        margin: 0.5in;
+        size: letter;
     }
 }

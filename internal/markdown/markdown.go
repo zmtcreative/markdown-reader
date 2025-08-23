@@ -4,11 +4,12 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 
 	"md-reader/internal/gm-ext/htmlsanitize"
+	utils "md-reader/internal/utils"
+
 	// "md-reader/internal/gm-ext/sectionwrapper"
 	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
 	sectionwrapper "github.com/ZMT-Creative/gm-sectionwrapper"
@@ -62,7 +63,7 @@ type ConfigProvider interface {
     UseInlineHTML() bool
     UseSanitize() bool
     StripH1() bool
-    UseFrontmatter() bool
+    UseFrontmatterTitle() bool
 
     // Markdown-specific configuration getters
     UseGFM() bool
@@ -137,14 +138,15 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 		)
 	}
 
-	// Enable Frontmatter extensions if configured (parses frontmatter metadata)
-	if configProvider.UseFrontmatter() {
-		options = append(options,
-			goldmark.WithExtensions(
-				&frontmatter.Extender{},
-			),
-		)
-	}
+	// // Enable Frontmatter extensions if configured (parses frontmatter metadata)
+	// if configProvider.UseFrontmatterTitle() {
+
+	// Frontmatter processing is always enabled
+	options = append(options,
+		goldmark.WithExtensions(
+			&frontmatter.Extender{},
+		),
+	)
 
 	// Enable Mermaid extensions if configured (for Mermaid diagrams/charts)
 	if configProvider.UseMermaid() {
@@ -334,38 +336,13 @@ func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]by
     if err := fm.Decode(&meta); err != nil {
         return []byte(html), nil, nil
     }
+	meta, _ = utils.NormalizeMapKeys(meta) // Normalize keys to lowercase
     return []byte(html), meta, nil
 }
 
-// CleanupHTMLContent refines the generated HTML for better rendering.
-func CleanupHTMLContent(htmlContent []byte) []byte {
-    htmlString := string(htmlContent)
-
-    re := regexp.MustCompile("(?si)" + `(>)\s*(<p>|<p\s+[^>]*>)`)
-    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
-
-    re = regexp.MustCompile("(?si)" + `(?:(?:</body>|</html>)?\s)+(</code>)`)
-    // htmlString = re.ReplaceAllString(htmlString, "\r\n$1")  // we do NOT want extra CRLF before closing </code>
-    htmlString = re.ReplaceAllString(htmlString, "$1")
-
-    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)(<code[^>]*>)(?:<html>)`)
-    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
-
-    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)\s*(?:<body[^>]*>)`)
-    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
-
-    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)(?:\r\n|\n)*(\S+)`)
-    // htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2\r\n$3") // we do NOT want extra CRLF after opening <code>
-    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2$3")
-
-    re = regexp.MustCompile("(?si)" + `(>)\s*(<section[^>]*>)`)
-    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
-
-    return []byte(htmlString)
-}
-
-// ExtractH1 finds and removes the first H1 heading from Markdown source.
-func ExtractH1(md string) (string, []byte, error) {
+// ExtractH1 finds the first H1 heading from Markdown source.
+// func ExtractH1(md string) (string, []byte, error) {
+func ExtractH1(md string) (string, error) {
     source := []byte(md)
     mdParser := goldmark.DefaultParser()
     reader := text.NewReader(source)
@@ -384,16 +361,16 @@ func ExtractH1(md string) (string, []byte, error) {
     })
 
     if h1Node == nil {
-        return "", []byte(md), nil
+        return "", nil
     }
 
     title := ExtractTextContent(h1Node, source)
     if strings.TrimSpace(title) == "" {
-        return title, []byte(md), nil
+        return title, nil
     }
 
-    modifiedSource := RemoveNodeFromSource(source, h1Node)
-    return title, []byte(modifiedSource), nil
+    // modifiedSource := RemoveNodeFromSource(source, h1Node)
+    return title, nil
 }
 
 func highlightingCustomWrapperRenderer(w util.BufWriter, c highlighting.CodeBlockContext, entering bool) {

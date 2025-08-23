@@ -32,3 +32,19 @@ func GetValueFromMap(m map[string]string, key string) string {
 	return ""
 }
 
+// NormalizeMapKeys takes a map[string]string and converts all keys to lowercase,
+// returning a new map with normalized keys and the original values.
+func NormalizeMapKeys(input map[string]string) (map[string]string, error) {
+	if input == nil {
+		return nil, nil
+	}
+
+	normalized := make(map[string]string, len(input))
+	for key, value := range input {
+		lowerKey := strings.ToLower(key)
+		normalized[lowerKey] = value
+	}
+
+	return normalized, nil
+}
+

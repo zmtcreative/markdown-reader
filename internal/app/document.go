@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -77,11 +78,18 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     // Normalize line endings to Unix-style (LF)
     mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
 
+    // Scan the frontmatter and remove any comments in the frontmatter
+    // Since both YAML and TOML use # for comments, this can cause problems for parsing later
+    mdContent = stripCommentsFromFrontmatter(mdContent)
+
     // Extract the document title from the H1 heading element if present
-    var thisDocumentTitle string
-    if dp.configManager.StripH1() {
-        thisDocumentTitle, mdContent, _ = markdown.ExtractH1(string(mdContent))
-    }
+    // We're doing this before converting, so we can use the Goldmark Parser to find the first '# Title'
+    var thisDocumentH1Title, _ = markdown.ExtractH1(string(mdContent))
+
+    // Clean up the title by removing extra whitespace and line breaks
+    thisDocumentH1Title = strings.ReplaceAll(thisDocumentH1Title, "\n", " ")
+    // Replace multiple whitespace characters with a single space using regex
+    thisDocumentH1Title = regexp.MustCompile(`\s+`).ReplaceAllString(thisDocumentH1Title, " ")
 
     // Convert Markdown content to HTML
     htmlContent, docFrontmatter, err := markdown.ConvertMarkdownToHTML(dp.mdConverter, mdContent)
@@ -90,10 +98,15 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     }
 
     // Process document metadata
-    docTitle, docDate, docType := dp.processDocumentMetadata(filePath, thisDocumentTitle, docFrontmatter)
+    docTitle, docDate, docType := dp.processDocumentMetadata(filePath, thisDocumentH1Title, docFrontmatter)
 
     // Cleanup HTML content
-    htmlContent = markdown.CleanupHTMLContent(htmlContent)
+    htmlContent = CleanupHTMLContent(htmlContent)
+
+    // Strip the first H1 element if configured
+    if dp.configManager.StripH1() {
+        htmlContent = stripFirstH1(htmlContent)
+    }
 
     // Emit the converted HTML to the frontend
     runtime.EventsEmit(dp.ctx, "markdown-rendered", string(htmlContent), docTitle, docDate)
@@ -106,8 +119,9 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
 
 // processDocumentMetadata extracts and formats document metadata
 func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle string, docFrontmatter map[string]string) (string, string, string) {
-    var docTitle, docDate, docType, tmpDocTitle, tmpDocDate string
-    docFileTitle := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+    var docTitle, docDate, fmDocTitle, fmDocDate, fmDocType string
+    // docFileTitle := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
+    docFileTitle := filepath.Base(filePath)
     timeLayout := time.DateTime + " MST"
     docDateLM := ""
     docDateDD := ""
@@ -122,25 +136,14 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
 
     // Extract frontmatter data - now using map[string]string
     if docFrontmatter != nil {
-        tmpDocTitle = docFrontmatter["Title"]
-        if tmpDocTitle == "" {
-            tmpDocTitle = docFrontmatter["title"] // Try lowercase
-        }
-
-        tmpDocDate = docFrontmatter["Date"]
-        if tmpDocDate == "" {
-            tmpDocDate = docFrontmatter["date"] // Try lowercase
-        }
-
-        docType = strings.ToLower(docFrontmatter["Type"])
-        if docType == "" {
-            docType = strings.ToLower(docFrontmatter["type"]) // Try lowercase
-        }
+        fmDocTitle = docFrontmatter["title"]
+        fmDocDate = docFrontmatter["date"]
+        fmDocType = strings.ToLower(docFrontmatter["doctype"])
     }
 
     // Determine document title
-    if tmpDocTitle != "" {
-        docTitle = tmpDocTitle
+    if fmDocTitle != "" && dp.configManager.UseFrontmatterTitle() {
+        docTitle = fmDocTitle
     } else if extractedTitle != "" {
         docTitle = extractedTitle
     } else {
@@ -148,14 +151,14 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
     }
 
     // Process document date from frontmatter
-    if tmpDocDate != "" {
+    if fmDocDate != "" {
         fmtDocDate := `<span class="date-label document-date">Document Date:</span> <span class="date-value document-date">%s</span>`
         tz := time.Now().Local().Location()
-        dateString, err := dateparse.ParseIn(tmpDocDate, tz)
+        dateString, err := dateparse.ParseIn(fmDocDate, tz)
         if err == nil {
             docDateDD = fmt.Sprintf(fmtDocDate, dateString.Format(timeLayout))
         } else {
-            docDateDD = fmt.Sprintf(fmtDocDate, tmpDocDate)
+            docDateDD = fmt.Sprintf(fmtDocDate, fmDocDate)
         }
     }
 
@@ -171,7 +174,7 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
         }
     }
 
-    return docTitle, docDate, docType
+    return docTitle, docDate, fmDocType
 }
 
 // updateDocumentClasses manages CSS classes on the document
@@ -209,4 +212,156 @@ func (dp *DocumentProcessor) RemoveDocClass(thisClass ...string) {
 // ToggleDocClass toggles the class on html and body elements
 func (dp *DocumentProcessor) ToggleDocClass(thisClass ...string) {
     runtime.EventsEmit(dp.ctx, "toggle-doc-class", thisClass)
+}
+
+// CleanupHTMLContent refines the generated HTML for better rendering.
+func CleanupHTMLContent(htmlContent []byte) []byte {
+    htmlString := string(htmlContent)
+
+    re := regexp.MustCompile("(?si)" + `(>)\s*(<p>|<p\s+[^>]*>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+    re = regexp.MustCompile("(?si)" + `(?:(?:</body>|</html>)?\s)+(</code>)`)
+    // htmlString = re.ReplaceAllString(htmlString, "\r\n$1")  // we do NOT want extra CRLF before closing </code>
+    htmlString = re.ReplaceAllString(htmlString, "$1")
+
+    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)(<code[^>]*>)(?:<html>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)\s*(?:<body[^>]*>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+    re = regexp.MustCompile("(?si)" + `(<pre[^>]*>)\s*(<code[^>]*>)(?:\r\n|\n)*(\S+)`)
+    // htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2\r\n$3") // we do NOT want extra CRLF after opening <code>
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2$3")
+
+    re = regexp.MustCompile("(?si)" + `(>)\s*(<section[^>]*>)`)
+    htmlString = re.ReplaceAllString(htmlString, "$1\r\n$2")
+
+    return []byte(htmlString)
+}
+
+// stripFirstH1 removes the first <h1> element and its contents from HTML content.
+// If any other header elements (h2-h6) are encountered before the first h1,
+// the original content is returned unchanged.
+func stripFirstH1(htmlContent []byte) []byte {
+    htmlString := string(htmlContent)
+
+    // First pass: check if there are any h2-h6 elements before the first h1
+    // This regex finds the first occurrence of any header element (h1-h6)
+    headerPattern := regexp.MustCompile(`(?i)<h([1-6])[^>]*>`)
+    headerMatch := headerPattern.FindStringSubmatch(htmlString)
+
+    if headerMatch == nil {
+        // No headers found, return original content
+        return htmlContent
+    }
+
+    // Check if the first header found is not h1
+    if headerMatch[1] != "1" {
+        // First header is h2-h6, return original content unchanged
+        return htmlContent
+    }
+
+    // Second pass: find and remove the first h1 element and its contents
+    // This regex matches the opening h1 tag, its contents, and the closing tag
+    // The (?s) flag makes . match newline characters as well
+    h1Pattern := regexp.MustCompile(`(?is)<h1[^>]*>.*?</h1>`)
+
+    // Find the first h1 match
+    h1Match := h1Pattern.FindStringIndex(htmlString)
+    if h1Match == nil {
+        // No h1 found (shouldn't happen based on first pass, but safety check)
+        return htmlContent
+    }
+
+    // Remove the first h1 element by concatenating the parts before and after it
+    modifiedHTML := htmlString[:h1Match[0]] + htmlString[h1Match[1]:]
+
+    return []byte(modifiedHTML)
+}
+
+// stripCommentsFromFrontmatter removes comment lines (starting with #) from frontmatter
+func stripCommentsFromFrontmatter(mdContent []byte) []byte {
+    content := string(mdContent)
+    lines := strings.Split(content, "\n")
+
+    var result strings.Builder
+    var frontmatterDelimiter string
+    inFrontmatter := false
+    frontmatterStarted := false
+
+    for i, line := range lines {
+        trimmedLine := strings.TrimSpace(line)
+
+        // Check if we're still in the preamble (only blank lines allowed before frontmatter)
+        if !frontmatterStarted && !inFrontmatter {
+            // If this is a blank line, keep it and continue
+            if trimmedLine == "" {
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            }
+
+            // Check if this line starts frontmatter
+            if strings.HasPrefix(trimmedLine, "---") && len(trimmedLine) >= 3 && strings.Trim(trimmedLine, "-") == "" {
+                frontmatterDelimiter = trimmedLine
+                frontmatterStarted = true
+                inFrontmatter = true
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            } else if strings.HasPrefix(trimmedLine, "+++") && len(trimmedLine) >= 3 && strings.Trim(trimmedLine, "+") == "" {
+                frontmatterDelimiter = trimmedLine
+                frontmatterStarted = true
+                inFrontmatter = true
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            } else {
+                // No frontmatter detected, this is regular content
+                // Add all remaining content as-is
+                result.WriteString(strings.Join(lines[i:], "\n"))
+                break
+            }
+        }
+
+        // We are inside frontmatter
+        if inFrontmatter {
+            // Check if this is the closing delimiter
+            if trimmedLine == frontmatterDelimiter {
+                inFrontmatter = false
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            }
+
+            // Skip lines that start with # (comments)
+            if strings.HasPrefix(trimmedLine, "#") {
+                continue
+            }
+
+            // Keep non-comment lines
+            result.WriteString(line)
+            if i < len(lines)-1 {
+                result.WriteString("\n")
+            }
+        } else {
+            // We're past the frontmatter, add everything as-is
+            result.WriteString(line)
+            if i < len(lines)-1 {
+                result.WriteString("\n")
+            }
+        }
+    }
+
+    return []byte(result.String())
 }

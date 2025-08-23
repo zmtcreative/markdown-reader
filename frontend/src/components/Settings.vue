@@ -106,7 +106,7 @@
                       Strip First H1 Heading
                     </label>
                     <p class="setting-description">
-                      Remove the first H1 heading from markdown and use it as the document title.
+                      Remove the first H1 Heading from the output.
                     </p>
                   </div>
 
@@ -114,13 +114,13 @@
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
-                        v-model="localSettings.application.use_frontmatter"
+                        v-model="localSettings.application.use_frontmatter_title"
                       />
                       <span class="checkbox-custom"></span>
-                      Parse Frontmatter
+                      Prefer Frontmatter Title
                     </label>
                     <p class="setting-description">
-                      Extract and parse YAML frontmatter from markdown files.
+                      Prefer the "Title:" from the frontmatter instead of the first H1 heading.
                     </p>
                   </div>
                 </fieldset>
@@ -380,7 +380,7 @@ const createDefaultSettings = (): Settings => {
       use_inline_html: true,
       use_sanitize_html: true,
       strip_h1: true,
-      use_frontmatter: true
+      use_frontmatter_title: true
     },
     markdown: {
       use_gfm: true,
