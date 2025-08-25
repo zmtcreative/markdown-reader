@@ -18,11 +18,16 @@ type Config struct {
 
 // Application-Specific Settings
 type ApplicationOptions struct {
-	UseInlineHTML       bool   `mapstructure:"use_inline_html" json:"use_inline_html"`             // Inline HTML support (allow inline HTML in Markdown)
-	UseSanitize         bool   `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`         // HTML Sanitization (remove unsafe elements and links)
-	StripH1             bool   `mapstructure:"strip_h1" json:"strip_h1"`                           // Strip First H1 and Use as Title
+	UseInlineHTML       bool    `mapstructure:"use_inline_html" json:"use_inline_html"`             // Inline HTML support (allow inline HTML in Markdown)
+	UseSanitize         bool    `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`         // HTML Sanitization (remove unsafe elements and links)
+	StripH1             bool    `mapstructure:"strip_h1" json:"strip_h1"`                           // Strip First H1 and Use as Title
 	// UseFrontmatter      bool   `mapstructure:"use_frontmatter" json:"use_frontmatter"`             // Parse Frontmatter
-	UseFrontmatterTitle bool   `mapstructure:"use_frontmatter_title" json:"use_frontmatter_title"` // Always Use Frontmatter Title if Available
+	UseFrontmatterTitle bool    `mapstructure:"use_frontmatter_title" json:"use_frontmatter_title"` // Always Use Frontmatter Title if Available
+	FontFamily          string  `mapstructure:"font_family" json:"font_family"`                     // Selected font family
+	FontSize            float64 `mapstructure:"font_size" json:"font_size"`                         // Selected font size in pixels
+	FontFamilyMono      string  `mapstructure:"font_family_mono" json:"font_family_mono"`           // Selected monospace font family
+	FontSizeMono        float64 `mapstructure:"font_size_mono" json:"font_size_mono"`               // Selected monospace font size in pixels
+	UseAdvancedFontDetection bool `mapstructure:"use_advanced_font_detection" json:"use_advanced_font_detection"` // Use advanced monospace font detection
 }
 
 // Markdown-Specific Settings
@@ -103,6 +108,11 @@ func NewConfigManager() *ConfigManager {
 	v.SetDefault("application.use_sanitize_html", true)
 	v.SetDefault("application.strip_h1", true)
 	v.SetDefault("application.use_frontmatter_title", true)
+	v.SetDefault("application.font_family", "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif")
+	v.SetDefault("application.font_size", 16.0)
+	v.SetDefault("application.font_family_mono", "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace")
+	v.SetDefault("application.font_size_mono", 14.0)
+	v.SetDefault("application.use_advanced_font_detection", true)
 
 	// Set default values for Markdown section
 	v.SetDefault("markdown.use_gfm", true)
@@ -189,6 +199,11 @@ func (cm *ConfigManager) loadConfig() {
 				UseSanitize:    true,
 				StripH1:        true,
 				UseFrontmatterTitle: true,
+				FontFamily:     "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
+				FontSize:       16.0,
+				FontFamilyMono: "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace",
+				FontSizeMono:   14.0,
+				UseAdvancedFontDetection: true,
 			},
 			Markdown: MarkdownOptions{
 				UseGFM:          true,
@@ -228,6 +243,11 @@ func (cm *ConfigManager) SaveConfig() error {
 	cm.viper.Set("application.use_sanitize_html", cm.config.Application.UseSanitize)
 	cm.viper.Set("application.strip_h1", cm.config.Application.StripH1)
 	cm.viper.Set("application.use_frontmatter_title", cm.config.Application.UseFrontmatterTitle)
+	cm.viper.Set("application.font_family", cm.config.Application.FontFamily)
+	cm.viper.Set("application.font_size", cm.config.Application.FontSize)
+	cm.viper.Set("application.font_family_mono", cm.config.Application.FontFamilyMono)
+	cm.viper.Set("application.font_size_mono", cm.config.Application.FontSizeMono)
+	cm.viper.Set("application.use_advanced_font_detection", cm.config.Application.UseAdvancedFontDetection)
 
 	// Update viper with current config values for Markdown section
 	cm.viper.Set("markdown.use_gfm", cm.config.Markdown.UseGFM)
@@ -355,4 +375,45 @@ func (cm *ConfigManager) UseAlertCallouts() bool {
 
 func (cm *ConfigManager) AlertCalloutStyle() string {
 	return cm.config.AlertCallouts.AlertCalloutStyle
+}
+
+// Font configuration getters and setters
+func (cm *ConfigManager) GetFontFamily() string {
+	return cm.config.Application.FontFamily
+}
+
+func (cm *ConfigManager) SetFontFamily(fontFamily string) {
+	cm.config.Application.FontFamily = fontFamily
+}
+
+func (cm *ConfigManager) GetFontSize() float64 {
+	return cm.config.Application.FontSize
+}
+
+func (cm *ConfigManager) SetFontSize(fontSize float64) {
+	cm.config.Application.FontSize = fontSize
+}
+
+func (cm *ConfigManager) GetFontFamilyMono() string {
+	return cm.config.Application.FontFamilyMono
+}
+
+func (cm *ConfigManager) SetFontFamilyMono(fontFamily string) {
+	cm.config.Application.FontFamilyMono = fontFamily
+}
+
+func (cm *ConfigManager) GetFontSizeMono() float64 {
+	return cm.config.Application.FontSizeMono
+}
+
+func (cm *ConfigManager) SetFontSizeMono(fontSize float64) {
+	cm.config.Application.FontSizeMono = fontSize
+}
+
+func (cm *ConfigManager) GetUseAdvancedFontDetection() bool {
+	return cm.config.Application.UseAdvancedFontDetection
+}
+
+func (cm *ConfigManager) SetUseAdvancedFontDetection(useAdvanced bool) {
+	cm.config.Application.UseAdvancedFontDetection = useAdvanced
 }

@@ -19,7 +19,7 @@ func NewErrorHandler(ctx context.Context) *ErrorHandler {
 
 // HandleError logs the error and optionally shows it to the user
 func (eh *ErrorHandler) HandleError(err error, userMessage string, showDialog bool) {
-    log.Printf("Error: %v", err)
+    log.Printf("##> LOG: Error: %v", err)
 
     if showDialog {
         runtime.MessageDialog(eh.ctx, runtime.MessageDialogOptions{

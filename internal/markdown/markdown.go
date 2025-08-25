@@ -299,7 +299,7 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
     if configProvider.UseSanitize() {
         options = append(options,
             goldmark.WithExtensions(
-                &htmlsanitize.SanitizeHTMLExtension{}, // Custom extension to sanitize HTML
+                htmlsanitize.NewSanitizeHTMLExtension(), // Custom extension to sanitize HTML
             ),
         )
     }
