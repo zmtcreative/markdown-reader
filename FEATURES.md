@@ -2,6 +2,10 @@
 
 ## Summary
 
+> [!NOTE]
+>
+> This document is out-of-date and will be updated at a later date. See the README for the most current summary of features.
+
 This document contains information about the features enabled and/or customized
 beyond the general Commonmark specification provided by the base Goldmark package.
 Some of these enabled extension are provided directly by the Goldmark package,

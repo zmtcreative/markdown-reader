@@ -1,13 +1,53 @@
 # Markdown Reader
 
-## About
+## About and Features
 
 This is a Markdown Reader written in Go using the Wails + Vue framework.
 
+The reader supports the current CommonMark spec plus a wide range of Extension:
+
+(*All options below are enabled by default unless noted otherwise*)
+
+- GitHub Flavored Markdown and PHP Markdown Extensions
+  - GFM: Tables
+  - GFM: Strikethrough
+  - GFM: Autolinks
+  - GFM: Task List Items
+  - PHP: Definition Lists
+  - PHP: Footnotes
+- Typographic Enhancements (*like [smartypants](https://daringfireball.net/projects/smartypants/)*)
+  - Fancy quotes
+  - Proper en-dash and em-dash
+  - Proper elipsis rendering
+- Emojis
+- Inline HTML  (*allows inclusion of bare HTML in Markdown -- __Potentially Unsafe__*)
+- Sanitize HTML  (*removes some potentiall dangerous HTML elements and disables potentially dangerous URLs with executable file extensions in the URL -- __should be enabled when using Inline HTML__*)
+- Frontmatter Parsing  (*currently can use the __Title:__ and __Date:__ entries in markdown frontmatter*)
+- Mermaid Diagrams and Charts
+- Image Figure Wrapping  (*provides a syntax for including captions with images*)
+[//]#: - Header Anchor Links
+- Fenced DIVs  (*works similar to fenced code blocks but uses `:::` to surround sections you want to wrap with a DIV element*)
+- Header Section Wrapper  (*nested wrapping of heading and all their content to keep section levels together since `<H?>` headings don't wrap the sections they represent*)
+- Code Syntax Highlighting  (*provides syntax highlighting of fenced code blocks*)
+- Pandoc-Style Fancy Lists  (*creating ordered lists using letters and roman numerals*)
+- Alerts/Callouts  (*uses `> [!NOTE]` style markdown syntax to create GFM and/or Obsidian Callouts*)
+- Block Attributes  (*allows you to add recognized HTML attributes to block elements using the `{.myclass #myid title="mytitle"}` syntax*)
+- Bracketed Spans  (*allows you to wrap some text in brackets to create spans -- `this is [some text]{.myclass}` that would wrap the `some text` and render as `<span class="myclass">some text</span>`*)
+- Proportional Font and Code Font Customization (*you can set the font family and font size you want the reader to use*)
+
 ## Status
 
-Still in Beta stage.
+> [!NOTE]
+>
+> Still in Beta stage.
 
-The basic framework is working. It opens and properly parses Markdown into formatted HTML that displays in the application. Most of the basic CSS styling is configured, so the document is readable.
+The application is useable in its current form, with extensive settings available to control
+which Markdown/Commonmark features and Extensions are displayed.
 
-The application still requires additional features. Most importantly, there is currently **no** customization dialog(s) to modify its behavior -- you open a document and view it, and then close the applicaton.
+The CSS styling for the application is still in-progress, so the look of rendered markdown may
+not be consistent, though it should be adequate for now.
+
+__Very__ rudimentary printing support is available, but the CSS styling for printing has
+not been tweaked, so print output will be useable but not necessarily ideal.
+
+Development is still ongoing.
