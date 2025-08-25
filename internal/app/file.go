@@ -29,7 +29,7 @@ func NewFileManager(ctx context.Context, binaryDetector *BinaryDetector, docProc
 
 // OpenFileMenuHandler handles the File > Open menu action
 func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *string) {
-    log.Println("File -> Open menu item clicked. Opening file dialog...")
+    log.Println("##> LOG: File -> Open menu item clicked. Opening file dialog...")
 
     // Open a file dialog to allow the user to select a Markdown file.
     selection, err := runtime.OpenFileDialog(fm.ctx, runtime.OpenDialogOptions{
@@ -41,21 +41,21 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
     })
     if err != nil {
         if strings.Contains(err.Error(), "The user cancelled the dialog") || strings.Contains(err.Error(), "canceled") {
-            log.Println("File dialog cancelled by user.")
+            log.Println("##> LOG: File dialog cancelled by user.")
             return
         }
-        log.Printf("Error opening file dialog: %v", err)
+        log.Printf("##> LOG: Error opening file dialog: %v", err)
         runtime.EventsEmit(fm.ctx, "error", "Failed to open file dialog: "+err.Error())
         return
     }
 
     if selection != "" {
-        log.Printf("User selected file: %s", selection)
+        log.Printf("##> LOG: User selected file: %s", selection)
 
         // Check if the selected file is binary
         isBinary, err := fm.binaryDetector.IsBinaryFile(selection)
         if err != nil {
-            log.Printf("Error checking if file is binary %q: %v", selection, err)
+            log.Printf("##> LOG: Error checking if file is binary %q: %v", selection, err)
             runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
                 Type:    runtime.ErrorDialog,
                 Title:   "Binary File Check Failed",
@@ -65,7 +65,7 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
         }
 
         if isBinary {
-            log.Printf("User selected a binary file: %s", selection)
+            log.Printf("##> LOG: User selected a binary file: %s", selection)
             runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
                 Type:    runtime.ErrorDialog,
                 Title:   "Cannot Open Binary File",
@@ -76,13 +76,13 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
 
         err = fm.docProcessor.LoadAndDisplayMarkdown(selection)
         if err != nil {
-            log.Printf("Error loading selected Markdown file %q: %v", selection, err)
+            log.Printf("##> LOG: Error loading selected Markdown file %q: %v", selection, err)
             runtime.EventsEmit(fm.ctx, "error", "Failed to load selected file: "+err.Error())
         } else {
-            log.Printf("Successfully loaded Markdown file: %s", selection)
+            log.Printf("##> LOG: Successfully loaded Markdown file: %s", selection)
             *currentFile = selection // Update currentFile to the newly opened file
         }
     } else {
-        log.Println("No file selected. User cancelled the dialog.")
+        log.Println("##> LOG: No file selected. User cancelled the dialog.")
     }
 }

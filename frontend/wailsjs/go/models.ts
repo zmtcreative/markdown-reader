@@ -19,6 +19,11 @@ export namespace app {
 	    use_sanitize_html: boolean;
 	    strip_h1: boolean;
 	    use_frontmatter_title: boolean;
+	    font_family: string;
+	    font_size: number;
+	    font_family_mono: string;
+	    font_size_mono: number;
+	    use_advanced_font_detection: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new ApplicationOptions(source);
@@ -30,6 +35,11 @@ export namespace app {
 	        this.use_sanitize_html = source["use_sanitize_html"];
 	        this.strip_h1 = source["strip_h1"];
 	        this.use_frontmatter_title = source["use_frontmatter_title"];
+	        this.font_family = source["font_family"];
+	        this.font_size = source["font_size"];
+	        this.font_family_mono = source["font_family_mono"];
+	        this.font_size_mono = source["font_size_mono"];
+	        this.use_advanced_font_detection = source["use_advanced_font_detection"];
 	    }
 	}
 	export class MarkdownOptions {

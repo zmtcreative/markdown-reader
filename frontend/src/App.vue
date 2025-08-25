@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
-import { GetTheme, SetTheme } from '../wailsjs/go/main/App';
+import { GetTheme, SetTheme, GetSettings, GetCurrentFont, GetCurrentMonospaceFont } from '../wailsjs/go/main/App';
 import Settings from './components/Settings.vue';
 import Help from './components/Help.vue';
 import Toolbar from './components/Toolbar.vue';
@@ -143,7 +143,79 @@ function onSettingsSaved() {
     // Settings have been saved successfully
     // You might want to emit an event or update the UI here
     console.log('Settings saved successfully');
+
+    // Call setRootFontSizeNum after settings are saved to update CSS custom variables
+    nextTick(() => {
+        updateFontSettings();
+        setRootFontSizeNum();
+    });
 }
+
+async function updateFontSettings() {
+    try {
+        // Get current font settings from backend
+        const fontSettings = await GetCurrentFont();
+        const monospaceFontSettings = await GetCurrentMonospaceFont();
+
+        if (fontSettings) {
+            const root = document.documentElement;
+
+            // Update font family CSS variable
+            if (fontSettings.fontFamily) {
+                root.style.setProperty('--font-family-base', `${fontSettings.fontFamily}`);
+                root.style.setProperty('font-family', `${fontSettings.fontFamily}`);
+                console.log(`Updated --font-family-base to: ${fontSettings.fontFamily}`);
+            }
+
+            // Update font size CSS variables
+            if (fontSettings.fontSize) {
+                root.style.setProperty('--font-size-base', `${fontSettings.fontSize}px`);
+                root.style.setProperty('font-size', `${fontSettings.fontSize}px`);
+                root.style.setProperty('--font-size-base-px', `${fontSettings.fontSize}px`);
+                console.log(`Updated --font-size-base to: ${fontSettings.fontSize}px`);
+            }
+        }
+
+        if (monospaceFontSettings) {
+            const root = document.documentElement;
+
+            // Update monospace font family CSS variable
+            if (monospaceFontSettings.fontFamily) {
+                root.style.setProperty('--font-family-code', `${monospaceFontSettings.fontFamily}`);
+                console.log(`Updated --font-family-code to: ${monospaceFontSettings.fontFamily}`);
+            }
+
+            // Update monospace font size CSS variable
+            if (monospaceFontSettings.fontSize) {
+                root.style.setProperty('--font-size-code', `${monospaceFontSettings.fontSize}px`);
+                console.log(`Updated --font-size-code to: ${monospaceFontSettings.fontSize}px`);
+            }
+        }
+    } catch (error) {
+        console.error('Error updating font settings:', error);
+    }
+}
+
+function setRootFontSizeNum() {
+    const root = document.documentElement;
+
+    // 1. Retrieve the current value of the CSS custom property.
+    // We use getComputedStyle() to get the live, computed value of the property.
+    const currentSizeWithUnit = getComputedStyle(root).getPropertyValue('--font-size-base-px').trim();
+
+    // 2. Strip the unit to get the number.
+    // Use parseFloat for better handling of decimal values, then convert to string
+    const currentSizeNumber = parseFloat(currentSizeWithUnit);
+
+    // 3. Validate the parsed number and update the custom property
+    if (!isNaN(currentSizeNumber) && currentSizeNumber > 0) {
+        root.style.setProperty('--font-size-base-num', currentSizeNumber.toString());
+        console.log(`Updated --font-size-base-num to: ${currentSizeNumber}`);
+    } else {
+        console.warn(`Invalid font size value: "${currentSizeWithUnit}", parsed as: ${currentSizeNumber}`);
+    }
+};
+
 
 onMounted(async () => {
   // Get initial theme from Go backend
@@ -198,6 +270,10 @@ onMounted(async () => {
         nodes: document.querySelectorAll('.markdown-body .mermaid'),
       });
       document.title = title; // Set the document title
+
+      // Call setRootFontSizeNum after document is loaded and DOM is updated
+      updateFontSettings();
+      setRootFontSizeNum();
     });
   });
   EventsOn('error', (message: string) => {
@@ -236,6 +312,8 @@ onUnmounted(() => {
 </script>
 
 <style>
+/* App.vue component-specific styles */
+/* Note: .app-header and .content-area styles have been moved to _app.scss */
 .app-container {
   display: flex;
   flex-direction: column;
@@ -243,50 +321,14 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.app-header {
-  /* Fixed header below toolbar */
-  flex-shrink: 0; /* Prevent header from shrinking */
-  padding: 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background-color: var(--header-bg, inherit);
-  position: relative;
-  z-index: 100;
-}
-
-.content-area {
-  /* Scrollable content area */
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px;
-  background-color: var(--content-bg, inherit);
-}
-
-/* Ensure markdown content doesn't have conflicting margins at top */
-.content-area .markdown-body {
-  margin-top: 0;
-}
-
-/* Theme-specific header styling */
-.dark .app-header {
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-  background-color: var(--header-bg-dark, inherit);
-}
-
-.light .app-header {
-  border-bottom-color: rgba(0, 0, 0, 0.1);
-  background-color: var(--header-bg-light, inherit);
-}
-
-/* Optional: Add subtle background differentiation */
-.dark {
-  --header-bg-dark: rgba(45, 55, 72, 0.8);
-  --content-bg: inherit;
-}
-
-.light {
-  --header-bg-light: rgba(248, 249, 250, 0.8);
-  --content-bg: inherit;
+/* Error message styling - remains here as it's component-specific */
+.error-message {
+  color: #dc3545;
+  font-weight: bold;
+  margin-left: 20px;
+  padding: 5px 10px;
+  background-color: #ffeaea;
+  border-radius: 4px;
 }
 
 /* Print-specific overrides to ensure proper printing */
@@ -296,18 +338,6 @@ onUnmounted(() => {
     height: auto !important;
     overflow: visible !important;
   }
-
-  .app-header {
-    position: static !important;
-    z-index: auto !important;
-    flex-shrink: 0 !important;
-  }
-
-  .content-area {
-    flex: none !important;
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-  }
 }
+
 </style>

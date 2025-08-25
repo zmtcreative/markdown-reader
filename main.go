@@ -30,6 +30,9 @@ func main() {
 	// This will initialize the application with the command-line arguments.
     mdrApp := NewApp(cliArgs)
 
+	// fmt.Printf("##> DEBUG (MAIN): App initialized with CLI args\n")
+	// fmt.Printf("####> Initial file: %s\n", mdrApp.currentFile)
+
 	// TODO: Add options to NewApp and Config to set Width and Height and validate the sizes
 	//       - Update the NewApp function to accept width and height parameters
 	//       - Update the Config struct to include width and height fields
@@ -42,8 +45,12 @@ func main() {
 	// Create application with options
 	werr := wails.Run(&options.App{
 		Title:  "Markdown Reader",
-		Width:  1024,
-		Height: 1024,
+		MinWidth: 616,
+		MinHeight: 539,
+		// MaxWidth: 1296,
+		// MaxHeight: 1020,
+		Width:  1040,
+		Height: 984,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

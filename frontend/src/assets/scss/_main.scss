@@ -10,76 +10,15 @@
 
 html {
     text-align: left;
+    --app-max-width: #{$view-max-width-px};
 }
 
 body[class] {
     margin: 0;
-    font-family: $font-family-base;
     background-color: var(--bg-color);
     color: var(--text-color);
     transition: background-color 0.3s, color 0.3s;
-}
-
-// ============================================================================
-// App Layout
-// ============================================================================
-
-#app {
-    font-family: $font-family-base;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-align: left;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-}
-
-// Header
-.app-header {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    padding: $header-padding;
-    margin: 10px 0;
-    border-top: 3px solid var(--border-color);
-    border-bottom: 3px solid var(--border-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-
-    h1 {
-        margin: 0;
-        font-size: 24px;
-    }
-
-    .document-dates {
-        margin: 0;
-        text-align: right;
-        font-size: 0.80rem;
-        padding: 5px 0;
-
-        .date-label {
-            font-weight: bold;
-        }
-    }
-}
-
-.error-message {
-    color: #dc3545;
-    font-weight: bold;
-    margin-left: 20px;
-    padding: 5px 10px;
-    background-color: #ffeaea;
-    border-radius: $border-radius;
-}
-
-// Content Area
-.content-area {
-    flex-grow: 1;
-    padding: $content-padding;
-    overflow-y: auto;
+    font-size: var(--font-size);
 }
 
 // ============================================================================
@@ -87,28 +26,94 @@ body[class] {
 // ============================================================================
 
 .markdown-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     line-height: $line-height-base;
-    max-width: 1200px;
+    max-width: var(--app-max-width);
     margin: 0 auto;
     padding: 10px;
 
-    h1, h2 {
-        border-bottom: 1px solid #eaecef;
-        padding-bottom: 0.3em;
+    h1, h2, h3 {
+        border-bottom: 1px solid rgba(var(--text-color-rgb), 0.33);
+        padding-bottom: 0.3rem;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        margin: 0.67rem 0;
+    }
+
+    h1 {
+        font-size: clamp(1.25rem, calc(var(--font-header-ratio) * 1.5), 2.125rem);
+    }
+    h2 {
+        font-size: clamp(1.125rem, calc(var(--font-header-ratio) * 1.25), 2rem);
+    }
+    h3 {
+        font-size: clamp(1rem, calc(var(--font-header-ratio) * 1.125), 1.75rem);
+    }
+    h4 {
+        font-size: clamp(0.875rem, calc(var(--font-header-ratio)), 1.5rem);
+    }
+    h5 {
+        font-size: clamp(0.825rem, calc(var(--font-header-ratio) * 0.9), 1.25rem);
+    }
+    h6 {
+        font-size: clamp(0.8rem, calc(var(--font-header-ratio) * 0.8), 1.125rem);
+    }
+
+    h1:first-of-type {
+        margin-top: 0;
+    }
+
+    p {
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 0.5rem 0;
     }
 
     p:first-of-type {
         margin-top: 0;
+        margin-bottom: 0;
+        padding-top: 0;
+    }
+
+    // Inline Emphasis Styles
+    strong {
+        font-weight: bold;
+        & code {
+            font-size: 0.95rem;
+        }
+    }
+
+    em {
+        font-style: italic;
+        & code {
+            font-size: 0.95rem;
+        }
+    }
+
+    del {
+        text-decoration: line-through;
+        text-decoration-color: var(--text-strikethrough-color);
+        text-decoration-style: solid;
+        text-decoration-thickness: 2px;
+    }
+
+    sup {
+        font-size: 0.75rem;
+        font-weight: 300;
+        vertical-align: super;
+        line-height: 1;
+        padding-left: 0.05rem;
     }
 
     code {
-        font-family: $font-family-code;
-        font-size: 0.9em;
+        font-family: var(--font-family-code);
+        font-size: var(--font-size-code);
+        font-weight: 500;
         background-color: var(--inline-code-bg);
         color: var(--text-color);
-        padding: 2px 4px;
+        padding: 1px 3px;
         border-radius: $border-radius;
+        line-height: calc($line-height-base * 1.1);
     }
 
     pre {
@@ -123,7 +128,7 @@ body[class] {
             padding: 0.75rem 0.5rem;
             line-height: 1.15;
             overflow-x: auto;
-            font-size: 14px;
+            font-size: var(--font-size-code);
             background-color: inherit;
         }
     }
@@ -140,7 +145,7 @@ body[class] {
             padding: 1.75rem 0.5rem 0.75rem 0.5rem;
             line-height: 1.15;
             overflow-x: auto;
-            font-size: 14px;
+            font-size: var(--font-size-code);
             background-color: inherit;
         }
 
@@ -276,18 +281,12 @@ body[class] {
     sup[id^="fnref"] {
         font-size: 0.8em;
         font-weight: 500;
-        // color: var(--text-color);
         vertical-align: super;
         line-height: 1;
         padding-left: 0.05rem;
 
         & > a {
             text-decoration: underline;
-            // color: var(--bg-color);
-            // border: 1px solid var(--text-color);
-            // padding: 0 0.0625rem;
-            // background-color: rgba(var(--text-color-rgb), 0.85);
-            // border-radius: 6px;
         }
     }
 

@@ -16,26 +16,81 @@ import (
 	gohtml "golang.org/x/net/html"
 )
 
-// //go:embed assets/images/danger-square.svg
-// var dangerSquare string
-
 //go:embed assets/images/broken-file.svg
 var BrokenFile string
 
-// SanitizeHTMLExtension implements Goldmark extension for markdown and raw HTML filtering
+// Constants for attribute handling
+const (
+	classDisallowed    = "disallowed"
+	classBadHref       = "disallowed bad-href"
+	classBadSrc        = "disallowed bad-src"
+	attrTarget         = "target"
+	attrTargetBlank    = "_blank"
+	attrBadHref        = "bad-href"
+	attrBadSrc         = "bad-src"
+	attrClass          = "class"
+	attrTitle          = "title"
+	attrHref           = "href"
+	attrSrc            = "src"
+	titleDisallowedFmt = "(Link to '%s' is disallowed by policy)"
+)
+
+// HTML sanitizer comment template
+const htmlSanitizerComment = "<!-- Removed by HTML sanitizer: %s -->"
+
+// Set default list of forbidden HTML tags
+// Note to Self: 'input' used to be on this list, but it was removed to ensure it doesn't break
+//                 things like the Task List GFM extension (which uses bare input checkboxes). The 'input'
+//                 element will still be removed if it's inside a 'form' (or one of the other
+//                 elements on the list below)
+var forbiddenTags = []string{
+	"script", "dialog", "embed", "iframe",
+	"form", "button", "select",
+}
+
+// Set default list of allowed file extensions
+var allowedExts = []string{
+	// Archive types
+	".zip", ".rar", ".7z", ".tar", ".gz", "tgz", ".bz2",
+	// Plain text Document types
+	".css", "scss", ".htm", ".html", ".md", ".txt", ".xml",
+	// Non-text Document types
+	".docx", ".xlsx", ".pptx", ".pdf",
+	// Images
+	".png", ".apng", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".ico", ".tiff", ".tif", ".icns",
+	// Videos
+	".mp4", ".ogg", ".webm", ".mov", ".avi", ".wmv", ".flv", ".mkv", ".m4v",
+	// Audio
+	".mp3", ".ogg", ".wav", ".flac", ".aac", ".m4a", ".wma", ".opus",
+}
+
+
+// SanitizeHTMLExtension implements Goldmark extension for markdown and raw HTML filtering.
+// It provides security filtering for HTML content by:
+// - Removing dangerous HTML tags (script, iframe, form, etc.)
+// - Filtering URLs in href and src attributes based on file extensions
+// - Adding target="_blank" to external links
+// - Replacing disallowed content with safe alternatives or comments
 type SanitizeHTMLExtension struct{}
 
-// Extend registers our custom renderer with Goldmark
+// NewSanitizeHTMLExtension creates a new instance of the HTML sanitization extension.
+// This follows Go best practices for constructor functions.
+func NewSanitizeHTMLExtension() *SanitizeHTMLExtension {
+	return &SanitizeHTMLExtension{}
+}
+
+// Extend registers our custom renderer with Goldmark.
+// This follows the standard Goldmark extension pattern.
 func (e *SanitizeHTMLExtension) Extend(m goldmark.Markdown) {
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
 		util.Prioritized(&FilteredHTMLRenderer{}, 500),
 	))
 }
 
-// FilteredHTMLRenderer handles HTML block and span rendering
+// FilteredHTMLRenderer handles HTML block and span rendering with security filtering
 type FilteredHTMLRenderer struct{}
 
-// RegisterFuncs registers rendering functions
+// RegisterFuncs registers rendering functions for different AST node types
 func (r *FilteredHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindHTMLBlock, r.renderHTMLBlock)
 	reg.Register(ast.KindRawHTML, r.renderRawHTML)
@@ -101,30 +156,30 @@ func (r *FilteredHTMLRenderer) renderLink(w util.BufWriter, source []byte, node 
 	hasTarget := false
 	if link.Attributes() != nil {
 		for _, attr := range link.Attributes() {
-			if string(attr.Name) == "target" {
+			if string(attr.Name) == attrTarget {
 				hasTarget = true
 				break
 			}
 		}
 	}
 
-	// Add start of <a> tag withhref if URL is allowed
+	// Add start of <a> tag with href if URL is allowed
 	if allowed {
 		newSVG = ""
 		_, _ = w.WriteString("<a href=\"")
-		_, _ = w.Write(util.EscapeHTML(util.URLEscape(link.Destination, true)))
+		_, _ = w.Write(util.URLEscape(link.Destination, true))
 		_ = w.WriteByte('"')
 	} else {
 		newSVG = resizeSVG(BrokenFile, 16, 16)
-		_, _ = w.WriteString(`<a class="disallowed bad-href" badhref="`)
-		_, _ = w.Write(util.EscapeHTML(util.URLEscape(link.Destination, true)))
+		_, _ = w.WriteString(`<a class="` + classBadHref + `" ` + attrBadHref + `="`)
+		_, _ = w.Write(util.URLEscape(link.Destination, true))
 		_ = w.WriteByte('"')
-		titleText = fmt.Sprintf("(Link to '%s' is disallowed by policy)", string(link.Destination))
+		titleText = fmt.Sprintf(titleDisallowedFmt, string(link.Destination))
 	}
 
 	// Add target="_blank" for external links without existing target
 	if allowed && !isInternalAnchor && !hasTarget {
-		_, _ = w.WriteString(` target="_blank"`)
+		_, _ = w.WriteString(` ` + attrTarget + `="` + attrTargetBlank + `"`)
 	}
 
 	// Render title if present
@@ -138,7 +193,7 @@ func (r *FilteredHTMLRenderer) renderLink(w util.BufWriter, source []byte, node 
 
 	// Render title if present
 	if titleText != "" {
-		_, _ = w.WriteString(` title="`)
+		_, _ = w.WriteString(` ` + attrTitle + `="`)
 		_, _ = w.Write(util.EscapeHTML([]byte(titleText)))
 		_ = w.WriteByte('"')
 	}
@@ -153,7 +208,10 @@ func (r *FilteredHTMLRenderer) renderLink(w util.BufWriter, source []byte, node 
 			_ = w.WriteByte('"')
 		}
 	}
-	_, _ = w.WriteString(`>` + newSVG + `&nbsp;`)
+	_, _ = w.WriteString(`>`)
+	if newSVG != "" {
+		_, _ = w.WriteString(newSVG)
+	}
 	return ast.WalkContinue, nil
 }
 
@@ -169,13 +227,16 @@ func (r *FilteredHTMLRenderer) renderImage(w util.BufWriter, source []byte, node
 	// Filter and render src attribute if URL is allowed
 	dest := string(img.Destination)
 	if isAllowedAttributeValue(dest) {
-		_, _ = w.WriteString(` src="`)
-		_, _ = w.Write(util.EscapeHTML(util.URLEscape(img.Destination, true)))
+		_, _ = w.WriteString(` ` + attrSrc + `="`)
+		_, _ = w.Write(util.URLEscape(img.Destination, true))
 		_ = w.WriteByte('"')
 	} else {
-		// Render with  badsrc attribute if URL is disallowed and set class for css
-		_, _ = w.WriteString(` class="disallowed bad-src" badsrc="`)
-		_, _ = w.Write(util.EscapeHTML(util.URLEscape(img.Destination, true)))
+		// Render with bad-src attribute if URL is disallowed and set class for CSS
+		_, _ = w.WriteString(` ` + attrClass + `="` + classBadSrc + `" ` + attrBadSrc + `="`)
+		_, _ = w.Write(util.URLEscape(img.Destination, true))
+		_ = w.WriteByte('"')
+		_, _ = w.WriteString(` ` + attrTitle + `="`)
+		_, _ = w.Write(util.EscapeHTML([]byte(fmt.Sprintf(titleDisallowedFmt, dest))))
 		_ = w.WriteByte('"')
 	}
 
@@ -211,6 +272,21 @@ func (r *FilteredHTMLRenderer) renderImage(w util.BufWriter, source []byte, node
 
 // filterHTML processes raw HTML through our security filters
 func filterHTML(raw string) string {
+	// Handle incomplete HTML fragments (like just "<sup>" or "</sup>")
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return raw
+	}
+
+	// If it's just an opening or closing tag without content, pass it through
+	// after security checks
+	if strings.HasPrefix(raw, "<") && strings.HasSuffix(raw, ">") {
+		// Check if it's a simple tag (opening or closing)
+		if isSimpleHTMLTag(raw) {
+			return filterSimpleTag(raw)
+		}
+	}
+
 	doc, err := gohtml.ParseFragment(strings.NewReader(raw), nil)
 	if err != nil {
 		return raw // Return original on parse error
@@ -218,10 +294,267 @@ func filterHTML(raw string) string {
 
 	filteredNodes := filterNodeList(doc)
 	var buf bytes.Buffer
+
+	// Instead of rendering full nodes (which include html/body wrapper),
+	// we need to extract and render only the content we care about
 	for _, node := range filteredNodes {
-		_ = gohtml.Render(&buf, node)
+		if node.Type == gohtml.ElementNode && node.Data == "html" {
+			// Find the body element and render its children
+			if body := findBodyNode(node); body != nil {
+				for child := body.FirstChild; child != nil; child = child.NextSibling {
+					_ = gohtml.Render(&buf, child)
+				}
+			}
+		} else {
+			// For non-html nodes, render directly
+			_ = gohtml.Render(&buf, node)
+		}
 	}
-	return buf.String()
+
+	result := buf.String()
+
+	// Post-process to fix URL escaping in href and src attributes
+	// This reverses the unwanted &amp; -> & escaping for URLs that were allowed
+	result = unescapeURLsInHTML(result)
+
+	return result
+}
+
+// unescapeURLsInHTML reverses unwanted HTML escaping in href and src attributes
+func unescapeURLsInHTML(html string) string {
+	// Use regex to find href and src attributes and unescape URLs in them
+	// This is safe because we only do this for URLs that passed our security filtering
+
+	// Pattern to match href="..." or src="..." attributes
+	hrefPattern := regexp.MustCompile(`((?:href|src)="[^"]*?)&amp;([^"]*")`)
+
+	// TODO: CLEANUP - Consider using a more robust HTML attribute parser
+	// instead of regex for better maintainability
+
+	// Replace &amp; with & in URL attributes
+	// Keep replacing until no more matches (handles multiple &amp; in one URL)
+	for hrefPattern.MatchString(html) {
+		html = hrefPattern.ReplaceAllString(html, "$1&$2")
+	}
+
+	return html
+}// isSimpleHTMLTag checks if the string is a simple HTML tag (opening or closing)
+func isSimpleHTMLTag(s string) bool {
+	// Match patterns like <tag>, <tag attr="value">, </tag>
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, "<") || !strings.HasSuffix(s, ">") {
+		return false
+	}
+
+	// Remove < and >
+	inner := strings.TrimSpace(s[1 : len(s)-1])
+	if inner == "" {
+		return false
+	}
+
+	// Check if it's a closing tag
+	if strings.HasPrefix(inner, "/") {
+		return true
+	}
+
+	// Check if it's an opening tag (with or without attributes)
+	parts := strings.Fields(inner)
+	if len(parts) == 0 {
+		return false
+	}
+
+	// First part should be a valid tag name
+	tagName := parts[0]
+	return isValidTagName(tagName)
+}
+
+// filterSimpleTag applies security filtering to a simple HTML tag
+func filterSimpleTag(tag string) string {
+	// Extract tag name
+	inner := strings.TrimSpace(tag[1 : len(tag)-1])
+
+	// Handle closing tags
+	if strings.HasPrefix(inner, "/") {
+		tagName := strings.TrimSpace(inner[1:])
+		if isForbiddenTag(tagName) {
+			return fmt.Sprintf(htmlSanitizerComment, tagName)
+		}
+		return tag // Return as-is if allowed
+	}
+
+	// Handle opening tags
+	parts := strings.Fields(inner)
+	if len(parts) == 0 {
+		return tag
+	}
+
+	tagName := parts[0]
+	if isForbiddenTag(tagName) {
+		return fmt.Sprintf(htmlSanitizerComment, tagName)
+	}
+
+	// For simple tags with just the tag name, return as-is
+	if len(parts) == 1 {
+		return tag
+	}
+
+	// For opening tags with attributes, manually filter attributes
+	// without using gohtml.ParseFragment to avoid auto-closing
+	return filterOpeningTagAttributes(tag, tagName)
+}
+
+// filterOpeningTagAttributes manually filters attributes in an opening tag
+// without using gohtml.ParseFragment to avoid auto-closing the tag
+func filterOpeningTagAttributes(tag, tagName string) string {
+	// Parse attributes manually
+	inner := strings.TrimSpace(tag[1 : len(tag)-1])
+
+	// Check if it's a self-closing tag (XHTML style)
+	isSelfClosing := strings.HasSuffix(inner, "/")
+	if isSelfClosing {
+		inner = strings.TrimSpace(inner[:len(inner)-1])
+	}
+
+	// Split on whitespace to separate tag name from attributes
+	parts := strings.Fields(inner)
+	if len(parts) <= 1 {
+		// No attributes to filter - return original tag structure
+		if isSelfClosing {
+			return fmt.Sprintf("<%s/>", tagName)
+		}
+		return tag
+	}
+
+	// Reconstruct the tag with filtered attributes
+	var result strings.Builder
+	result.WriteString("<")
+	result.WriteString(tagName)
+
+	// Parse and filter each attribute
+	attrString := strings.TrimSpace(inner[len(tagName):])
+	filteredAttrs := parseAndFilterAttributes(attrString, tagName)
+
+	for _, attr := range filteredAttrs {
+		result.WriteString(" ")
+		result.WriteString(attr)
+	}
+
+	// Close the tag appropriately
+	if isSelfClosing {
+		result.WriteString("/>")
+	} else {
+		result.WriteString(">")
+	}
+	return result.String()
+}
+
+// parseAndFilterAttributes parses attribute string and returns filtered attributes
+func parseAndFilterAttributes(attrString, tagName string) []string {
+	var attrs []string
+
+	// Simple attribute parsing - this is a simplified version
+	// In a production system, you might want more robust parsing
+	parts := strings.Split(attrString, " ")
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Look for key="value" pattern
+		if strings.Contains(part, "=") {
+			keyValue := strings.SplitN(part, "=", 2)
+			if len(keyValue) == 2 {
+				key := strings.TrimSpace(keyValue[0])
+				value := strings.Trim(strings.TrimSpace(keyValue[1]), `"'`)
+
+				// Filter the attribute
+				if !isSensitiveAttribute(key) || isAllowedAttributeValue(value) {
+					attrs = append(attrs, fmt.Sprintf(`%s="%s"`, key, value))
+				} else {
+					// Replace with bad- attributes using constants
+					attrs = append(attrs, fmt.Sprintf(`bad-%s="%s"`, strings.ToLower(key), value))
+					attrs = append(attrs, fmt.Sprintf(`%s="%s"`, attrClass, classDisallowed+" bad-"+strings.ToLower(key)))
+					attrs = append(attrs, fmt.Sprintf(`%s="%s"`, attrTitle, fmt.Sprintf(titleDisallowedFmt, value)))
+				}
+			}
+		} else {
+			// Boolean attribute or malformed - just pass through
+			attrs = append(attrs, part)
+		}
+	}
+
+	// Add target="_blank" for external links (similar to addTargetBlank)
+	hasTarget := false
+	hasHref := false
+	isInternalAnchor := false
+
+	for _, attr := range attrs {
+		if strings.HasPrefix(attr, `href="`) {
+			hasHref = true
+			value := strings.Trim(attr[6:], `"`)
+			if strings.HasPrefix(value, "#") {
+				isInternalAnchor = true
+			}
+		}
+		if strings.HasPrefix(attr, `target="`) {
+			hasTarget = true
+		}
+	}
+
+	// Use the centralized function instead
+	if strings.EqualFold(tagName, "a") && hasHref && !isInternalAnchor && !hasTarget {
+		attrs = append(attrs, attrTarget+`="`+attrTargetBlank+`"`)
+	}
+
+	return attrs
+}
+
+// isValidTagName checks if a string is a valid HTML tag name
+func isValidTagName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	// Simple check: alphanumeric characters, hyphens allowed
+	for _, char := range name {
+		if !((char >= 'a' && char <= 'z') ||
+			 (char >= 'A' && char <= 'Z') ||
+			 (char >= '0' && char <= '9') ||
+			 char == '-') {
+			return false
+		}
+	}
+	return true
+}
+
+// isForbiddenTag checks if a tag is in the forbidden list
+func isForbiddenTag(tagName string) bool {
+	// forbiddenTags := []string{
+	// 	"script", "dialog", "embed", "iframe",
+	// 	"form", "button", "select",
+	// }
+
+	for _, forbidden := range forbiddenTags {
+		if strings.EqualFold(tagName, forbidden) {
+			return true
+		}
+	}
+	return false
+}
+
+// findBodyNode finds the body element in an HTML document structure
+func findBodyNode(node *gohtml.Node) *gohtml.Node {
+	if node.Type == gohtml.ElementNode && node.Data == "body" {
+		return node
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		if body := findBodyNode(child); body != nil {
+			return body
+		}
+	}
+	return nil
 }
 
 // filterNodeList processes a list of HTML nodes
@@ -238,15 +571,11 @@ func filterNodeList(nodes []*gohtml.Node) []*gohtml.Node {
 // filterNode applies security filters to an HTML node
 func filterNode(node *gohtml.Node) *gohtml.Node {
 	// Remove forbidden elements and their contents
-	// Note to Self: 'input' used to be on this list, but it was removed to ensure it doesn't break
-	//                 things like the Task List GFM extension (which uses bare input checkboxes). The 'input'
-	//                 element will still be removed if it's inside a 'form' (or one of the other
-	//                 elements on the list below)
 	if node.Type == gohtml.ElementNode {
-		forbiddenTags := []string{
-			"script", "dialog", "embed", "iframe",
-			"form", "button", "select",
-		}
+		// forbiddenTags := []string{
+		// 	"script", "dialog", "embed", "iframe",
+		// 	"form", "button", "select",
+		// }
 		for _, tag := range forbiddenTags {
 			if strings.EqualFold(node.Data, tag) {
 				return nil // Completely remove the element
@@ -264,39 +593,29 @@ func filterNode(node *gohtml.Node) *gohtml.Node {
 		addTargetBlank(node)
 	}
 
-	// Collect child nodes to process
-	var childNodes []*gohtml.Node
+	// For text nodes and other non-element nodes, return as-is
+	if node.Type != gohtml.ElementNode {
+		return node
+	}
+
+	// Process child nodes recursively
 	for child := node.FirstChild; child != nil; {
-		// Save next sibling before processing since filtering might detach nodes
-		next := child.NextSibling
-		childNodes = append(childNodes, child)
-		child = next
-	}
+		next := child.NextSibling // Save next before filtering might change structure
 
-	// Process child nodes
-	var filteredChildren []*gohtml.Node
-	for _, child := range childNodes {
-		if filtered := filterNode(child); filtered != nil {
-			filteredChildren = append(filteredChildren, filtered)
-		} else {
-			tmpCommentNode := child
-			tmpCommentNode.Data = fmt.Sprintf(" Removed by HTML sanitizer: %s ", child.Data)
-			tmpCommentNode.Type = gohtml.CommentNode
-			filteredChildren = append(filteredChildren, tmpCommentNode)
+		filtered := filterNode(child)
+		if filtered == nil {
+			// Child was removed, replace with comment
+			comment := &gohtml.Node{
+				Type: gohtml.CommentNode,
+				Data: fmt.Sprintf(" Removed by HTML sanitizer: %s ", child.Data),
+			}
+			node.InsertBefore(comment, child)
+			node.RemoveChild(child)
 		}
-	}
+		// If filtered is not nil and is the same node, it stays in place
+		// If filtered is different, we would need to replace, but that's not expected in our case
 
-	// Remove all existing children
-	node.FirstChild = nil
-	node.LastChild = nil
-
-	// Append filtered children in order
-	for _, child := range filteredChildren {
-		// Clear sibling references before appending
-		child.Parent = nil
-		child.PrevSibling = nil
-		child.NextSibling = nil
-		node.AppendChild(child)
+		child = next
 	}
 
 	return node
@@ -311,12 +630,12 @@ func addTargetBlank(node *gohtml.Node) {
 
 	for _, attr := range node.Attr {
 		switch attr.Key {
-		case "href":
+		case attrHref:
 			hasHref = true
 			if strings.HasPrefix(attr.Val, "#") {
 				isInternalAnchor = true
 			}
-		case "target":
+		case attrTarget:
 			hasTarget = true
 		}
 	}
@@ -324,8 +643,8 @@ func addTargetBlank(node *gohtml.Node) {
 	// Add target="_blank" for external links without existing target
 	if hasHref && !isInternalAnchor && !hasTarget {
 		node.Attr = append(node.Attr, gohtml.Attribute{
-			Key: "target",
-			Val: "_blank",
+			Key: attrTarget,
+			Val: attrTargetBlank,
 		})
 	}
 }
@@ -337,13 +656,20 @@ func filterAttributes(node *gohtml.Node) {
 		if !isSensitiveAttribute(attr.Key) || isAllowedAttributeValue(attr.Val) {
 			attrs = append(attrs, attr)
 		} else {
-			var newAttr gohtml.Attribute
-			newAttr.Key = "bad-" + strings.ToLower(attr.Key)
-			newAttr.Val = attr.Val
-			attrs = append(attrs, newAttr)
-			newAttr.Key = "class"
-			newAttr.Val = "disallowed bad-" + strings.ToLower(attr.Key)
-			attrs = append(attrs, newAttr)
+			// TODO: CLEANUP - This logic is similar to parseAndFilterAttributes
+			// Replace with bad- prefixed attributes using constants
+			attrs = append(attrs, gohtml.Attribute{
+				Key: "bad-" + strings.ToLower(attr.Key),
+				Val: attr.Val,
+			})
+			attrs = append(attrs, gohtml.Attribute{
+				Key: attrClass,
+				Val: classDisallowed + " bad-" + strings.ToLower(attr.Key),
+			})
+			attrs = append(attrs, gohtml.Attribute{
+				Key: attrTitle,
+				Val: fmt.Sprintf(titleDisallowedFmt, attr.Val),
+			})
 		}
 	}
 	node.Attr = attrs
@@ -390,15 +716,17 @@ func isAllowedAttributeValue(value string) bool {
 		return true
 	}
 
-	// Check to see if the URL has a fragment
-	if u.Fragment != "" && isValidFragment(u.Fragment) {
-		return true
+	// Check query string parameters for disallowed extensions
+	if u.RawQuery != "" {
+		if !areQueryParamsAllowed(u.RawQuery) {
+			return false
+		}
 	}
 
-	// // Check to see if the URL has a query string
-	// if u.RawQuery != "" {
-	// 	return true
-	// }
+	// Check to see if the URL has a fragment
+	if u.Fragment != "" && !isValidFragment(u.Fragment) {
+		return false
+	}
 
 	// Extract file extension from path
 	base := path.Base(u.Path)
@@ -417,31 +745,72 @@ func isAllowedAttributeValue(value string) bool {
 func isDomainOnlyURL(u *url.URL) bool {
 	// Valid domain-only cases:
 	// 1. Empty path (e.g., "http://example.com")
-	// 2. Single slash path (e.g., "http://example.com/")
-	return u.Path == "" || u.Path == "/"
+	// 2. Single slash path with no query parameters (e.g., "http://example.com/")
+	return (u.Path == "" || u.Path == "/") && u.RawQuery == ""
 }
 
-// isExtensionAllowed checks if a file extension is permitted
+// areQueryParamsAllowed checks if query string parameters contain any disallowed file extensions
+func areQueryParamsAllowed(rawQuery string) bool {
+	// Parse the query string
+	queryValues, err := url.ParseQuery(rawQuery)
+	if err != nil {
+		// If we can't parse the query, allow it (conservative approach)
+		return true
+	}
+
+	// Check each parameter value for file extensions
+	for _, values := range queryValues {
+		for _, value := range values {
+			if containsDisallowedExtension(value) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// containsDisallowedExtension checks if a string contains a file path with disallowed extension
+func containsDisallowedExtension(value string) bool {
+	// Look for potential file paths in the value
+	// This handles cases like: "file.exe", "path/to/file.dll", "download?file=virus.bat"
+
+	// Split on common separators to find potential filenames
+	separators := []string{"/", "\\", "=", "&", "?", " ", ",", ";"}
+	parts := []string{value}
+
+	// Split the value by each separator
+	for _, sep := range separators {
+		var newParts []string
+		for _, part := range parts {
+			subParts := strings.Split(part, sep)
+			newParts = append(newParts, subParts...)
+		}
+		parts = newParts
+	}
+
+	// Check each part for file extensions
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Extract extension from this part
+		ext := path.Ext(part)
+		if ext != "" && !isExtensionAllowed(ext) {
+			return true // Found disallowed extension
+		}
+	}
+
+	return false
+}
+
+// isExtensionAllowed checks if a file extension is in the allowed list
 func isExtensionAllowed(ext string) bool {
 	ext = strings.ToLower(ext)
 	if (ext == "") || (ext == ".") {
 		return true
-	}
-
-	// Check against allowed extensions
-	allowedExts := []string{
-		// Archive types
-		".zip", ".rar", ".7z", ".tar", ".gz", ".bz2",
-		// Plain text Document types
-		".css", ".htm", ".html", ".md", ".txt", ".xml",
-		// Non-text Document types
-		".docx", ".xlsx", ".pptx", ".pdf",
-		// Images
-		".png", ".apng", ".jpg", ".jpeg", ".gif", ".bmp", ".svg", ".webp", ".ico", ".tiff", ".tif", ".icns",
-		// Videos
-		".mp4", ".ogg", ".webm", ".mov", ".avi", ".wmv", ".flv", ".mkv", ".m4v",
-		// Audio
-		".mp3", ".ogg", ".wav", ".flac", ".aac", ".m4a", ".wma", ".opus",
 	}
 
 	// If the extension is in the list of allowed extensions, return true
@@ -470,6 +839,8 @@ func isValidFragment(fragment string) bool {
 	return validFragment.MatchString(fragment)
 }
 
+// resizeSVG modifies SVG content to set specific width and height attributes.
+// If either width or height is 0, it uses the other dimension to maintain square aspect ratio.
 func resizeSVG(svg string, width, height int) string {
 	if width == 0 || height == 0 {
 		if width == 0 {

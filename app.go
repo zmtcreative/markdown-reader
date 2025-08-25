@@ -46,6 +46,7 @@ type App struct {
     documentProcessor   *app.DocumentProcessor
     binaryDetector      *app.BinaryDetector
     configManager       *app.ConfigManager
+    fontManager         *app.FontManager
 }
 
 // NewApp creates a new App application struct
@@ -74,6 +75,7 @@ func NewApp(cliArgs *cli.CliArgs) *App {
         versionInfo:        setAboutString,                                     // Set version info using the application name with extension
         cmdlineOptions:     stringFromPtr(cliArgs.CmdlineOptions, ""),         // Store the command line options for help display
         configManager:      configManager,                                     // Store the config manager
+        fontManager:        app.NewFontManager(configManager),                     // Initialize font manager with config manager
     }
 }
 
@@ -147,10 +149,10 @@ func (a *App) startup(ctx context.Context) {
 // This is where we load and display the initial Markdown file if provided via CLI.
 func (a *App) domReady(ctx context.Context) {
     if a.currentFile != "" {
-        log.Printf("Loading initial file from command line: %s", a.currentFile)
+        log.Printf("##> LOG: Loading initial file from command line: %s", a.currentFile)
         err := a.documentProcessor.LoadAndDisplayMarkdown(a.currentFile)
         if err != nil {
-            log.Printf("Error loading initial Markdown file %q: %v", a.currentFile, err)
+            log.Printf("##> LOG: Error loading initial Markdown file %q: %v", a.currentFile, err)
             // Emit an error event to the frontend
             runtime.EventsEmit(a.ctx, "error", "Failed to load initial file: "+err.Error())
         }
@@ -169,7 +171,7 @@ func (a *App) domReady(ctx context.Context) {
 // shutdown is called when the app is about to exit.
 // Perform any cleanup here if necessary.
 func (a *App) shutdown(ctx context.Context) {
-    log.Println("Application is shutting down.")
+    log.Println("##> LOG: Application is shutting down.")
 }
 
 func (a *App) menu() *menu.Menu {
@@ -321,7 +323,7 @@ func (a *App) SaveSettings(settings *app.Config) error {
     // Automatically reload the current document to apply new settings
     if a.currentFile != "" {
         if reloadErr := a.ReloadCurrentDocument(); reloadErr != nil {
-            log.Printf("Warning: Failed to reload document after settings change: %v", reloadErr)
+            log.Printf("##> LOG: Warning: Failed to reload document after settings change: %v", reloadErr)
             // Don't return the reload error, as settings were successfully saved
         }
     }
@@ -348,10 +350,114 @@ func (a *App) SaveSettingsSessionOnly(settings *app.Config) error {
     // Automatically reload the current document to apply new settings
     if a.currentFile != "" {
         if reloadErr := a.ReloadCurrentDocument(); reloadErr != nil {
-            log.Printf("Warning: Failed to reload document after settings change: %v", reloadErr)
+            log.Printf("##> LOG: Warning: Failed to reload document after settings change: %v", reloadErr)
             // Don't return the reload error, as settings were successfully applied
         }
     }
 
     return nil
+}
+
+// GetAvailableFonts returns a list of available system fonts
+func (a *App) GetAvailableFonts() []string {
+    return a.fontManager.GetSystemFonts()
+}
+
+// SetApplicationFont updates the font family and size settings
+func (a *App) SetApplicationFont(fontFamily string, fontSize float64) error {
+    // Validate font size (reasonable range: 8-72 pixels)
+    if fontSize < 8 || fontSize > 72 {
+        return fmt.Errorf("font size must be between 8 and 72 pixels, got: %.1f", fontSize)
+    }
+
+    // Update configuration
+    a.configManager.SetFontFamily(fontFamily)
+    a.configManager.SetFontSize(fontSize)
+
+    // Save the configuration
+    if err := a.configManager.SaveConfig(); err != nil {
+        return fmt.Errorf("failed to save font configuration: %w", err)
+    }
+
+    return nil
+}
+
+// GetCurrentFont returns the current font family and size
+func (a *App) GetCurrentFont() map[string]interface{} {
+    return map[string]interface{}{
+        "fontFamily": a.configManager.GetFontFamily(),
+        "fontSize":   a.configManager.GetFontSize(),
+    }
+}
+
+// GetAvailableMonospaceFonts returns a list of available monospace fonts
+func (a *App) GetAvailableMonospaceFonts() []string {
+    return a.fontManager.GetMonospaceFonts()
+}
+
+// SetApplicationMonospaceFont updates the monospace font family and size settings
+func (a *App) SetApplicationMonospaceFont(fontFamily string, fontSize float64) error {
+    // Validate font size (reasonable range: 8-72 pixels)
+    if fontSize < 8 || fontSize > 72 {
+        return fmt.Errorf("monospace font size must be between 8 and 72 pixels, got: %.1f", fontSize)
+    }
+
+    // Update configuration
+    a.configManager.SetFontFamilyMono(fontFamily)
+    a.configManager.SetFontSizeMono(fontSize)
+
+    // Save the configuration
+    if err := a.configManager.SaveConfig(); err != nil {
+        return fmt.Errorf("failed to save monospace font configuration: %w", err)
+    }
+
+    return nil
+}
+
+// GetCurrentMonospaceFont returns the current monospace font family and size
+func (a *App) GetCurrentMonospaceFont() map[string]interface{} {
+    return map[string]interface{}{
+        "fontFamily": a.configManager.GetFontFamilyMono(),
+        "fontSize":   a.configManager.GetFontSizeMono(),
+    }
+}
+
+// GetAdvancedFontDetectionStatus returns the current status of advanced font detection
+func (a *App) GetAdvancedFontDetectionStatus() bool {
+    return a.configManager.GetUseAdvancedFontDetection()
+}
+
+// SetAdvancedFontDetection enables or disables advanced font detection
+func (a *App) SetAdvancedFontDetection(enabled bool) error {
+    a.configManager.SetUseAdvancedFontDetection(enabled)
+
+    // Save the configuration
+    if err := a.configManager.SaveConfig(); err != nil {
+        return fmt.Errorf("failed to save advanced font detection setting: %w", err)
+    }
+
+    return nil
+}
+
+// GetMonospaceFontsWithDetectionInfo returns monospace fonts with detection method information
+func (a *App) GetMonospaceFontsWithDetectionInfo() map[string]interface{} {
+    isAdvancedEnabled := a.configManager.GetUseAdvancedFontDetection()
+
+    basicFonts := a.fontManager.BasicMonospaceDetection()
+    advancedFonts := a.fontManager.AdvancedMonospaceDetection()
+
+    return map[string]interface{}{
+        "fonts": a.fontManager.GetMonospaceFonts(),
+        "detectionMode": map[string]interface{}{
+            "isAdvancedEnabled": isAdvancedEnabled,
+            "basicCount":       len(basicFonts),
+            "advancedCount":    len(advancedFonts),
+            "currentMode":     func() string {
+                if isAdvancedEnabled {
+                    return "advanced"
+                }
+                return "basic"
+            }(),
+        },
+    }
 }

@@ -1,4 +1,7 @@
 @use "sass:color";
+@use "sass:math";
+
+$base-font-size: 16;
 
 // ============================================================================
 // SCSS Variables - Consolidated from existing CSS custom properties
@@ -14,24 +17,36 @@ $text-color-light-rgb: 46, 52, 64;
 $text-color-dark: #d8dee9;
 $text-color-dark-rgb: 216, 222, 233;
 $header-bg-light: #f8f9fa;
-$header-bg-light-rgb: 248, 249, 250;
+$header-bg-light-rgb: 248, 249, 250; // UNUSED
 $header-bg-dark: #3b4252;
-$header-bg-dark-rgb: 59, 66, 82;
+$header-bg-dark-rgb: 59, 66, 82; // UNUSED
 $border-color-light: #d8dee9;
-$border-color-light-rgb: 216, 222, 233;
+$border-color-light-rgb: 216, 222, 233; // UNUSED
 $border-color-dark: #4c566a;
-$border-color-dark-rgb: 76, 86, 106;
+$border-color-dark-rgb: 76, 86, 106; // UNUSED
 $dialog-color-accent: #3b82f6;
 
 // Typography
-$font-family-base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-$font-family-code: "MesloLGL Nerd Font", "FiraCode Nerd Font", "Fira Code", "Consolas", "Courier New", Courier, monospace;
-$line-height-tight: 1.3;
+$font-family-base-sans: Verdana, Arial, Helvetica, Tahoma, Geneva, "Trebuchet MS", sans-serif;
+$font-family-base-serif: "Book Antiqua", Georgia, "URW Palladio L", Palatino, serif;
+$font-family-base: $font-family-base-sans;
+$font-family-code: "Consolas", "Monaco", "DejaVu Sans Mono", "Liberation Mono", "Courier New", Courier, monospace;
+$line-height-tight: 1.1;
 $line-height-base: 1.2;
+$font-size-base: 1rem;
+$font-size-min: calc($font-size-base - 0.25rem);  // rem unit
+$font-size-max: calc($font-size-base + 0.25rem);  // rem unit
+$font-size-diff: math.div(calc($font-size-max - $font-size-min), 1rem); // cancel out rem units
+$view-min-width: 600;
+$view-min-width-px: #{$view-min-width}px;
+$view-max-width: 3840;
+$view-max-width-px: #{$view-max-width}px;
+$view-width-diff: calc($view-max-width - $view-min-width);
+$font-view-ratio: calc($font-size-diff / $view-width-diff);
+
 
 // Layout & Spacing
-$app-padding: 20px;
-$header-padding: 0px 20px;
+$header-padding: 3px 20px;
 $content-padding: 20px;
 $border-radius: 4px;
 
@@ -42,14 +57,12 @@ $callout-background-opacity: 0.025;
 $callout-padding: 12px 12px 3px 9px;
 $callout-radius: 10px;
 $callout-blend-mode: normal;
-$callout-title-size: 1.1em;
+$callout-title-size: 1.1rem;
 $callout-title-padding: 0;
 $callout-title-weight: 700;
 $callout-content-padding: 0;
 $callout-content-background: transparent;
-// Symbol to use when callout is open
 $callout-fold-isopen: \2BC6;
-// Symbol to use when callout is closed
 $callout-fold-isclosed: \2BC8;
 $callout-fold-symbol-size: 1.2em;
 
@@ -79,26 +92,26 @@ $td-suffix: ":";
 $td-separator: ".";
 
 // Neutral Colors (for techdoc theme)
-$neutral-50: 250, 250, 250;
-$neutral-100: 245, 245, 245;
-$neutral-200: 229, 229, 229;
-$neutral-300: 212, 212, 212;
-$neutral-400: 163, 163, 163;
-$neutral-500: 115, 115, 115;
-$neutral-600: 82, 82, 82;
+$neutral-50: 250, 250, 250; // UNUSED
+$neutral-100: 245, 245, 245; // UNUSED
+$neutral-200: 229, 229, 229; // UNUSED
+$neutral-300: 212, 212, 212; // UNUSED
+$neutral-400: 163, 163, 163; // UNUSED
+$neutral-500: 115, 115, 115; // UNUSED
+$neutral-600: 82, 82, 82; // UNUSED
 $neutral-700: 64, 64, 64;
-$neutral-800: 38, 38, 38;
-$neutral-900: 23, 23, 23;
-$neutral-950: 10, 10, 10;
+$neutral-800: 38, 38, 38; // UNUSED
+$neutral-900: 23, 23, 23; // UNUSED
+$neutral-950: 10, 10, 10; // UNUSED
 
 // Essential Color Palette (commonly used colors only)
 $color-white: 255, 255, 255;
 $color-black: 0, 0, 0;
-$color-red: 255, 0, 0;
-$color-green: 0, 128, 0;
-$color-blue: 0, 0, 255;
-$color-gray: 128, 128, 128;
-$color-silver: 192, 192, 192;
+$color-red: 255, 0, 0; // UNUSED
+$color-green: 0, 128, 0; // UNUSED
+$color-blue: 0, 0, 255; // UNUSED
+$color-gray: 128, 128, 128; // UNUSED
+$color-silver: 192, 192, 192; // UNUSED
 
 // Link Colors
 $link-color-light: #5e81ac;
@@ -124,6 +137,24 @@ $codeblock-opacity-dark: 0.25;
 
     // Typography
     --line-height-tight: #{$line-height-tight};
+    --line-height-base: #{$line-height-base};
+    --font-family-base: #{$font-family-base};
+    --font-family-base-serif: #{$font-family-base-serif}; // UNUSED
+    --font-family-base-sans: #{$font-family-base-sans}; // UNUSED
+    --font-family-code: #{$font-family-code};
+    --font-size-base: #{$font-size-base};
+    --font-size-base-px: calc(#{$font-size-base} + 0px);
+    --font-size-base-num: 16;
+    --font-size-code: 14px; // Default monospace font size - will be dynamically updated
+    --font-header-ratio: calc(#{$font-size-base} + (100vw - #{$view-min-width-px}) * #{$font-view-ratio} * var(--font-size-base-num));
+    --font-size-calc: clamp(#{$font-size-min}, calc(#{$font-size-min} + (100vw - #{$view-min-width-px}) * #{$font-view-ratio} * var(--font-size-base-num)), #{$font-size-max});
+    --font-size: var(--font-size-calc);
+    --font-size-px: calc(var(--font-size) + 0px);
+
+    // These need to be here so the app can update them for font changes!
+    // DO NOT set font-size or font-family directly elsewhere in the SCSS!
+    font-size: var(--font-size-base);
+    font-family: var(--font-family-base);
 
     // Callouts
     --callout-border-width: #{$callout-border-width};
@@ -170,18 +201,22 @@ $codeblock-opacity-dark: 0.25;
     --dialog-color-tab-accent: #{$dialog-color-accent};
     --dialog-font-family-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 
-
     // Essential colors
     --css-color-white: #{$color-white};
     --css-color-black: #{$color-black};
+
+    // Inline Text Emphasis
+    --text-strikethrough-color: red;
+
+    --display-document-dates: block;
 }
 
 // Dark theme overrides
 html.dark {
     --bg-color: #{$bg-color-dark};
-    --bg-color-rgb: #{$bg-color-dark};
+    --bg-color-rgb: #{$bg-color-dark-rgb};
     --text-color: #{$text-color-dark};
-    --text-color-rgb: #{$text-color-dark};
+    --text-color-rgb: #{$text-color-dark-rgb};
     --header-bg-color: #{$header-bg-dark};
     --border-color: #{$border-color-dark};
     --inline-code-bg: #{$inline-code-bg-dark};

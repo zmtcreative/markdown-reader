@@ -1,0 +1,96 @@
+@use "variables" as *;
+
+// ============================================================================
+// Application Layout Styles
+// Styles moved from App.vue for .app-header and .content-area selectors
+// ============================================================================
+
+// This (#app) COULD be in App.vue, but I'm putting it here since this is where I'll
+// make general app-wide styles settings (like the main font family and uses SCSS variables).
+#app {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-header {
+  /* Fixed header below toolbar */
+  position: relative;
+  z-index: 100;
+  background-color: var(--bg-color, inherit);
+  color: var(--text-color);
+  padding: #{$header-padding};
+  border-bottom: 4px solid var(--text-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-flow: row wrap;
+  gap: 0 10px;
+  flex-shrink: 0;
+
+  h1 {
+      margin: 0;
+      font-size: clamp(1.125rem, calc(var(--font-header-ratio) * 1.25), 2rem);
+      align-self: flex-end;
+      flex: 2 0 auto;
+  }
+
+  .document-dates {
+      display: var(--display-document-dates, block);
+      margin: 0;
+      text-align: right;
+      align-self: flex-end;
+      flex: 1 0 auto;
+      font-size: clamp(0.55rem, calc(var(--font-header-ratio) * 0.5), 0.8rem);
+      padding: 5px 0 5px 0;
+
+      .date-label {
+          font-weight: bold;
+      }
+  }
+}
+
+.content-area {
+  /* Scrollable content area */
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: #{$content-padding};
+  background-color: var(--bg-color, inherit);
+}
+
+/* Ensure markdown content doesn't have conflicting margins at top */
+.content-area .markdown-body {
+  margin-top: 0;
+}
+
+/* Optional: Add subtle background differentiation */
+.dark {
+  --header-bg-dark: rgba(45, 55, 72, 0.8);
+  --content-bg: inherit;
+}
+
+.light {
+  --header-bg-light: rgba(248, 249, 250, 0.8);
+  --content-bg: inherit;
+}
+
+/* Print-specific overrides to ensure proper printing */
+@media print {
+  .app-header {
+    position: static !important;
+    z-index: auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .content-area {
+    flex: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}

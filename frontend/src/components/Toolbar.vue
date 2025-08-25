@@ -50,11 +50,12 @@ defineEmits<{
   top: 0;
   left: 0;
   right: 0;
-  height: 40px;
+  height: 28px;
   background-color: var(--toolbar-bg, #f8f9fa);
-  border-bottom: 1px solid var(--toolbar-border, #e9ecef);
+  border-bottom: 3px solid var(--toolbar-border, #e9ecef);
+  border-top:  3px solid var(--toolbar-border, #e9ecef);
   z-index: 1000;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); */
 }
 
 .toolbar-content {
@@ -107,17 +108,21 @@ defineEmits<{
 
 /* Dark theme styles */
 :global(.dark) .app-toolbar {
-  --toolbar-bg: #2d3748;
-  --toolbar-border: #4a5568;
-  --toolbar-text: #e2e8f0;
-  --toolbar-hover: rgba(255, 255, 255, 0.1);
+  --toolbar-bg: #000000;
+  --toolbar-border: var(--bg-color);
+  --toolbar-text: #ffffff;
+  --toolbar-hover: rgba(255, 255, 255, 0.25);
 }
 
 /* Light theme styles */
 :global(.light) .app-toolbar {
-  --toolbar-bg: #ffffff;
+  /* --toolbar-bg: #ffffff;
   --toolbar-border: #e2e8f0;
   --toolbar-text: #4a5568;
-  --toolbar-hover: rgba(0, 0, 0, 0.05);
+  --toolbar-hover: rgba(0, 0, 0, 0.05); */
+  --toolbar-bg: #2b2b2b;
+  --toolbar-border: var(--bg-color);
+  --toolbar-text: #ffffff;
+  --toolbar-hover: rgba(255, 255, 255, 0.25);
 }
 </style>
