@@ -76,7 +76,17 @@ func getAppNameFromExecutable() string {
 
 	// Get the base name from the executable path
 	execPath := os.Args[0]
-	baseName := filepath.Base(execPath)
+
+	// Handle both Windows and Unix path separators
+	var baseName string
+	if strings.Contains(execPath, "\\") {
+		// Windows path - handle manually to work cross-platform
+		parts := strings.Split(execPath, "\\")
+		baseName = parts[len(parts)-1]
+	} else {
+		// Unix path or no path separators
+		baseName = filepath.Base(execPath)
+	}
 
 	// Remove the file extension
 	ext := filepath.Ext(baseName)
