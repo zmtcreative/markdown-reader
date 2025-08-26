@@ -1,5 +1,13 @@
 @use "variables" as *; // Import variables for use in this file
 
+// TechDoc Theme Variables
+$td-base-margin: 0rem;
+$td-section-indent: 0.5rem;
+$td-header-left-indent: -0.5rem;
+$td-header-right-indent: 0.5rem;
+$td-suffix: ":";
+$td-separator: ".";
+
 // ============================================================================
 // TechDoc Theme
 // ============================================================================
@@ -16,9 +24,14 @@
     --color-neutral-700: #{$neutral-700};
 
     .markdown-body {
-        section:first-child {
-            counter-reset: td-h2 0;
-        }
+        counter-reset: td-h2 0;
+
+        // section[class="section-h1"]:has(section[class="section-h2"]):not(h1) {
+        //     counter-reset: td-h2 0;
+        // }
+        // section:first-child:has(h1) {
+        //     counter-reset: td-h2 0;
+        // }
         // section > h1 { font-size: calc(1.375rem + 1.5vw); }
         // section > h2 { font-size: calc(1.325rem + 0.9vw); }
         // section > h3 { font-size: calc(1.3rem + 0.6vw); }

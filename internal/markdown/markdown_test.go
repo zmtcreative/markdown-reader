@@ -327,6 +327,117 @@ func TestCodeLanguagesCompleteness(t *testing.T) {
     }
 }
 
+func TestStripCommentsFromFrontmatter(t *testing.T) {
+	tests := []struct {
+		name     string
+        fmtype   string
+		input    string
+		expected string
+	}{
+		{
+			name: "basic frontmatter with comment",
+            fmtype: "YAML",
+			input: `---
+Title: Hello World
+# Doctype: techdoc
+Date: 2025-08-08
+---
+
+# This is the First section
+
+This is some text in the first section.`,
+			expected: `---
+Title: Hello World
+Date: 2025-08-08
+---
+
+# This is the First section
+
+This is some text in the first section.`,
+		},
+		{
+			name: "frontmatter with plus delimiters",
+            fmtype: "TOML",
+			input: `+++
+title = "Hello World"
+# doctype = "techdoc"
+date = "2025-08-08"
++++
+
+# This is the First section
+
+This is some text in the first section.`,
+			expected: `+++
+title = "Hello World"
+date = "2025-08-08"
++++
+
+# This is the First section
+
+This is some text in the first section.`,
+		},
+		{
+			name: "no frontmatter",
+            fmtype: "",
+			input: `# This is the First section
+
+This is some text in the first section.`,
+			expected: `# This is the First section
+
+This is some text in the first section.`,
+		},
+		{
+			name: "frontmatter with no comments",
+			fmtype: "YAML",
+			input: `---
+Title: Hello World
+Date: 2025-08-08
+---
+
+# This is the First section`,
+			expected: `---
+Title: Hello World
+Date: 2025-08-08
+---
+
+# This is the First section`,
+		},
+		{
+			name: "blank lines before frontmatter",
+            fmtype: "YAML",
+			input: `
+
+---
+Title: Hello World
+# Doctype: techdoc
+Date: 2025-08-08
+---
+
+# Content`,
+			expected: `
+
+---
+Title: Hello World
+Date: 2025-08-08
+---
+
+# Content`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, fmType := stripCommentsFromFrontmatter([]byte(tt.input))
+			if string(result) != tt.expected {
+				t.Errorf("stripCommentsFromFrontmatter() = %q, want %q", string(result), tt.expected)
+			}
+			if fmType != tt.fmtype {
+				t.Errorf("stripCommentsFromFrontmatter() fmType = %q, want %q", fmType, tt.fmtype)
+			}
+		})
+	}
+}
+
 func BenchmarkExtractH1(b *testing.B) {
     markdown := "# Test Title\n\nThis is some content that follows the title.\n\n## Subtitle\n\nMore content here."
 

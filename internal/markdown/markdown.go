@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -141,7 +142,9 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 	// Frontmatter processing is always enabled
 	options = append(options,
 		goldmark.WithExtensions(
-			&frontmatter.Extender{},
+			&frontmatter.Extender{
+				Mode: frontmatter.SetMetadata,
+			},
 		),
 	)
 
@@ -317,24 +320,44 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 }
 
 // ConvertMarkdownToHTML converts a byte slice of Markdown content into HTML.
-func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]byte, map[string]string, error) {
+// Returns: the HTML content ([]byte), frontmatter metadata (map[string]any), and any conversion error (error).
+func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]byte, map[string]any, string, error) {
     var buf strings.Builder
-    var meta map[string]string
-    fmctx := parser.NewContext()
-    err := mdConverter.Convert(markdown, &buf, parser.WithContext(fmctx))
+	// Get the frontmatter data and place it in meta
+	root := mdConverter.Parser().Parse(text.NewReader(markdown))
+	doc := root.OwnerDocument()
+	meta := doc.Meta()
+
+	// Strip comments from frontmatter before rendering
+	// Note to Self: The frontmatter extension handles parsing comments in frontmatter just fine,
+	//               but since the original source is passed to the Convert() method, we need to
+	//               strip comments in the frontmatter manually -- otherwise, commented
+	//               frontmatter will be treated as an ATX header and screw up ExtractH1() and
+	//               Convert() calls.
+	mdContent, fmType := stripCommentsFromFrontmatter(markdown)
+
+    // Extract the document title from the H1 heading element if present
+    // We're doing this before converting, so we can use the Goldmark Parser to find the first '# Title'
+    var thisDocumentH1Title, _ = ExtractH1(string(mdContent))
+
+    // Clean up the title by removing extra whitespace and line breaks
+    thisDocumentH1Title = strings.ReplaceAll(thisDocumentH1Title, "\n", " ")
+    // Replace multiple whitespace characters with a single space using regex
+    thisDocumentH1Title = regexp.MustCompile(`\s+`).ReplaceAllString(thisDocumentH1Title, " ")
+
+	// Convert the Markdown content to HTML
+	// Note to self: Since we're altering the mdContent before rendering,
+	//               we need use the Convert() method, we can't use the 'root'
+	//               variable with the Renderer() function here, since the source
+	//               now doesn't match the AST in 'root' anymore.
+	err := mdConverter.Convert(mdContent, &buf)
     if err != nil {
-        return nil, nil, err
+        return nil, nil, "", err
     }
     html := buf.String()
-    fm := frontmatter.Get(fmctx)
-    if fm == nil {
-        return []byte(html), nil, nil
-    }
-    if err := fm.Decode(&meta); err != nil {
-        return []byte(html), nil, nil
-    }
 	meta, _ = utils.NormalizeMapKeys(meta) // Normalize keys to lowercase
-    return []byte(html), meta, nil
+	meta["_FM_TYPE"] = fmType // Add frontmatter type to metadata
+    return []byte(html), meta, thisDocumentH1Title, nil
 }
 
 // ExtractH1 finds the first H1 heading from Markdown source.
@@ -568,4 +591,92 @@ func getLanguageByAlias(language []byte) []byte {
 		}
 	}
 	return language
+}
+
+// stripCommentsFromFrontmatter removes comment lines (starting with #) from frontmatter
+func stripCommentsFromFrontmatter(mdContent []byte) ([]byte, string) {
+    content := string(mdContent)
+    lines := strings.Split(content, "\n")
+
+    var result strings.Builder
+    var frontmatterDelimiter string
+    inFrontmatter := false
+    frontmatterStarted := false
+	fmType := ""
+
+    for i, line := range lines {
+        trimmedLine := strings.TrimSpace(line)
+
+        // Check if we're still in the preamble (only blank lines allowed before frontmatter)
+        if !frontmatterStarted && !inFrontmatter {
+            // If this is a blank line, keep it and continue
+            if trimmedLine == "" {
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            }
+
+            // Check if this line starts frontmatter
+            if strings.HasPrefix(trimmedLine, "---") && len(trimmedLine) >= 3 && strings.Trim(trimmedLine, "-") == "" {
+                frontmatterDelimiter = trimmedLine
+                frontmatterStarted = true
+                inFrontmatter = true
+				fmType = "YAML"
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            } else if strings.HasPrefix(trimmedLine, "+++") && len(trimmedLine) >= 3 && strings.Trim(trimmedLine, "+") == "" {
+                frontmatterDelimiter = trimmedLine
+                frontmatterStarted = true
+                inFrontmatter = true
+                fmType = "TOML"
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            } else {
+                // No frontmatter detected, this is regular content
+                // Add all remaining content as-is
+                result.WriteString(strings.Join(lines[i:], "\n"))
+                break
+            }
+        }
+
+        // We are inside frontmatter
+        if inFrontmatter {
+            // Check if this is the closing delimiter
+            if trimmedLine == frontmatterDelimiter {
+                inFrontmatter = false
+                result.WriteString(line)
+                if i < len(lines)-1 {
+                    result.WriteString("\n")
+                }
+                continue
+            }
+
+            // Skip lines that start with # (comments)
+            if strings.HasPrefix(trimmedLine, "#") {
+                continue
+            }
+
+            // Keep non-comment lines
+            result.WriteString(line)
+            if i < len(lines)-1 {
+                result.WriteString("\n")
+            }
+        } else {
+            // We're past the frontmatter, add everything as-is
+            result.WriteString(line)
+            if i < len(lines)-1 {
+                result.WriteString("\n")
+            }
+        }
+    }
+
+    return []byte(result.String()), fmType
 }

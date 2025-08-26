@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import WailsDevHelper from './wails-dev-helper';
 import { Page } from '@playwright/test';
 
-test.describe('Markdown Reader - Optimized Test Suite', () => {
+test.describe("Markdown Reader - Optimized Test Suite\n", () => {
   let wailsDev: WailsDevHelper;
   let page: Page;
 
@@ -12,7 +12,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
     wailsDev = new WailsDevHelper();
     page = await wailsDev.launchAndConnect();
     await wailsDev.waitForAppReady(page);
-    console.log('✅ Application ready - will be shared across all tests for maximum performance');
+    console.log(' ✅ Application ready - will be shared across all tests for maximum performance');
   });
 
   // 🔚 Shutdown application ONCE after all tests
@@ -21,12 +21,12 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
     if (wailsDev) {
       await wailsDev.disconnect();
     }
-    console.log('✅ Shared application shutdown complete');
+    console.log(' ✅ Shared application shutdown complete');
   });
 
   // 🧹 Fast state reset between tests (no app restart needed!)
   test.beforeEach(async () => {
-    console.log('🔄 Resetting application state (fast reset - no restart)...');
+    console.log(' 🔄 Resetting application state (fast reset - no restart)...');
 
     try {
       // Close any open modals
@@ -40,9 +40,9 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       // Wait for app to be ready
       await page.waitForSelector('.app-header', { timeout: 5000 });
 
-      console.log('✅ State reset complete (no app restart - major time savings!)');
+      console.log(' ✅ State reset complete (no app restart - major time savings!)');
     } catch (error) {
-      console.log(`⚠️ State reset error (continuing anyway): ${error}`);
+      console.log(` ⚠️ State reset error (continuing anyway): ${error}`);
     }
   });
 
@@ -65,7 +65,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       expect(title).toBe('Markdown Reader');
 
       await page.screenshot({ path: 'test-results/optimized-01-app-display.png' });
-      console.log('✅ PASSED: Application loads and displays correctly');
+      console.log('  ✅ PASSED: Application loads and displays correctly');
     });
 
     test('should be responsive and handle basic interactions', async () => {
@@ -82,7 +82,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('.content-area')).toBeVisible();
 
       await page.screenshot({ path: 'test-results/optimized-02-responsiveness.png' });
-      console.log('✅ PASSED: Application is responsive and handles interactions');
+      console.log('  ✅ PASSED: Application is responsive and handles interactions');
     });
   });
 
@@ -97,10 +97,10 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('#help-modal-content')).toBeAttached();
       await expect(page.locator('#help-modal-close')).toBeAttached();
 
-      console.log('✅ Help modal elements verified in DOM');
+      console.log('  ✅ Help modal elements verified in DOM');
 
       await page.screenshot({ path: 'test-results/optimized-03-help-modal-elements.png' });
-      console.log('✅ PASSED: Help modal infrastructure is present');
+      console.log('  ✅ PASSED: Help modal infrastructure is present');
     });
 
     test('should handle programmatic Help modal triggering', async () => {
@@ -125,7 +125,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('#help-modal-overlay')).toBeAttached();
 
       await page.screenshot({ path: 'test-results/optimized-04-help-modal-programmatic.png' });
-      console.log('✅ PASSED: Programmatic Help modal triggering works');
+      console.log('  ✅ PASSED: Programmatic Help modal triggering works');
     });
 
     test('should handle Help menu keyboard shortcuts', async () => {
@@ -140,7 +140,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('#content')).toBeVisible();
 
       await page.screenshot({ path: 'test-results/optimized-05-help-shortcuts.png' });
-      console.log('✅ PASSED: Help keyboard shortcuts handled correctly');
+      console.log('  ✅ PASSED: Help keyboard shortcuts handled correctly');
     });
   });
 
@@ -158,10 +158,10 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('#content')).toBeVisible();
       await expect(page.locator('.app-header')).toBeVisible();
 
-      console.log('✅ File open shortcut triggered successfully');
+      console.log('  ✅ File open shortcut triggered successfully');
 
       await page.screenshot({ path: 'test-results/optimized-06-file-shortcuts.png' });
-      console.log('✅ PASSED: File menu shortcuts work correctly');
+      console.log('  ✅ PASSED: File menu shortcuts work correctly');
     });
 
     test('should handle Print functionality shortcuts', async () => {
@@ -175,7 +175,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('.content-area')).toBeVisible();
 
       await page.screenshot({ path: 'test-results/optimized-07-print-shortcuts.png' });
-      console.log('✅ PASSED: Print functionality shortcuts work correctly');
+      console.log('  ✅ PASSED: Print functionality shortcuts work correctly');
     });
 
     test('should demonstrate file operation responsiveness', async () => {
@@ -196,7 +196,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('#content')).toBeVisible();
 
       await page.screenshot({ path: 'test-results/optimized-08-file-operations-rapid.png' });
-      console.log('✅ PASSED: Rapid file operations handled gracefully');
+      console.log('  ✅ PASSED: Rapid file operations handled gracefully');
     });
   });
 
@@ -207,24 +207,24 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       console.log('🧪 Testing: Theme toggle functionality');
 
       // Look for theme toggle button
-      const themeButton = page.locator('button:has-text("Toggle Theme")');
+      const themeButton = page.locator('.theme-toggle-btn');
 
       if (await themeButton.isVisible()) {
         await themeButton.click();
         await page.waitForTimeout(400);
-        console.log('✅ Theme toggle button clicked successfully');
+        console.log('  ✅ Theme toggle button clicked successfully');
 
         // Verify theme change didn't break the app
         await expect(page.locator('.app-header')).toBeVisible();
       } else {
-        console.log('ℹ️ Theme toggle button not found - testing other theme functionality');
+        console.log('    ℹ️ Theme toggle button not found - testing other theme functionality');
 
         // Test that we can still interact with the UI
         await expect(page.locator('body')).toBeVisible();
       }
 
       await page.screenshot({ path: 'test-results/optimized-09-theme-functionality.png' });
-      console.log('✅ PASSED: Theme functionality verified');
+      console.log('  ✅ PASSED: Theme functionality verified');
     });
 
     test('should maintain UI state consistency', async () => {
@@ -239,7 +239,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(header).toHaveCSS('display', /^(block|flex)$/);
 
       await page.screenshot({ path: 'test-results/optimized-10-ui-consistency.png' });
-      console.log('✅ PASSED: UI state consistency maintained');
+      console.log('  ✅ PASSED: UI state consistency maintained');
     });
   });
 
@@ -263,12 +263,12 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       const endTime = Date.now();
       const testTime = endTime - startTime;
 
-      console.log(`⚡ Performance test completed in ${testTime}ms`);
-      console.log('🎯 This test ran WITHOUT restarting the application!');
-      console.log('📊 Estimated time savings: ~20-30 seconds per test vs restart approach');
+      console.log(`    ⚡ Performance test completed in ${testTime}ms`);
+      console.log('    🎯 This test ran WITHOUT restarting the application!');
+      console.log('    📊 Estimated time savings: ~20-30 seconds per test vs restart approach');
 
       await page.screenshot({ path: 'test-results/optimized-11-performance-demo.png' });
-      console.log('✅ PASSED: Performance optimization benefits demonstrated');
+      console.log('  ✅ PASSED: Performance optimization benefits demonstrated');
     });
 
     test('should handle multiple sequential operations without issues', async () => {
@@ -295,7 +295,7 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       await expect(page.locator('.content-area')).toBeVisible();
 
       await page.screenshot({ path: 'test-results/optimized-12-sequential-operations.png' });
-      console.log('✅ PASSED: Multiple sequential operations handled without issues');
+      console.log('  ✅ PASSED: Multiple sequential operations handled without issues');
     });
 
     test('should verify complete application functionality integration', async () => {
@@ -322,10 +322,10 @@ test.describe('Markdown Reader - Optimized Test Suite', () => {
       const contentText = await page.locator('#content').textContent();
       expect(contentText).toBeTruthy();
 
-      console.log('✅ All integration checkpoints passed');
+      console.log('  ✅ All integration checkpoints passed');
 
       await page.screenshot({ path: 'test-results/optimized-13-complete-integration.png' });
-      console.log('✅ PASSED: Complete application functionality integration verified');
+      console.log('  ✅ PASSED: Complete application functionality integration verified');
     });
   });
 });

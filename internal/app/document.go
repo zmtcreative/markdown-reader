@@ -14,10 +14,22 @@ import (
 	"golang.org/x/text/transform"
 
 	"md-reader/internal/markdown"
+	"md-reader/internal/utils"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
 )
+
+// MarkdownRenderData contains all data needed for the markdown-rendered event
+type MarkdownRenderData struct {
+	HTML        string `json:"html"`
+	Title       string `json:"title"`
+	Date        string `json:"date"`
+	Frontmatter string `json:"frontmatter,omitempty"`
+	// Future fields can be added here without breaking existing functionality
+	// Type     string `json:"type,omitempty"`
+	// Metadata map[string]string `json:"metadata,omitempty"`
+}
 
 // DocumentProcessor handles document processing and rendering
 type DocumentProcessor struct {
@@ -78,27 +90,18 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     // Normalize line endings to Unix-style (LF)
     mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
 
-    // Scan the frontmatter and remove any comments in the frontmatter
-    // Since both YAML and TOML use # for comments, this can cause problems for parsing later
-    mdContent = stripCommentsFromFrontmatter(mdContent)
-
-    // Extract the document title from the H1 heading element if present
-    // We're doing this before converting, so we can use the Goldmark Parser to find the first '# Title'
-    var thisDocumentH1Title, _ = markdown.ExtractH1(string(mdContent))
-
-    // Clean up the title by removing extra whitespace and line breaks
-    thisDocumentH1Title = strings.ReplaceAll(thisDocumentH1Title, "\n", " ")
-    // Replace multiple whitespace characters with a single space using regex
-    thisDocumentH1Title = regexp.MustCompile(`\s+`).ReplaceAllString(thisDocumentH1Title, " ")
-
     // Convert Markdown content to HTML
-    htmlContent, docFrontmatter, err := markdown.ConvertMarkdownToHTML(dp.mdConverter, mdContent)
+    htmlContent, docFrontmatter, thisDocumentH1Title, err := markdown.ConvertMarkdownToHTML(dp.mdConverter, mdContent)
     if err != nil {
         return fmt.Errorf("failed to convert Markdown to HTML: %w", err)
     }
 
     // Process document metadata
     docTitle, docDate, docType := dp.processDocumentMetadata(filePath, thisDocumentH1Title, docFrontmatter)
+
+    // Format frontmatter as HTML
+    formatter := NewFrontmatterHTMLFormatter()
+    frontmatterHTML := formatter.FormatAsHTML(docFrontmatter)
 
     // Cleanup HTML content
     htmlContent = CleanupHTMLContent(htmlContent)
@@ -108,8 +111,16 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
         htmlContent = stripFirstH1(htmlContent)
     }
 
+    // Create structured data for the frontend
+    renderData := MarkdownRenderData{
+        HTML:        string(htmlContent),
+        Title:       docTitle,
+        Date:        docDate,
+        Frontmatter: frontmatterHTML,
+    }
+
     // Emit the converted HTML to the frontend
-    runtime.EventsEmit(dp.ctx, "markdown-rendered", string(htmlContent), docTitle, docDate)
+    runtime.EventsEmit(dp.ctx, "markdown-rendered", renderData)
 
     // Handle document type classes
     dp.updateDocumentClasses(docType)
@@ -118,7 +129,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
 }
 
 // processDocumentMetadata extracts and formats document metadata
-func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle string, docFrontmatter map[string]string) (string, string, string) {
+func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle string, docFrontmatter map[string]any) (string, string, string) {
     var docTitle, docDate, fmDocTitle, fmDocDate, fmDocType string
     // docFileTitle := strings.TrimSuffix(filepath.Base(filePath), filepath.Ext(filePath))
     docFileTitle := filepath.Base(filePath)
@@ -134,11 +145,17 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
         docDateLM = fmt.Sprintf(fmtLastModified, fileModDate.In(tz).Format(timeLayout))
     }
 
-    // Extract frontmatter data - now using map[string]string
+    // Extract frontmatter data - now using map[string]any the utils.GetValue generic to handle possible nil values
     if docFrontmatter != nil {
-        fmDocTitle = docFrontmatter["title"]
-        fmDocDate = docFrontmatter["date"]
-        fmDocType = strings.ToLower(docFrontmatter["doctype"])
+        if title, ok := utils.GetValue[string](docFrontmatter, "title"); ok {
+            fmDocTitle = title
+        }
+        if date, ok := utils.GetValue[time.Time](docFrontmatter, "date"); ok {
+            fmDocDate = date.String()
+        }
+        if docType, ok := utils.GetValue[string](docFrontmatter, "doctype"); ok {
+            fmDocType = strings.ToLower(docType)
+        }
     }
 
     // Determine document title
@@ -281,87 +298,3 @@ func stripFirstH1(htmlContent []byte) []byte {
     return []byte(modifiedHTML)
 }
 
-// stripCommentsFromFrontmatter removes comment lines (starting with #) from frontmatter
-func stripCommentsFromFrontmatter(mdContent []byte) []byte {
-    content := string(mdContent)
-    lines := strings.Split(content, "\n")
-
-    var result strings.Builder
-    var frontmatterDelimiter string
-    inFrontmatter := false
-    frontmatterStarted := false
-
-    for i, line := range lines {
-        trimmedLine := strings.TrimSpace(line)
-
-        // Check if we're still in the preamble (only blank lines allowed before frontmatter)
-        if !frontmatterStarted && !inFrontmatter {
-            // If this is a blank line, keep it and continue
-            if trimmedLine == "" {
-                result.WriteString(line)
-                if i < len(lines)-1 {
-                    result.WriteString("\n")
-                }
-                continue
-            }
-
-            // Check if this line starts frontmatter
-            if strings.HasPrefix(trimmedLine, "---") && len(trimmedLine) >= 3 && strings.Trim(trimmedLine, "-") == "" {
-                frontmatterDelimiter = trimmedLine
-                frontmatterStarted = true
-                inFrontmatter = true
-                result.WriteString(line)
-                if i < len(lines)-1 {
-                    result.WriteString("\n")
-                }
-                continue
-            } else if strings.HasPrefix(trimmedLine, "+++") && len(trimmedLine) >= 3 && strings.Trim(trimmedLine, "+") == "" {
-                frontmatterDelimiter = trimmedLine
-                frontmatterStarted = true
-                inFrontmatter = true
-                result.WriteString(line)
-                if i < len(lines)-1 {
-                    result.WriteString("\n")
-                }
-                continue
-            } else {
-                // No frontmatter detected, this is regular content
-                // Add all remaining content as-is
-                result.WriteString(strings.Join(lines[i:], "\n"))
-                break
-            }
-        }
-
-        // We are inside frontmatter
-        if inFrontmatter {
-            // Check if this is the closing delimiter
-            if trimmedLine == frontmatterDelimiter {
-                inFrontmatter = false
-                result.WriteString(line)
-                if i < len(lines)-1 {
-                    result.WriteString("\n")
-                }
-                continue
-            }
-
-            // Skip lines that start with # (comments)
-            if strings.HasPrefix(trimmedLine, "#") {
-                continue
-            }
-
-            // Keep non-comment lines
-            result.WriteString(line)
-            if i < len(lines)-1 {
-                result.WriteString("\n")
-            }
-        } else {
-            // We're past the frontmatter, add everything as-is
-            result.WriteString(line)
-            if i < len(lines)-1 {
-                result.WriteString("\n")
-            }
-        }
-    }
-
-    return []byte(result.String())
-}

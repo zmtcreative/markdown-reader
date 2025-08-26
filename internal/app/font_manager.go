@@ -12,6 +12,10 @@ type FontManager struct {
 	availableFonts []string
 	knownMonospaceFonts map[string]bool
 	configManager *ConfigManager
+	// Caching fields for performance
+	fontCache map[string]bool  // Cache for font existence checks
+	monoCache map[string]bool  // Cache for monospace detection results
+	systemFontCache []string   // Cache for system fonts
 }
 
 // NewFontManager creates a new FontManager
@@ -19,6 +23,9 @@ func NewFontManager(configManager *ConfigManager) *FontManager {
 	return &FontManager{
 		availableFonts: []string{},
 		configManager: configManager,
+		fontCache: make(map[string]bool),
+		monoCache: make(map[string]bool),
+		systemFontCache: []string{},
 		knownMonospaceFonts: map[string]bool{
 			"Consolas":                true,
 			"Courier New":             true,
@@ -46,16 +53,26 @@ func NewFontManager(configManager *ConfigManager) *FontManager {
 
 // GetSystemFonts returns a list of available system fonts
 func (fm *FontManager) GetSystemFonts() []string {
+	// Return cached result if available
+	if len(fm.systemFontCache) > 0 {
+		return fm.systemFontCache
+	}
+
+	var result []string
 	switch runtime.GOOS {
 	case "windows":
-		return fm.getWindowsFonts()
+		result = fm.getWindowsFonts()
 	case "linux":
-		return fm.getLinuxFonts()
+		result = fm.getLinuxFonts()
 	case "darwin":
-		return fm.getMacOSFonts()
+		result = fm.getMacOSFonts()
 	default:
-		return fm.getDefaultFonts()
+		result = fm.getDefaultFonts()
 	}
+
+	// Cache the result
+	fm.systemFontCache = result
+	return result
 }
 
 // getWindowsFonts retrieves fonts on Windows
@@ -243,9 +260,26 @@ func (fm *FontManager) AdvancedMonospaceDetection() []string {
 			continue
 		}
 
+		// Check cache first
+		if cached, exists := fm.monoCache[cleanName]; exists {
+			if cached {
+				advancedMonospaceFonts = append(advancedMonospaceFonts, font)
+			}
+			continue
+		}
+
 		// Advanced detection methods
-		if fm.detectMonospaceByName(cleanName) ||
-		   fm.detectMonospaceByFontPath(cleanName) {
+		isMonospace := fm.detectMonospaceByName(cleanName)
+		if !isMonospace {
+			// Only do expensive file operations if name-based detection fails
+			// and we haven't already checked this font
+			isMonospace = fm.detectMonospaceByFontPathOptimized(cleanName)
+		}
+
+		// Cache the result
+		fm.monoCache[cleanName] = isMonospace
+
+		if isMonospace {
 			advancedMonospaceFonts = append(advancedMonospaceFonts, font)
 		}
 	}
@@ -292,22 +326,45 @@ func (fm *FontManager) isLikelyProportionalFont(fontName string) bool {
 	return false
 }
 
-// detectMonospaceByFontPath attempts to find and analyze font files
-func (fm *FontManager) detectMonospaceByFontPath(fontName string) bool {
+// detectMonospaceByFontPathOptimized is an optimized version that limits expensive operations
+func (fm *FontManager) detectMonospaceByFontPathOptimized(fontName string) bool {
+	// Skip file system operations for very common non-monospace fonts
+	lowerName := strings.ToLower(fontName)
+	commonProportionalFonts := []string{
+		"arial", "helvetica", "times", "georgia", "verdana", "tahoma",
+		"trebuchet", "comic", "impact", "palatino", "calibri", "cambria",
+	}
+
+	for _, proportional := range commonProportionalFonts {
+		if strings.Contains(lowerName, proportional) {
+			return false
+		}
+	}
+
+	// Only proceed with file operations if the font name suggests it might be monospace
+	if !fm.couldBeMonospaceByName(fontName) {
+		return false
+	}
+
 	// Get potential font file paths based on OS
 	fontPaths := fm.getFontDirectories()
 
+	// Limit to fewer extensions and files to check
+	extensions := []string{".ttf", ".otf"}
+
 	for _, basePath := range fontPaths {
-		// Try common font file extensions
-		extensions := []string{".ttf", ".otf", ".woff", ".woff2"}
+		// Check if the directory exists first to avoid unnecessary operations
+		if !fm.fileExistsWithCache(basePath) {
+			continue
+		}
 
 		for _, ext := range extensions {
-			// Generate possible filenames based on font name
-			possibleFiles := fm.generateFontFilenames(fontName, ext)
+			// Generate only the most likely filenames
+			possibleFiles := fm.generateLimitedFontFilenames(fontName, ext)
 
 			for _, filename := range possibleFiles {
 				fullPath := filepath.Join(basePath, filename)
-				if fm.fileExists(fullPath) {
+				if fm.fileExistsWithCache(fullPath) {
 					// Found a font file, try to analyze it
 					if fm.analyzeFontFile(fullPath) {
 						return true
@@ -319,6 +376,65 @@ func (fm *FontManager) detectMonospaceByFontPath(fontName string) bool {
 
 	return false
 }
+
+// couldBeMonospaceByName does a quick check if a font name suggests monospace
+func (fm *FontManager) couldBeMonospaceByName(fontName string) bool {
+	lowerName := strings.ToLower(fontName)
+
+	// Quick indicators that suggest monospace
+	monoHints := []string{
+		"mono", "code", "console", "terminal", "courier", "fixed",
+		"typewriter", "programming", "dev", "source", "nerd", "cascadia",
+	}
+
+	for _, hint := range monoHints {
+		if strings.Contains(lowerName, hint) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// generateLimitedFontFilenames creates fewer, more likely font filenames
+func (fm *FontManager) generateLimitedFontFilenames(fontName string, ext string) []string {
+	var filenames []string
+
+	// Most common patterns only
+	filenames = append(filenames, fontName+ext)
+
+	// Replace spaces with the most common substitute
+	noSpaces := strings.ReplaceAll(fontName, " ", "")
+	if noSpaces != fontName {
+		filenames = append(filenames, noSpaces+ext)
+	}
+
+	// Add Regular suffix (most common)
+	filenames = append(filenames, fontName+"Regular"+ext)
+	filenames = append(filenames, noSpaces+"Regular"+ext)
+
+	return filenames
+}
+
+// fileExistsWithCache checks file existence with caching
+func (fm *FontManager) fileExistsWithCache(filename string) bool {
+	if cached, exists := fm.fontCache[filename]; exists {
+		return cached
+	}
+
+	_, err := os.Stat(filename)
+	result := !os.IsNotExist(err)
+
+	// Cache the result
+	fm.fontCache[filename] = result
+	return result
+}
+
+// // detectMonospaceByFontPath attempts to find and analyze font files
+// func (fm *FontManager) detectMonospaceByFontPath(fontName string) bool {
+// 	// Use the optimized version for better performance
+// 	return fm.detectMonospaceByFontPathOptimized(fontName)
+// }
 
 // getFontDirectories returns OS-specific font directories
 func (fm *FontManager) getFontDirectories() []string {
@@ -346,43 +462,42 @@ func (fm *FontManager) getFontDirectories() []string {
 	}
 }
 
-// generateFontFilenames creates possible font filenames from font name
-func (fm *FontManager) generateFontFilenames(fontName string, ext string) []string {
-	var filenames []string
+// // generateFontFilenames creates possible font filenames from font name
+// func (fm *FontManager) generateFontFilenames(fontName string, ext string) []string {
+// 	var filenames []string
 
-	// Original name
-	filenames = append(filenames, fontName+ext)
+// 	// Original name
+// 	filenames = append(filenames, fontName+ext)
 
-	// Replace spaces with common substitutes
-	replacements := []string{
-		strings.ReplaceAll(fontName, " ", ""),      // NoSpaces
-		strings.ReplaceAll(fontName, " ", "-"),     // Dashes
-		strings.ReplaceAll(fontName, " ", "_"),     // Underscores
-	}
+// 	// Replace spaces with common substitutes
+// 	replacements := []string{
+// 		strings.ReplaceAll(fontName, " ", ""),      // NoSpaces
+// 		strings.ReplaceAll(fontName, " ", "-"),     // Dashes
+// 		strings.ReplaceAll(fontName, " ", "_"),     // Underscores
+// 	}
 
-	for _, replacement := range replacements {
-		if replacement != fontName {
-			filenames = append(filenames, replacement+ext)
-		}
-	}
+// 	for _, replacement := range replacements {
+// 		if replacement != fontName {
+// 			filenames = append(filenames, replacement+ext)
+// 		}
+// 	}
 
-	// Add common style suffixes
-	styles := []string{"Regular", "Normal", "Medium"}
-	for _, style := range styles {
-		filenames = append(filenames, fontName+style+ext)
-		for _, replacement := range replacements {
-			filenames = append(filenames, replacement+style+ext)
-		}
-	}
+// 	// Add common style suffixes
+// 	styles := []string{"Regular", "Normal", "Medium"}
+// 	for _, style := range styles {
+// 		filenames = append(filenames, fontName+style+ext)
+// 		for _, replacement := range replacements {
+// 			filenames = append(filenames, replacement+style+ext)
+// 		}
+// 	}
 
-	return filenames
-}
+// 	return filenames
+// }
 
-// fileExists checks if a file exists
-func (fm *FontManager) fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	return !os.IsNotExist(err)
-}
+// // fileExists checks if a file exists
+// func (fm *FontManager) fileExists(filename string) bool {
+// 	return fm.fileExistsWithCache(filename)
+// }
 
 // analyzeFontFile performs basic font file analysis to detect monospace characteristics
 func (fm *FontManager) analyzeFontFile(filePath string) bool {
