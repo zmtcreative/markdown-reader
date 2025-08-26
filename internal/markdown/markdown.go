@@ -138,9 +138,6 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 		)
 	}
 
-	// // Enable Frontmatter extensions if configured (parses frontmatter metadata)
-	// if configProvider.UseFrontmatterTitle() {
-
 	// Frontmatter processing is always enabled
 	options = append(options,
 		goldmark.WithExtensions(
@@ -323,13 +320,13 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]byte, map[string]string, error) {
     var buf strings.Builder
     var meta map[string]string
-    cntxt := parser.NewContext()
-    err := mdConverter.Convert(markdown, &buf, parser.WithContext(cntxt))
+    fmctx := parser.NewContext()
+    err := mdConverter.Convert(markdown, &buf, parser.WithContext(fmctx))
     if err != nil {
         return nil, nil, err
     }
     html := buf.String()
-    fm := frontmatter.Get(cntxt)
+    fm := frontmatter.Get(fmctx)
     if fm == nil {
         return []byte(html), nil, nil
     }
