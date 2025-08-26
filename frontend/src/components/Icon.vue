@@ -28,12 +28,24 @@
     <template v-if="name === 'moon'">
       <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>
     </template>
+
+    <!-- List Tree icon -->
+    <template v-if="name === 'list-tree'">
+      <path d="M21 12h-8"/>
+      <path d="M21 6h-8"/>
+      <path d="M21 18h-8"/>
+      <path d="M3 6v4c0 1.1.9 2 2 2h3"/>
+      <path d="M3 10v6c0 1.1.9 2 2 2h3"/>
+      <circle cx="3" cy="6" r="1"/>
+      <circle cx="3" cy="12" r="1"/>
+      <circle cx="3" cy="18" r="1"/>
+    </template>
   </svg>
 </template>
 
 <script setup lang="ts">
 interface Props {
-  name: 'sun' | 'moon'
+  name: 'sun' | 'moon' | 'list-tree'
   size?: number | string
   color?: string
 }

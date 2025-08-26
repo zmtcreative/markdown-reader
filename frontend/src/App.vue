@@ -3,11 +3,19 @@
     <!-- Application Toolbar -->
     <Toolbar
       :currentTheme="currentTheme"
+      :showFrontmatter="showFrontmatter"
       @toggleTheme="toggleTheme"
+      @toggleFrontmatter="toggleFrontmatter"
+    />
+
+    <!-- FrontMatter Section (between toolbar and header) -->
+    <FrontMatter
+      :frontmatterHTML="frontmatterHTML"
+      :isVisible="showFrontmatter"
     />
 
     <!-- Fixed Header -->
-    <header class="app-header">
+    <header class="app-header" :class="{ 'with-frontmatter': showFrontmatter && frontmatterHTML }">
       <h1 v-html="docHTMLTitle" class="document-title"></h1>
       <p v-html="docHTMLDate" class="document-dates"></p>
       <!-- Display error message if preset -->
@@ -42,11 +50,15 @@ import { GetTheme, SetTheme, GetSettings, GetCurrentFont, GetCurrentMonospaceFon
 import Settings from './components/Settings.vue';
 import Help from './components/Help.vue';
 import Toolbar from './components/Toolbar.vue';
+import FrontMatter from './components/FrontMatter.vue';
+import type { MarkdownRenderData } from './types/markdown';
 import mermaid from 'mermaid';
 
 const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
 const docHTMLTitle = ref('');
 const docHTMLDate = ref('');
+const frontmatterHTML = ref('');
+const showFrontmatter = ref(false);
 const errorMessage = ref('');
 
 // Modal reactive variables
@@ -87,6 +99,11 @@ async function toggleTheme() {
   const newTheme = currentTheme.value === 'light' ? 'dark' : 'light';
   await SetTheme(newTheme); // Call Go backend to set the new theme
   currentTheme.value = newTheme;
+}
+
+// Function to toggle the frontmatter visibility
+function toggleFrontmatter() {
+  showFrontmatter.value = !showFrontmatter.value;
 }
 
 // Watch for changes in the theme and update the body class
@@ -257,11 +274,12 @@ onMounted(async () => {
   });
 
   // Listen for the 'markdown-rendered' event from the Go backend
-  EventsOn('markdown-rendered', (html: string, title: string, date: string) => {
+  EventsOn('markdown-rendered', (data: MarkdownRenderData) => {
     console.log('Received markdownLoaded event. Updating HTML content.');
-    renderedHTML.value = html;
-    docHTMLTitle.value = title;
-    docHTMLDate.value = date;
+    renderedHTML.value = data.html;
+    docHTMLTitle.value = data.title;
+    docHTMLDate.value = data.date;
+    frontmatterHTML.value = data.frontmatter || '';
     errorMessage.value = ''; // Clear any previous error message
     nextTick(() => {
       console.log('Next tick after setting renderedHTML');
@@ -269,7 +287,7 @@ onMounted(async () => {
       mermaid.run({
         nodes: document.querySelectorAll('.markdown-body .mermaid'),
       });
-      document.title = title; // Set the document title
+      document.title = data.title; // Set the document title
 
       // Call setRootFontSizeNum after document is loaded and DOM is updated
       updateFontSettings();
@@ -329,6 +347,12 @@ onUnmounted(() => {
   padding: 5px 10px;
   background-color: #ffeaea;
   border-radius: 4px;
+}
+
+/* Adjust header positioning when frontmatter is visible */
+.app-header.with-frontmatter {
+  /* Add a small top margin to account for frontmatter section shadow */
+  margin-top: 4px;
 }
 
 /* Print-specific overrides to ensure proper printing */

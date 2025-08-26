@@ -9,6 +9,18 @@
       <!-- Right side - theme toggle and other action items -->
       <div class="toolbar-right">
         <button
+          @click="$emit('toggleFrontmatter')"
+          class="toolbar-btn frontmatter-toggle-btn"
+          :title="showFrontmatter ? 'Hide Frontmatter' : 'Show Frontmatter'"
+        >
+          <Icon
+            name="list-tree"
+            :size="18"
+            class="toolbar-icon"
+          />
+        </button>
+
+        <button
           @click="$emit('toggleTheme')"
           class="toolbar-btn theme-toggle-btn"
           :title="currentTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'"
@@ -36,11 +48,13 @@ import Icon from './Icon.vue'
 
 interface Props {
   currentTheme: 'light' | 'dark'
+  showFrontmatter: boolean
 }
 
 defineProps<Props>()
 defineEmits<{
   toggleTheme: []
+  toggleFrontmatter: []
 }>()
 </script>
 
