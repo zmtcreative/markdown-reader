@@ -148,20 +148,34 @@ func (a *App) startup(ctx context.Context) {
 // domReady is called after the frontend loads the DOM.
 // This is where we load and display the initial Markdown file if provided via CLI.
 func (a *App) domReady(ctx context.Context) {
+        // Create structured data for the frontend
+        renderData := app.MarkdownRenderData{
+            HTML:        "",
+            Title:       "",
+            Date:        "",
+            FrontmatterHTML: "",
+        }
+
     if a.currentFile != "" {
         log.Printf("##> LOG: Loading initial file from command line: %s", a.currentFile)
         err := a.documentProcessor.LoadAndDisplayMarkdown(a.currentFile)
         if err != nil {
             log.Printf("##> LOG: Error loading initial Markdown file %q: %v", a.currentFile, err)
             // Emit an error event to the frontend
-            runtime.EventsEmit(a.ctx, "error", "Failed to load initial file: "+err.Error())
+            renderData.HTML = "<h2>Error loading file</h2><p>" + err.Error() + "</p>"
+            runtime.EventsEmit(a.ctx, "error", renderData)
         }
     } else {
         // Emit a welcome message if no initial file is provided
-        welcomeHTML := "<h1>Welcome to Markdown Reader!</h1>" +
-            "<p>Open a Markdown file using the <code>File &gt; Open</code> menu option or provide a path via the command line (e.g., <code>./markdown-reader.exe --file path/to/your/file.md</code>).</p>" +
-            "<p>This reader supports GitHub Flavored Markdown (GFM).</p>"
-        runtime.EventsEmit(a.ctx, "markdown-rendered", "<h2>No file loaded</h2>"+welcomeHTML)
+        renderData.Title = "Welcome to Markdown Reader!"
+        welcomeHTML := "<h1>" + renderData.Title + "</h1>" +
+            "<h2>No File Loaded</h2>" +
+            "<p>Open a Markdown file using the <code>File &gt; Open</code> menu option or provide a path via the command line (e.g., <code>" +
+            a.appProgName +
+            " --file path/to/your/file.md</code>).</p>"
+        renderData.HTML = welcomeHTML
+        renderData.FrontmatterHTML = `<div class="frontmatter-container"><div class="frontmatter-header">No frontmatter</div></div>`
+        runtime.EventsEmit(a.ctx, "markdown-rendered", renderData)
     }
     if a.showHelp {
         runtime.EventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
@@ -422,9 +436,19 @@ func (a *App) GetCurrentMonospaceFont() map[string]interface{} {
     }
 }
 
-// GetAdvancedFontDetectionStatus returns the current status of advanced font detection
+// GetAdvancedFontDetectionStatus returns the current advanced font detection setting
 func (a *App) GetAdvancedFontDetectionStatus() bool {
-    return a.configManager.GetUseAdvancedFontDetection()
+	return a.configManager.GetUseAdvancedFontDetection()
+}
+
+// GetCurrentFile returns the current file path or empty string if none
+func (a *App) GetCurrentFile() string {
+	return a.currentFile
+}
+
+// HasCurrentFile returns true if a file is currently loaded
+func (a *App) HasCurrentFile() bool {
+	return a.currentFile != ""
 }
 
 // SetAdvancedFontDetection enables or disables advanced font detection

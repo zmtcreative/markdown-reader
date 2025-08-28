@@ -20,8 +20,7 @@ type Config struct {
 type ApplicationOptions struct {
 	UseInlineHTML       bool    `mapstructure:"use_inline_html" json:"use_inline_html"`             // Inline HTML support (allow inline HTML in Markdown)
 	UseSanitize         bool    `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`         // HTML Sanitization (remove unsafe elements and links)
-	StripH1             bool    `mapstructure:"strip_h1" json:"strip_h1"`                           // Strip First H1 and Use as Title
-	// UseFrontmatter      bool   `mapstructure:"use_frontmatter" json:"use_frontmatter"`             // Parse Frontmatter
+	UseStripH1          bool    `mapstructure:"use_strip_h1" json:"use_strip_h1"`                     // Strip First H1
 	UseFrontmatterTitle bool    `mapstructure:"use_frontmatter_title" json:"use_frontmatter_title"` // Always Use Frontmatter Title if Available
 	FontFamily          string  `mapstructure:"font_family" json:"font_family"`                     // Selected font family
 	FontSize            float64 `mapstructure:"font_size" json:"font_size"`                         // Selected font size in pixels
@@ -32,7 +31,8 @@ type ApplicationOptions struct {
 
 // Markdown-Specific Settings
 type MarkdownOptions struct {
-	UseGFM             bool   `mapstructure:"use_gfm" json:"use_gfm"`                         // GitHub Flavored Markdown and PHP Markdown Extensions
+	UseGFM             bool   `mapstructure:"use_gfm" json:"use_gfm"`                         // GitHub Flavored Markdown
+	UsePHPMDExt        bool   `mapstructure:"use_php_md_ext" json:"use_php_md_ext"`           // PHP Markdown Extensions Support
 	UseEmoji           bool   `mapstructure:"use_emoji" json:"use_emoji"`                     // Emoji Support
 	UseMermaid         bool   `mapstructure:"use_mermaid" json:"use_mermaid"`                 // Mermaid Diagrams Support
 	UseFigure          bool   `mapstructure:"use_figure" json:"use_figure"`                   // Image Figure Wrapping Support
@@ -42,7 +42,10 @@ type MarkdownOptions struct {
 	UseHighlighting    bool   `mapstructure:"use_highlighting" json:"use_highlighting"`       // Fenced Code Highlighting
 	UseFancyLists      bool   `mapstructure:"use_fancylists" json:"use_fancylists"`           // Allow Pandoc-Style Fancy Lists
 	UseAttributes      bool   `mapstructure:"use_attributes" json:"use_attributes"`           // Allow Custom Attributes (using '{.myclass}' syntax)
+	UseAbbreviations   bool   `mapstructure:"use_abbreviations" json:"use_abbreviations"`     // Allow Abbreviations (using `*[ABBR]: Abbreviations` syntax)
 	UseTypographic     bool   `mapstructure:"use_typographic" json:"use_typographic"`         // Typographic Extensions to Use Fancy Quotes
+	UseKatex           bool   `mapstructure:"use_katex" json:"use_katex"`                     // KaTeX Support for Mathematical Expressions
+	UseD2Diagrams      bool   `mapstructure:"use_d2_diagrams" json:"use_d2_diagrams"`         // D2 Diagrams Support
 }
 
 // Alert Callouts Settings
@@ -116,7 +119,7 @@ func NewConfigManager() *ConfigManager {
 	// Set default values for Application section
 	v.SetDefault("application.use_inline_html", true)
 	v.SetDefault("application.use_sanitize_html", true)
-	v.SetDefault("application.strip_h1", true)
+	v.SetDefault("application.use_strip_h1", true)
 	v.SetDefault("application.use_frontmatter_title", true)
 	v.SetDefault("application.font_family", "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif")
 	v.SetDefault("application.font_size", 16.0)
@@ -126,6 +129,7 @@ func NewConfigManager() *ConfigManager {
 
 	// Set default values for Markdown section
 	v.SetDefault("markdown.use_gfm", true)
+	v.SetDefault("markdown.use_php_md_ext", true)
 	v.SetDefault("markdown.use_emoji", true)
 	v.SetDefault("markdown.use_mermaid", true)
 	v.SetDefault("markdown.use_figure", true)
@@ -136,6 +140,9 @@ func NewConfigManager() *ConfigManager {
 	v.SetDefault("markdown.use_fancylists", true)
 	v.SetDefault("markdown.use_attributes", true)
 	v.SetDefault("markdown.use_typographic", true)
+	v.SetDefault("markdown.use_abbreviations", false)
+	v.SetDefault("markdown.use_katex", true)
+	v.SetDefault("markdown.use_d2_diagrams", true)
 
 	// Set default values for Alert Callouts section
 	v.SetDefault("alert_callouts.use_alertcallouts", true)
@@ -207,7 +214,7 @@ func (cm *ConfigManager) loadConfig() {
 			Application: ApplicationOptions{
 				UseInlineHTML:  true,
 				UseSanitize:    true,
-				StripH1:        true,
+				UseStripH1:     true,
 				UseFrontmatterTitle: true,
 				FontFamily:     "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
 				FontSize:       16.0,
@@ -217,6 +224,7 @@ func (cm *ConfigManager) loadConfig() {
 			},
 			Markdown: MarkdownOptions{
 				UseGFM:          true,
+				UsePHPMDExt:     true,
 				UseEmoji:        true,
 				UseMermaid:      true,
 				UseFigure:       true,
@@ -227,6 +235,9 @@ func (cm *ConfigManager) loadConfig() {
 				UseFancyLists:   true,
 				UseAttributes:   true,
 				UseTypographic:  true,
+				UseAbbreviations: false,
+				UseKatex:        true,
+				UseD2Diagrams:   true,
 			},
 			AlertCallouts: AlertCalloutOptions{
 				UseAlertCallouts:  true,
@@ -251,7 +262,7 @@ func (cm *ConfigManager) SaveConfig() error {
 	// Update viper with current config values for Application section
 	cm.viper.Set("application.use_inline_html", cm.config.Application.UseInlineHTML)
 	cm.viper.Set("application.use_sanitize_html", cm.config.Application.UseSanitize)
-	cm.viper.Set("application.strip_h1", cm.config.Application.StripH1)
+	cm.viper.Set("application.use_strip_h1", cm.config.Application.UseStripH1)
 	cm.viper.Set("application.use_frontmatter_title", cm.config.Application.UseFrontmatterTitle)
 	cm.viper.Set("application.font_family", cm.config.Application.FontFamily)
 	cm.viper.Set("application.font_size", cm.config.Application.FontSize)
@@ -261,6 +272,7 @@ func (cm *ConfigManager) SaveConfig() error {
 
 	// Update viper with current config values for Markdown section
 	cm.viper.Set("markdown.use_gfm", cm.config.Markdown.UseGFM)
+	cm.viper.Set("markdown.use_php_md_ext", cm.config.Markdown.UsePHPMDExt)
 	cm.viper.Set("markdown.use_emoji", cm.config.Markdown.UseEmoji)
 	cm.viper.Set("markdown.use_mermaid", cm.config.Markdown.UseMermaid)
 	cm.viper.Set("markdown.use_figure", cm.config.Markdown.UseFigure)
@@ -271,6 +283,9 @@ func (cm *ConfigManager) SaveConfig() error {
 	cm.viper.Set("markdown.use_fancylists", cm.config.Markdown.UseFancyLists)
 	cm.viper.Set("markdown.use_attributes", cm.config.Markdown.UseAttributes)
 	cm.viper.Set("markdown.use_typographic", cm.config.Markdown.UseTypographic)
+	cm.viper.Set("markdown.use_abbreviations", cm.config.Markdown.UseAbbreviations)
+	cm.viper.Set("markdown.use_katex", cm.config.Markdown.UseKatex)
+	cm.viper.Set("markdown.use_d2_diagrams", cm.config.Markdown.UseD2Diagrams)
 
 	// Update viper with current config values for Alert Callouts section
 	cm.viper.Set("alert_callouts.use_alertcallouts", cm.config.AlertCallouts.UseAlertCallouts)
@@ -285,6 +300,7 @@ func (cm *ConfigManager) SaveConfig() error {
 }
 
 // ApplyCliOverrides applies command-line argument overrides to the configuration
+// DEPRECATED: We no longer provide command line overrides (keeping this here for reference for now)
 func (cm *ConfigManager) ApplyCliOverrides(allowInlineHTML, sanitizeHTML, stripH1 *bool) {
 	if allowInlineHTML != nil {
 		cm.config.Application.UseInlineHTML = *allowInlineHTML
@@ -293,7 +309,7 @@ func (cm *ConfigManager) ApplyCliOverrides(allowInlineHTML, sanitizeHTML, stripH
 		cm.config.Application.UseSanitize = *sanitizeHTML
 	}
 	if stripH1 != nil {
-		cm.config.Application.StripH1 = *stripH1
+		cm.config.Application.UseStripH1 = *stripH1
 	}
 }
 
@@ -325,8 +341,8 @@ func (cm *ConfigManager) UseSanitize() bool {
 	return cm.config.Application.UseSanitize
 }
 
-func (cm *ConfigManager) StripH1() bool {
-	return cm.config.Application.StripH1
+func (cm *ConfigManager) UseStripH1() bool {
+	return cm.config.Application.UseStripH1
 }
 
 func (cm *ConfigManager) UseFrontmatterTitle() bool {
@@ -336,6 +352,10 @@ func (cm *ConfigManager) UseFrontmatterTitle() bool {
 // Markdown-specific configuration getters
 func (cm *ConfigManager) UseGFM() bool {
 	return cm.config.Markdown.UseGFM
+}
+
+func (cm *ConfigManager) UsePHPMDExt() bool {
+	return cm.config.Markdown.UsePHPMDExt
 }
 
 func (cm *ConfigManager) UseEmoji() bool {
@@ -376,6 +396,18 @@ func (cm *ConfigManager) UseAttributes() bool {
 
 func (cm *ConfigManager) UseTypographic() bool {
 	return cm.config.Markdown.UseTypographic
+}
+
+func (cm *ConfigManager) UseAbbreviations() bool {
+	return cm.config.Markdown.UseAbbreviations
+}
+
+func (cm *ConfigManager) UseKatex() bool {
+	return cm.config.Markdown.UseKatex
+}
+
+func (cm *ConfigManager) UseD2Diagrams() bool {
+	return cm.config.Markdown.UseD2Diagrams
 }
 
 // Alert callouts configuration getters

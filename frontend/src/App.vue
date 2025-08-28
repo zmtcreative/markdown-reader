@@ -46,15 +46,17 @@
 <script setup lang="ts">
 import { ref, watch, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
-import { GetTheme, SetTheme, GetSettings, GetCurrentFont, GetCurrentMonospaceFont } from '../wailsjs/go/main/App';
+import { GetTheme, SetTheme, GetSettings, GetCurrentFont, GetCurrentMonospaceFont, HasCurrentFile } from '../wailsjs/go/main/App';
 import Settings from './components/Settings.vue';
 import Help from './components/Help.vue';
 import Toolbar from './components/Toolbar.vue';
 import FrontMatter from './components/FrontMatter.vue';
 import type { MarkdownRenderData } from './types/markdown';
 import mermaid from 'mermaid';
+import katex from 'katex';
 
-const renderedHTML = ref('<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>');
+// const renderedHTML = ref('');
+const renderedHTML = ref('<h3 style="text-align:center;color:green; border:0;">Loading document...</h3>');
 const docHTMLTitle = ref('');
 const docHTMLDate = ref('');
 const frontmatterHTML = ref('');
@@ -233,10 +235,89 @@ function setRootFontSizeNum() {
     }
 };
 
+// Function to render KaTeX expressions in the content
+function renderKaTeXExpressions() {
+  try {
+    // Find the content container
+    const contentElement = document.querySelector('#content');
+    if (!contentElement) {
+      console.warn('Content element not found for KaTeX rendering');
+      return;
+    }
+
+    // Render inline math expressions \(...\)
+    const inlineMathElements = contentElement.querySelectorAll('p, div, span, td, th, li');
+    inlineMathElements.forEach(element => {
+      if (element.innerHTML.includes('\\(') && element.innerHTML.includes('\\)')) {
+        element.innerHTML = element.innerHTML.replace(
+          /\\\((.*?)\\\)/g,
+          (match, latex) => {
+            try {
+              return katex.renderToString(latex, {
+                throwOnError: false,
+                displayMode: false
+              });
+            } catch (error) {
+              console.error('KaTeX inline rendering error:', error);
+              return match; // Return original if error
+            }
+          }
+        );
+      }
+    });
+
+    // Render display math expressions \[...\]
+    const displayMathElements = contentElement.querySelectorAll('div');
+    displayMathElements.forEach(element => {
+      if (element.innerHTML.includes('\\[') && element.innerHTML.includes('\\]')) {
+        element.innerHTML = element.innerHTML.replace(
+          /\\\[(.*?)\\\]/gs, // 's' flag for multiline matching
+          (match, latex) => {
+            try {
+              return `<div>${katex.renderToString(latex.trim(), {
+                throwOnError: false,
+                displayMode: true
+              })}</div>`;
+            } catch (error) {
+              console.error('KaTeX display rendering error:', error);
+              return match; // Return original if error
+            }
+          }
+        );
+      }
+    });
+
+    console.log('KaTeX expressions rendered successfully');
+  } catch (error) {
+    console.error('Error in renderKaTeXExpressions:', error);
+  }
+}
+
 
 onMounted(async () => {
   // Get initial theme from Go backend
   currentTheme.value = (await GetTheme()) as 'light' | 'dark';
+
+  // Set up a timeout to check if we receive the 'markdown-rendered' event
+  // If no event is received within a reasonable time, check if there's actually a file loaded
+  let renderTimeout = setTimeout(async () => {
+    try {
+      const hasFile = await HasCurrentFile();
+      if (!hasFile) {
+        // Only show the "no file specified" message if there's truly no file
+        console.log('No file detected after timeout, showing no file message');
+        renderedHTML.value = '<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>';
+      } else {
+        // There's a file but no render event came - this might indicate an issue
+        console.log('File detected but no render event received, keeping loading message');
+        // Keep the loading message - user can manually reload if needed
+      }
+    } catch (error) {
+      console.error('Error checking current file status:', error);
+      // If we can't check, assume no file and show the appropriate message
+      renderedHTML.value = '<h3>No markdown file specified. Please open a markdown file using File > Open.</h3>';
+    }
+  }, 5000); // Wait 5 seconds for the markdown-rendered event
 
   // Listen for theme changes initiated from the backend
   EventsOn('theme:changed', (newTheme: string) => {
@@ -276,17 +357,24 @@ onMounted(async () => {
   // Listen for the 'markdown-rendered' event from the Go backend
   EventsOn('markdown-rendered', (data: MarkdownRenderData) => {
     console.log('Received markdownLoaded event. Updating HTML content.');
+    clearTimeout(renderTimeout); // Cancel the timeout since we got the event
     renderedHTML.value = data.html;
     docHTMLTitle.value = data.title;
     docHTMLDate.value = data.date;
-    frontmatterHTML.value = data.frontmatter || '';
+    frontmatterHTML.value = data.frontmatter_html || '';
     errorMessage.value = ''; // Clear any previous error message
+    // Ensure the DOM is updated before running Mermaid, KaTeX and other updates
     nextTick(() => {
       console.log('Next tick after setting renderedHTML');
+
       // After the content is set, initialize Mermaid diagrams
       mermaid.run({
         nodes: document.querySelectorAll('.markdown-body .mermaid'),
       });
+
+      // Render KaTeX expressions
+      renderKaTeXExpressions();
+
       document.title = data.title; // Set the document title
 
       // Call setRootFontSizeNum after document is loaded and DOM is updated

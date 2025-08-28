@@ -30,7 +30,7 @@ func TestNewConfigManager(t *testing.T) {
 	if !config.Application.UseSanitize {
 		t.Error("Default UseSanitize should be true")
 	}
-	if !config.Application.StripH1 {
+	if !config.Application.UseStripH1 {
 		t.Error("Default StripH1 should be true")
 	}
 	if !config.Application.UseFrontmatterTitle {
@@ -82,7 +82,7 @@ func TestConfigManagerGettersAndSetters(t *testing.T) {
 		Application: ApplicationOptions{
 			UseInlineHTML:  false,
 			UseSanitize:    false,
-			StripH1:        false,
+			UseStripH1:     false,
 			UseFrontmatterTitle: false,
 		},
 		Markdown: MarkdownOptions{
@@ -255,7 +255,7 @@ func TestApplyCliOverrides(t *testing.T) {
 	cm := NewConfigManager()
 
 	// Initial values should be defaults (true)
-	if !cm.UseInlineHTML() || !cm.UseSanitize() || !cm.StripH1() {
+	if !cm.UseInlineHTML() || !cm.UseSanitize() || !cm.UseStripH1() {
 		t.Fatal("Initial configuration should have all true values")
 	}
 
@@ -273,15 +273,15 @@ func TestApplyCliOverrides(t *testing.T) {
 	if cm.UseSanitize() {
 		t.Error("UseSanitize() should be false after CLI override")
 	}
-	if cm.StripH1() {
-		t.Error("StripH1() should be false after CLI override")
+	if cm.UseStripH1() {
+		t.Error("UseStripH1() should be false after CLI override")
 	}
 
 	// Test with nil values (should not change)
 	cm.ApplyCliOverrides(nil, nil, nil)
 
 	// Values should remain false
-	if cm.UseInlineHTML() || cm.UseSanitize() || cm.StripH1() {
+	if cm.UseInlineHTML() || cm.UseSanitize() || cm.UseStripH1() {
 		t.Error("Values should remain false when nil overrides are applied")
 	}
 }
@@ -305,7 +305,7 @@ func TestSaveAndLoadConfig(t *testing.T) {
 		Application: ApplicationOptions{
 			UseInlineHTML:  false,
 			UseSanitize:    false,
-			StripH1:        false,
+			UseStripH1:     false,
 			UseFrontmatterTitle: false,
 		},
 		Markdown: MarkdownOptions{

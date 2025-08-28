@@ -18,6 +18,10 @@ export function GetAvailableMonospaceFonts() {
   return window['go']['main']['App']['GetAvailableMonospaceFonts']();
 }
 
+export function GetCurrentFile() {
+  return window['go']['main']['App']['GetCurrentFile']();
+}
+
 export function GetCurrentFont() {
   return window['go']['main']['App']['GetCurrentFont']();
 }
@@ -36,6 +40,10 @@ export function GetSettings() {
 
 export function GetTheme() {
   return window['go']['main']['App']['GetTheme']();
+}
+
+export function HasCurrentFile() {
+  return window['go']['main']['App']['HasCurrentFile']();
 }
 
 export function LoadAndDisplayMarkdown(arg1) {

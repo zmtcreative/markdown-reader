@@ -10,7 +10,7 @@ func TestFrontmatterHTMLFormatter_FormatAsHTML_YAML(t *testing.T) {
 
 	// Test YAML formatting
 	yamlFrontmatter := map[string]any{
-		"_FM_TYPE": "YAML",
+		"__FMTYPE__": "YAML",
 		"title":    "Test Document",
 		"author":   "John Doe",
 		"date":     "2024-01-01",
@@ -23,9 +23,10 @@ func TestFrontmatterHTMLFormatter_FormatAsHTML_YAML(t *testing.T) {
 	}
 
 	result := formatter.FormatAsHTML(yamlFrontmatter)
+	// fmt.Printf("##> %s", result)
 
 	// Verify YAML-specific formatting
-	if !strings.Contains(result, `<div class="frontmatter-header">--- YAML</div>`) {
+	if !strings.Contains(result, `<div class="frontmatter-header"><abbr title="YAML">---</abbr></div>`) {
 		t.Error("Expected YAML header with '---'")
 	}
 	if !strings.Contains(result, `<div class="frontmatter-footer">---</div>`) {
@@ -49,7 +50,7 @@ func TestFrontmatterHTMLFormatter_FormatAsHTML_TOML(t *testing.T) {
 
 	// Test TOML formatting
 	tomlFrontmatter := map[string]any{
-		"_FM_TYPE": "TOML",
+		"__FMTYPE__": "TOML",
 		"title":    "Test Document",
 		"author":   "John Doe",
 		"date":     "2024-01-01",
@@ -64,7 +65,7 @@ func TestFrontmatterHTMLFormatter_FormatAsHTML_TOML(t *testing.T) {
 	result := formatter.FormatAsHTML(tomlFrontmatter)
 
 	// Verify TOML-specific formatting
-	if !strings.Contains(result, `<div class="frontmatter-header">+++ TOML</div>`) {
+	if !strings.Contains(result, `<div class="frontmatter-header"><abbr title="TOML">+++</abbr></div>`) {
 		t.Error("Expected TOML header with '+++'")
 	}
 	if !strings.Contains(result, `<div class="frontmatter-footer">+++</div>`) {
@@ -89,32 +90,33 @@ func TestFrontmatterHTMLFormatter_FormatAsHTML_TOML(t *testing.T) {
 func TestFrontmatterHTMLFormatter_FormatAsHTML_EmptyType_DefaultsToYAML(t *testing.T) {
 	formatter := NewFrontmatterHTMLFormatter()
 
-	// Test default behavior when _FM_TYPE is empty
+	// Test default behavior when __FMTYPE__ is empty
 	frontmatter := map[string]any{
-		"_FM_TYPE": "",
+		"__FMTYPE__": "",
 		"title":    "Test Document",
 	}
 
 	result := formatter.FormatAsHTML(frontmatter)
 
 	// Should default to YAML formatting
-	if !strings.Contains(result, `<div class="frontmatter-header">--- YAML</div>`) {
-		t.Error("Expected to default to YAML formatting when _FM_TYPE is empty")
+	if !strings.Contains(result, `<div class="frontmatter-header"><abbr title="YAML">---</abbr></div>`) {
+		t.Error("Expected to default to YAML formatting when __FMTYPE__ is empty")
 	}
 }
 
 func TestFrontmatterHTMLFormatter_FormatAsHTML_NoType_DefaultsToYAML(t *testing.T) {
 	formatter := NewFrontmatterHTMLFormatter()
 
-	// Test default behavior when _FM_TYPE is missing
+	// Test default behavior when __FMTYPE__ is missing
 	frontmatter := map[string]any{
+		"__FMTYPE__": "YAML",
 		"title": "Test Document",
 	}
 
 	result := formatter.FormatAsHTML(frontmatter)
 
 	// Should default to YAML formatting
-	if !strings.Contains(result, `<div class="frontmatter-header">--- YAML</div>`) {
-		t.Error("Expected to default to YAML formatting when _FM_TYPE is missing")
+	if !strings.Contains(result, `<div class="frontmatter-header"><abbr title="YAML">---</abbr></div>`) {
+		t.Error("Expected to default to YAML formatting when __FMTYPE__ is missing")
 	}
 }

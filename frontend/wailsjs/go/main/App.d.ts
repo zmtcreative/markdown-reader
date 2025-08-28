@@ -10,6 +10,8 @@ export function GetAvailableFonts():Promise<Array<string>>;
 
 export function GetAvailableMonospaceFonts():Promise<Array<string>>;
 
+export function GetCurrentFile():Promise<string>;
+
 export function GetCurrentFont():Promise<Record<string, any>>;
 
 export function GetCurrentMonospaceFont():Promise<Record<string, any>>;
@@ -19,6 +21,8 @@ export function GetMonospaceFontsWithDetectionInfo():Promise<Record<string, any>
 export function GetSettings():Promise<app.Config>;
 
 export function GetTheme():Promise<string>;
+
+export function HasCurrentFile():Promise<boolean>;
 
 export function LoadAndDisplayMarkdown(arg1:string):Promise<void>;
 

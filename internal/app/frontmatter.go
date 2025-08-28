@@ -30,8 +30,26 @@ func NewFrontmatterHTMLFormatter() *FrontmatterHTMLFormatter {
 
 // FormatAsHTML converts a map[string]any frontmatter to HTML with format-specific syntax highlighting
 func (f *FrontmatterHTMLFormatter) FormatAsHTML(frontmatter map[string]any) string {
-	if len(frontmatter) == 0 {
-		return ""
+	emptyFrontmatter := `<div class="frontmatter-container"><div class="frontmatter-header">No frontmatter</div></div>`
+	commentedFrontmatter := `<div class="frontmatter-container"><div class="frontmatter-header">No ACTIVE frontmatter (all commented out)</div></div>`
+	// Note-to-Self:
+	// Since we're now storing the key '__ABBR__' in the frontmatter map, we need to account for it:
+	//      1. if UseAbbreviations is set, but no frontmatter is present, len(frontmatter) will be 1
+	//      2. if UseAbbreviations is not set, but frontmatter is present, len(frontmatter) will at least 2 (1 for __FMTYPE__ and at least one actual frontmatter key)
+	//      3. if UseAbbreviations is not set AND there is no frontmatter, len(frontmatter) should be 0
+	//      edge-case: if #2 is true, but frontmatter is all commented out, len(frontmatter) should be 1 (i.e., __FMTYPE__ will still be set)
+    //                 (but since all frontmatter is commented out, technically there is "No frontmatter", so essentially true :smile: )
+	fmlen := len(frontmatter)
+	if _, ok := frontmatter["__ABBR__"]; ok {
+		if fmlen <= 1 {
+			return emptyFrontmatter
+		} else if fmlen == 2 {
+			return commentedFrontmatter
+		}
+	} else {
+		if fmlen <= 1 {
+			return commentedFrontmatter
+		}
 	}
 
 	fmType := f.extractAndNormalizeFMType(frontmatter)
@@ -48,7 +66,7 @@ func (f *FrontmatterHTMLFormatter) FormatAsHTML(frontmatter map[string]any) stri
 // extractAndNormalizeFMType extracts the frontmatter type and normalizes it
 func (f *FrontmatterHTMLFormatter) extractAndNormalizeFMType(frontmatter map[string]any) string {
 	var fmType string
-	if fmtype, ok := utils.GetValue[string](frontmatter, "_FM_TYPE"); ok {
+	if fmtype, ok := utils.GetValue[string](frontmatter, "__FMTYPE__"); ok {
 		fmType = strings.ToUpper(strings.TrimSpace(fmtype))
 	}
 
@@ -60,12 +78,13 @@ func (f *FrontmatterHTMLFormatter) extractAndNormalizeFMType(frontmatter map[str
 	return fmType
 }
 
-// getSortedKeys returns sorted keys from frontmatter, excluding _FM_TYPE
+// getSortedKeys returns sorted keys from frontmatter, excluding __FMTYPE__
 func (f *FrontmatterHTMLFormatter) getSortedKeys(frontmatter map[string]any) []string {
 	keys := make([]string, 0, len(frontmatter))
 	for k := range frontmatter {
-		// Ignore frontmatter type _FM_TYPE key -- this is handled separately
-		if k == "_FM_TYPE" {
+		if k == "__FMTYPE__" {  // Ignore frontmatter type key
+			continue
+		} else if k == "__ABBR__" {  // Ignore frontmatter abbreviations key
 			continue
 		}
 		keys = append(keys, k)
@@ -78,7 +97,8 @@ func (f *FrontmatterHTMLFormatter) getSortedKeys(frontmatter map[string]any) []s
 func (f *FrontmatterHTMLFormatter) formatWithContainer(frontmatter map[string]any, fmType, delimiter string, keyValueFormatter func(string, any) string) string {
 	var htmlParts []string
 	htmlParts = append(htmlParts, `<div class="frontmatter-container">`)
-	htmlParts = append(htmlParts, fmt.Sprintf(`<div class="frontmatter-header">%s %s</div>`, delimiter, html.EscapeString(fmType)))
+	htmlParts = append(htmlParts, fmt.Sprintf(`<div class="frontmatter-header"><abbr title="%s">%s</abbr></div>`, fmType, delimiter))
+	// htmlParts = append(htmlParts, fmt.Sprintf(`<div class="frontmatter-header">%s %s</div>`, delimiter, html.EscapeString(fmType)))
 
 	keys := f.getSortedKeys(frontmatter)
 
@@ -100,6 +120,8 @@ func (f *FrontmatterHTMLFormatter) formatValue(value any, formatStyle string) st
 	if value == nil {
 		return `<span class="fm-null">null</span>`
 	}
+
+	_ = formatStyle // Currently unused, but can be used for future format-specific handling
 
 	switch v := value.(type) {
 	case string:
