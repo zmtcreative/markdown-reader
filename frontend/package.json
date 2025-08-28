@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "katex": "^0.16.22",
     "mermaid": "^11.9.0",
     "vue": "^3.2.37"
   },
   "devDependencies": {
     "@babel/types": "^7.18.10",
     "@playwright/test": "^1.55.0",
+    "@types/katex": "^0.16.7",
     "@types/node": "^24.3.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "autoprefixer": "^10.4.21",

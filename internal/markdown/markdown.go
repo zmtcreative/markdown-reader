@@ -14,11 +14,24 @@ import (
 	// "md-reader/internal/gm-ext/sectionwrapper"
 	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
 	sectionwrapper "github.com/ZMT-Creative/gm-sectionwrapper"
+	"oss.terrastruct.com/d2/d2layouts/d2elklayout"
+	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
 
 	fancylists "github.com/ZMT-Creative/gm-fancy-lists"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	figure "github.com/mangoumbrella/goldmark-figure"
 
+	d2diagrams "github.com/FurqanSoftware/goldmark-d2"
+	katex "github.com/kingreatwill/goldmark-katex/v2"
+
+	// d2dagrelayout "oss.terrastruct.com/d2/d2layouts/d2dagrelayout"
+
+	// d2themescatalog "oss.terrastruct.com/d2/d2themes/d2themescatalog"
+
+	// katex "github.com/kingreatwill/goldmark-katex/v2"
+	// d2diagrams "github.com/FurqanSoftware/goldmark-d2"
+	// d2themescatalog "oss.terrastruct.com/d2/d2themes/d2themescatalog"
+	// d2elklayout "oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	blockattr "github.com/mdigger/goldmark-attributes"
 	bracketedspan "github.com/nemunaire/goldmark-inline-attributes"
 	fences "github.com/stefanfritsch/goldmark-fences"
@@ -63,11 +76,12 @@ type ConfigProvider interface {
     // Application-specific configuration getters
     UseInlineHTML() bool
     UseSanitize() bool
-    StripH1() bool
+    UseStripH1() bool
     UseFrontmatterTitle() bool
 
     // Markdown-specific configuration getters
     UseGFM() bool
+	UsePHPMDExt() bool
     UseEmoji() bool
     UseMermaid() bool
     UseFigure() bool
@@ -78,6 +92,9 @@ type ConfigProvider interface {
     UseFancyLists() bool
     UseAttributes() bool
     UseTypographic() bool
+	UseAbbreviations() bool
+	UseKatex() bool
+	UseD2Diagrams() bool
 
     // Alert callouts configuration getters
     UseAlertCallouts() bool
@@ -119,11 +136,19 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 		)
 	}
 
-	// Enable GitHub Flavored Markdown (GFM) extensions and PHP Markdown extensions if configured
+	// Enable GitHub Flavored Markdown (GFM) extensions
 	if configProvider.UseGFM() {
 		options = append(options,
 			goldmark.WithExtensions(
 				extension.GFM,
+			),
+		)
+	}
+
+	// Enable PHP Markdown extensions if configured
+	if configProvider.UsePHPMDExt() {
+		options = append(options,
+			goldmark.WithExtensions(
 				extension.DefinitionList,
 				extension.Footnote,
 			),
@@ -315,13 +340,33 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 		)
 	}
 
+	if configProvider.UseKatex() {
+		options = append(options,
+			goldmark.WithExtensions(
+				katex.KaTeX,
+			),
+		)
+	}
+
+	if configProvider.UseD2Diagrams() {
+		options = append(options,
+			goldmark.WithExtensions(
+				&d2diagrams.Extender{
+					// Layout: d2dagrelayout.DefaultLayout,
+					Layout: d2elklayout.DefaultLayout,
+					ThemeID: &d2themescatalog.CoolClassics.ID,
+					Sketch: false,
+				},
+			),
+		)
+	}
 
     return goldmark.New(options...)
 }
 
 // ConvertMarkdownToHTML converts a byte slice of Markdown content into HTML.
 // Returns: the HTML content ([]byte), frontmatter metadata (map[string]any), and any conversion error (error).
-func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]byte, map[string]any, string, error) {
+func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte, configProvider ConfigProvider) ([]byte, map[string]any, string, error) {
     var buf strings.Builder
 	// Get the frontmatter data and place it in meta
 	root := mdConverter.Parser().Parse(text.NewReader(markdown))
@@ -345,6 +390,13 @@ func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]by
     // Replace multiple whitespace characters with a single space using regex
     thisDocumentH1Title = regexp.MustCompile(`\s+`).ReplaceAllString(thisDocumentH1Title, " ")
 
+	// If UseAbbreviations is enabled, get the abbreviation definitions from the markdown
+	abbrDefs := make(map[string]string)
+	if configProvider.UseAbbreviations() {
+		abbrDefs, mdContent = GetMarkdownAbbreviations(mdContent)
+		// renderData.Abbreviations = abbrDefs
+	}
+
 	// Convert the Markdown content to HTML
 	// Note to self: Since we're altering the mdContent before rendering,
 	//               we need use the Convert() method, we can't use the 'root'
@@ -356,7 +408,13 @@ func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte) ([]by
     }
     html := buf.String()
 	meta, _ = utils.NormalizeMapKeys(meta) // Normalize keys to lowercase
-	meta["_FM_TYPE"] = fmType // Add frontmatter type to metadata
+
+	// Add custom keys AFTER nomalizing -- only actual frontmatter keys should be lowercased
+	meta["__FMTYPE__"] = fmType // Add frontmatter type to metadata
+	if len(abbrDefs) > 0 {
+		meta["__ABBR__"] = abbrDefs
+	}
+
     return []byte(html), meta, thisDocumentH1Title, nil
 }
 

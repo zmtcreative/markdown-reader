@@ -1,0 +1,26 @@
+@use "variables" as *; // Import variables for use in this file
+
+.markdown-body {
+
+    div div:has(.katex-display) {
+        font-size: 1.33em;
+        font-weight: 400;
+        // border: 1px dotted red;
+        // max-width: 95%;
+        --katex-section-indent: calc(var(--td-section-indent, 1rem) + 2rem);
+        margin: 0 2rem 0 var(--katex-section-indent, 3rem);
+
+        span.katex-display {
+            margin: 0.25em 0;
+
+            .katex {
+                text-align: left;
+            }
+        }
+    }
+    p span.katex {
+        font-size: 1.33em;
+        line-height: 1.2;
+        font-weight: bold;
+    }
+}

@@ -25,7 +25,7 @@ type MarkdownRenderData struct {
 	HTML        string `json:"html"`
 	Title       string `json:"title"`
 	Date        string `json:"date"`
-	Frontmatter string `json:"frontmatter,omitempty"`
+	FrontmatterHTML string `json:"frontmatter_html,omitempty"`
 	// Future fields can be added here without breaking existing functionality
 	// Type     string `json:"type,omitempty"`
 	// Metadata map[string]string `json:"metadata,omitempty"`
@@ -69,6 +69,20 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
         return fmt.Errorf("failed to read file %s: %w", filePath, err)
     }
 
+    // Note-to-Self:
+    // Emit the initial loading state -- this will show a "Loading document..." message
+    //   This will flash quickly for most document loads and probably won't be visible.
+    //   HOWEVER, complex documents and those with D2 Diagrams may take longer to load, so
+    //   this message will be visible.
+    tmpData := MarkdownRenderData{
+        HTML:        `<h3 style="text-align:center;color:green; border:0;">Loading document...</h3>`,
+        Title:       "",
+        Date:        "",
+        FrontmatterHTML: "",
+    }
+    runtime.EventsEmit(dp.ctx, "markdown-rendered", tmpData)
+    // End-of-Note
+
     // Detect and handle UTF-16 BOMs, and convert to UTF-8 if necessary
     if len(mdContent) >= 2 {
         bom := mdContent[:2]
@@ -91,7 +105,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
 
     // Convert Markdown content to HTML
-    htmlContent, docFrontmatter, thisDocumentH1Title, err := markdown.ConvertMarkdownToHTML(dp.mdConverter, mdContent)
+    htmlContent, docFrontmatter, thisDocumentH1Title, err := markdown.ConvertMarkdownToHTML(dp.mdConverter, mdContent, dp.configManager)
     if err != nil {
         return fmt.Errorf("failed to convert Markdown to HTML: %w", err)
     }
@@ -107,8 +121,15 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     htmlContent = CleanupHTMLContent(htmlContent)
 
     // Strip the first H1 element if configured
-    if dp.configManager.StripH1() {
+    if dp.configManager.UseStripH1() {
         htmlContent = stripFirstH1(htmlContent)
+    }
+
+    if dp.configManager.UseAbbreviations() {
+        if docFrontmatter["__ABBR__"] != nil {
+            abbrDefs := docFrontmatter["__ABBR__"].(map[string]string)
+            htmlContent = markdown.ReplaceAbbreviationsInHTML(htmlContent, abbrDefs)
+        }
     }
 
     // Create structured data for the frontend
@@ -116,7 +137,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
         HTML:        string(htmlContent),
         Title:       docTitle,
         Date:        docDate,
-        Frontmatter: frontmatterHTML,
+        FrontmatterHTML: frontmatterHTML,
     }
 
     // Emit the converted HTML to the frontend

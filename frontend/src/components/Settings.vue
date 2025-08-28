@@ -103,7 +103,7 @@
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
-                        v-model="localSettings.application.strip_h1"
+                        v-model="localSettings.application.use_strip_h1"
                       />
                       <span class="checkbox-custom"></span>
                       Strip First H1 Heading
@@ -231,7 +231,22 @@
                       GitHub Flavored Markdown
                     </label>
                     <p class="setting-description">
-                      GitHub Flavored Markdown and PHP Markdown Extensions.
+                      GFM Extensions (tables, strikethroughs, task lists & auto links).
+                    </p>
+                  </div>
+
+                  <!-- PHP Markdown Extensions -->
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_php_md_ext"
+                      />
+                      <span class="checkbox-custom"></span>
+                      PHP Markdown Extensions
+                    </label>
+                    <p class="setting-description">
+                      PHP Markdown Extensions (footnotes & definition lists).
                     </p>
                   </div>
 
@@ -247,21 +262,6 @@
                     </label>
                     <p class="setting-description">
                       Enable syntax highlighting for code blocks.
-                    </p>
-                  </div>
-
-                  <!-- Anchor Links on Headings -->
-                  <div class="setting-group">
-                    <label class="checkbox-label">
-                      <input
-                        type="checkbox"
-                        v-model="localSettings.markdown.use_anchor"
-                      />
-                      <span class="checkbox-custom"></span>
-                      Anchor Links on Headings
-                    </label>
-                    <p class="setting-description">
-                      Add clickable anchor links to heading elements.
                     </p>
                   </div>
 
@@ -295,6 +295,21 @@
                     </p>
                   </div>
 
+                  <!-- Anchor Links on Headings -->
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_anchor"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Anchor Links on Headings
+                    </label>
+                    <p class="setting-description">
+                      Add clickable anchor links to heading elements.
+                    </p>
+                  </div>
+
                   <!-- Mermaid Diagrams -->
                   <div class="setting-group">
                     <label class="checkbox-label">
@@ -307,6 +322,36 @@
                     </label>
                     <p class="setting-description">
                       Enable Mermaid diagram rendering for charts and graphs.
+                    </p>
+                  </div>
+
+                  <!-- D2 Diagrams -->
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_d2_diagrams"
+                      />
+                      <span class="checkbox-custom"></span>
+                      D2 Diagrams
+                    </label>
+                    <p class="setting-description">
+                      Enable D2 diagram rendering for flowcharts and diagrams.
+                    </p>
+                  </div>
+
+                  <!-- KaTeX Math Support -->
+                  <div class="setting-group">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_katex"
+                      />
+                      <span class="checkbox-custom"></span>
+                      KaTeX Math Support
+                    </label>
+                    <p class="setting-description">
+                      Enable KaTeX math rendering for LaTeX formulas.
                     </p>
                   </div>
 
@@ -382,6 +427,21 @@
                     </label>
                     <p class="setting-description">
                       Use fancy quotes and typographic enhancements.
+                    </p>
+                  </div>
+
+                  <!-- Abbreviations Handling (Experimental) -->
+                  <div class="setting-group experimental">
+                    <label class="checkbox-label">
+                      <input
+                        type="checkbox"
+                        v-model="localSettings.markdown.use_abbreviations"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Abbreviations
+                    </label>
+                    <p class="setting-description">
+                      Support for abbreviations (using '*[ABBR]: Abbreviations' syntax).
                     </p>
                   </div>
                 </fieldset>
@@ -479,7 +539,7 @@ const createDefaultSettings = (): Settings => {
     application: {
       use_inline_html: true,
       use_sanitize_html: true,
-      strip_h1: true,
+      use_strip_h1: true,
       use_frontmatter_title: true,
       font_family: "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
       font_size: 16.0,
@@ -489,6 +549,7 @@ const createDefaultSettings = (): Settings => {
     },
     markdown: {
       use_gfm: true,
+      use_php_md_ext: true,
       use_emoji: true,
       use_mermaid: true,
       use_figure: true,
@@ -498,7 +559,10 @@ const createDefaultSettings = (): Settings => {
       use_highlighting: true,
       use_fancylists: true,
       use_attributes: true,
-      use_typographic: true
+      use_abbreviations: false,
+      use_typographic: true,
+      use_katex: true,
+      use_d2_diagrams: true
     },
     alert_callouts: {
       use_alertcallouts: true,
@@ -931,6 +995,11 @@ loadSettings();
 
 .setting-group:hover {
   background: var(--dialog-color-bg-hover);
+}
+
+.setting-group.experimental p::before {
+  content: '[Experimental] ';
+  color: red;
 }
 
 /* Checkbox styling */

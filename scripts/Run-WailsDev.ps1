@@ -1,8 +1,11 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $false, Position = 0)]
+    [Parameter(Mandatory = $false, Position = 0, HelpMessage = "Path to the markdown file")]
     [Alias("file","f")]
-    [string]$FilePath
+    [string]$FilePath,
+    [Parameter(Mandatory = $false, HelpMessage = "Do a 'wails build --clean' before running 'wails dev'")]
+    [Alias("c")]
+    [switch]$Clean
 )
 
 # Set up script and project paths
@@ -32,8 +35,14 @@ function Invoke-WailsDev {
         }
     # }
 
+    if ($Clean) {
+        Write-Host -ForegroundColor Cyan "Running: wails build --clean"
+        wails build --clean
+    }
+
     $sample_file = $sample_file.Replace('\', '\\')
 
+    Write-Host -ForegroundColor Cyan 'Running: wails dev -appargs "--file=""' + ${sample_file} + '""'
     wails dev -appargs "--file=""${sample_file}"""
     # wails dev -loglevel Trace -appargs "--nohtml"
 
