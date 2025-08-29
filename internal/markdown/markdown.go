@@ -261,58 +261,33 @@ func CreateGoldmarkInstance(configProvider ConfigProvider) goldmark.Markdown {
 
 	// Enable Alert Callouts extensions if configured
 	if configProvider.UseAlertCallouts() {
-		// Folding is enabled by default here
-		options = append(options,
-			goldmark.WithExtensions(
-				alertcallouts.NewAlertCallouts(
-					alertcallouts.WithFolding(true),
-				),
-			),
-		)
+		// Create a new default instance of the alert callouts extender
+		acx := alertcallouts.NewAlertCallouts()
 
 		// Add alert callouts based on selected style
 		switch alertIconID {
 		case ALERT_GFM_STRICT:
 			// Use strict GFM icons supplied by the embedded icon set
-			options = append(options,
-				goldmark.WithExtensions(
-					alertcallouts.NewAlertCallouts(
-						alertcallouts.WithIcons(alertcallouts.CreateIconsMap(alertCalloutsGFMStrictData)),
-						alertcallouts.WithFolding(false),
-					),
-				),
-			)
+			acx = alertcallouts.NewAlertCallouts(alertcallouts.UseGFMStrictIcons())
+
 		case ALERT_GFM_WITH_ALIASES:
 			// Use standard GFM icons but with aliases for similar alert names (e.g., notes->note)
-			// (this one is built in to the gm-alert-callouts extension)
-			options = append(options,
-				goldmark.WithExtensions(
-					alertcallouts.NewAlertCallouts(
-						alertcallouts.UseGFMIcons(),
-					),
-				),
-			)
+			acx = alertcallouts.NewAlertCallouts(alertcallouts.UseGFMWithAliasesIcons())
+
 		case ALERT_GFM_PLUS:
 			// Use GFM Plus icons (GFM + Obsidian-style callouts but with GFM and custom icons)
-			// (this one is built in to the gm-alert-callouts extension)
-			options = append(options,
-				goldmark.WithExtensions(
-					alertcallouts.NewAlertCallouts(
-						alertcallouts.UseGFMPlusIcons(),
-					),
-				),
-			)
+			acx = alertcallouts.NewAlertCallouts(alertcallouts.UseGFMPlusIcons())
+
 		case ALERT_OBSIDIAN:
 			// Use Obsidian icons (Obsidian-style callouts using Obsidian's icon set)
-			// (this one is built in to the gm-alert-callouts extension)
-			options = append(options,
-				goldmark.WithExtensions(
-					alertcallouts.NewAlertCallouts(
-						alertcallouts.UseObsidianIcons(),
-					),
-				),
-			)
+			acx = alertcallouts.NewAlertCallouts(alertcallouts.UseObsidianIcons())
 		}
+
+		// Add the alert callouts extension to the options
+		options = append(options,
+			goldmark.WithExtensions(acx),
+		)
+
 	}
 
 	// Sanitize HTML
@@ -372,6 +347,7 @@ func ConvertMarkdownToHTML(mdConverter goldmark.Markdown, markdown []byte, confi
 	root := mdConverter.Parser().Parse(text.NewReader(markdown))
 	doc := root.OwnerDocument()
 	meta := doc.Meta()
+
 
 	// Strip comments from frontmatter before rendering
 	// Note to Self: The frontmatter extension handles parsing comments in frontmatter just fine,
