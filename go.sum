@@ -7,8 +7,6 @@ github.com/Masterminds/semver/v3 v3.2.1 h1:RN9w6+7QoMeJVGyfmbcgs28Br8cvmnucEXnY0
 github.com/Masterminds/semver/v3 v3.2.1/go.mod h1:qvl/7zhW3nngYb5+80sSMF+FG2BjYrf8m9wsX0PNOMQ=
 github.com/PuerkitoBio/goquery v1.10.3 h1:pFYcNSqHxBD06Fpj/KsbStFRsgRATgnf3LeXiUkhzPo=
 github.com/PuerkitoBio/goquery v1.10.3/go.mod h1:tMUX0zDMHXYlAQk6p35XxQMqMweEKB7iK7iLNd4RH4Y=
-github.com/ZMT-Creative/gm-alert-callouts v0.6.0 h1:HxWxis44HrbEWhAnEqdWAMWaiVKttVZ37ZReZ07Rt7A=
-github.com/ZMT-Creative/gm-alert-callouts v0.6.0/go.mod h1:BynWRxhCepG6oa2ODN4fXC/yN06cl79aPA+QAgSRykI=
 github.com/ZMT-Creative/gm-fancy-lists v0.2.0 h1:Li+/fku47boMoSFlrrgqkrEo4wpmAJM/OKIJRhfrdeU=
 github.com/ZMT-Creative/gm-fancy-lists v0.2.0/go.mod h1:xVQ5sxRBM3gU+7EACFQ07T43G959WaYxTNtu4/YFXZE=
 github.com/ZMT-Creative/gm-sectionwrapper v0.2.0 h1:T46VexTQjgt7X9G5K4Hltp3mInUEmsKRss/7mjxvoWY=

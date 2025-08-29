@@ -64,8 +64,8 @@ type ConfigManager struct {
 // AlertCalloutStyles defines the available alert callout styles
 // (Note to self: Do NOT change "GFMStrict" if you can help it -- this is being used as the fallback default)
 var AlertCalloutStyles = map[string]string{
-	"GFMStrict":     "GFM Alerts (Standard 5 Alert Types)",
-	"GFMWithAliases": "GFM Alerts (GFM + Aliases [e.g., notes = note])",
+	"GFMStrict":     "Strict GFM Alerts (Standard 5 Alert Types)",
+	"GFMWithAliases": "GFM Alerts + Aliases (GFM + Aliases [e.g., notes = note])",
 	"GFMPlus":       "GFM Alerts Plus (GFM + Some Obsidian-Style Callouts)",
 	"Obsidian":      "Obsidian-Style (Obsidian Icons and Callout Names)",
 }

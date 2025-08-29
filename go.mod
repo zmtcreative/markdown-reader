@@ -2,7 +2,7 @@ module md-reader
 
 go 1.24.5
 
-// replace github.com/ZMT-Creative/gm-alert-callouts => ../gm-alert-callouts
+replace github.com/ZMT-Creative/gm-alert-callouts => ../gm-alert-callouts
 
 // replace github.com/ZMT-Creative/gm-block-attributes => ../gm-block-attributes
 // replace github.com/ZMT-Creative/gm-fancy-lists => ../gm-fancy-lists
@@ -11,7 +11,8 @@ go 1.24.5
 
 require (
 	github.com/FurqanSoftware/goldmark-d2 v0.0.0-20250728083049-c971ca586592
-	github.com/ZMT-Creative/gm-alert-callouts v0.6.0
+	// github.com/ZMT-Creative/gm-alert-callouts v0.6.0
+	// github.com/ZMT-Creative/gm-alert-callouts v0.0.0
 	github.com/ZMT-Creative/gm-fancy-lists v0.2.0
 	github.com/ZMT-Creative/gm-sectionwrapper v0.2.0
 	github.com/alecthomas/chroma/v2 v2.19.0
@@ -35,6 +36,8 @@ require (
 	golang.org/x/text v0.27.0
 	oss.terrastruct.com/d2 v0.7.1
 )
+
+require github.com/ZMT-Creative/gm-alert-callouts v0.0.0-00010101000000-000000000000
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
