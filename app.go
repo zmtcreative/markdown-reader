@@ -145,6 +145,10 @@ func (a *App) startup(ctx context.Context) {
     a.fileManager = app.NewFileManager(ctx, a.binaryDetector, a.documentProcessor)
 }
 
+func initialFileLoadErrorMessage(err error) string {
+	return "Failed to load initial file: " + err.Error()
+}
+
 // domReady is called after the frontend loads the DOM.
 // This is where we load and display the initial Markdown file if provided via CLI.
 func (a *App) domReady(ctx context.Context) {
@@ -158,12 +162,10 @@ func (a *App) domReady(ctx context.Context) {
 
     if a.currentFile != "" {
         log.Printf("##> LOG: Loading initial file from command line: %s", a.currentFile)
-        err := a.documentProcessor.LoadAndDisplayMarkdown(a.currentFile)
+        err := a.fileManager.LoadFile(a.currentFile)
         if err != nil {
             log.Printf("##> LOG: Error loading initial Markdown file %q: %v", a.currentFile, err)
-            // Emit an error event to the frontend
-            renderData.HTML = "<h2>Error loading file</h2><p>" + err.Error() + "</p>"
-            runtime.EventsEmit(a.ctx, "error", renderData)
+            runtime.EventsEmit(a.ctx, "error", initialFileLoadErrorMessage(err))
         }
     } else {
         // Emit a welcome message if no initial file is provided

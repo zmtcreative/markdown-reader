@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"html"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -169,7 +170,7 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
     // Extract frontmatter data - now using map[string]any the utils.GetValue generic to handle possible nil values
     if docFrontmatter != nil {
         if title, ok := utils.GetValue[string](docFrontmatter, "title"); ok {
-            fmDocTitle = title
+            fmDocTitle = html.EscapeString(title)
         }
         if date, ok := utils.GetValue[time.Time](docFrontmatter, "date"); ok {
             fmDocDate = date.String()
@@ -183,9 +184,9 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
     if fmDocTitle != "" && dp.configManager.UseFrontmatterTitle() {
         docTitle = fmDocTitle
     } else if extractedTitle != "" {
-        docTitle = extractedTitle
+        docTitle = html.EscapeString(extractedTitle)
     } else {
-        docTitle = fmt.Sprintf("File: %s", docFileTitle)
+        docTitle = fmt.Sprintf("File: %s", html.EscapeString(docFileTitle))
     }
 
     // Process document date from frontmatter
@@ -196,7 +197,7 @@ func (dp *DocumentProcessor) processDocumentMetadata(filePath, extractedTitle st
         if err == nil {
             docDateDD = fmt.Sprintf(fmtDocDate, dateString.Format(timeLayout))
         } else {
-            docDateDD = fmt.Sprintf(fmtDocDate, fmDocDate)
+            docDateDD = fmt.Sprintf(fmtDocDate, html.EscapeString(fmDocDate))
         }
     }
 

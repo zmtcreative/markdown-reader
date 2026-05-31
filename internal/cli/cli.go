@@ -18,6 +18,14 @@ type CliArgs struct {
     AppProgNameWithExt  *string // Store the application name with extension
 }
 
+var recognizedFlags = map[string]bool{
+	"-f":      true,
+	"--file":  true,
+	"-h":      true,
+	"--help":  true,
+	"--":      true,
+}
+
 // GetArgs becomes a standalone function that parses flags and returns them.
 func GetArgs() (*CliArgs, error) {
     // Use a new, local FlagSet to avoid conflicts with the global one,
@@ -41,11 +49,17 @@ func GetArgs() (*CliArgs, error) {
     // Configure flags that can be used without a value
     fs.Lookup("help").NoOptDefVal = "true"
 
-    // Parse the application's arguments (os.Args[1:])
-    // ContinueOnError prevents the flagset from exiting the app on its own.
-    // We use _ = fs.Parse(os.Args[1:]) to ignore the error
+    // Parse only the supported flags. Unknown flags are intentionally ignored so
+    // the GUI app stays tolerant of shell wrappers and launcher-added arguments.
+    filteredArgs := []string{}
     if len(os.Args) > 1 {
-        _ = fs.Parse(os.Args[1:])
+        filteredArgs = filterSupportedArgs(os.Args[1:])
+    }
+
+    // Parse the application's filtered arguments.
+    // ContinueOnError prevents the flagset from exiting the app on its own.
+    if len(os.Args) > 1 {
+        _ = fs.Parse(filteredArgs)
     } else {
         _ = fs.Parse([]string{})
     }
@@ -113,4 +127,45 @@ func GetArgs() (*CliArgs, error) {
     }
 
     return args, nil
+}
+
+func filterSupportedArgs(args []string) []string {
+    filtered := make([]string, 0, len(args))
+
+    for i := 0; i < len(args); i++ {
+        arg := args[i]
+
+        if arg == "--" {
+            filtered = append(filtered, args[i:]...)
+            break
+        }
+
+        if !strings.HasPrefix(arg, "-") || arg == "-" {
+            filtered = append(filtered, arg)
+            continue
+        }
+
+        if recognizedFlags[arg] {
+            filtered = append(filtered, arg)
+            if (arg == "-f" || arg == "--file") && i+1 < len(args) {
+                filtered = append(filtered, args[i+1])
+                i++
+            }
+            continue
+        }
+
+        if strings.HasPrefix(arg, "--file=") {
+            filtered = append(filtered, arg)
+            continue
+        }
+
+        if strings.HasPrefix(arg, "--help=") {
+            filtered = append(filtered, "--help")
+            continue
+        }
+
+        // Unknown flags are intentionally ignored.
+    }
+
+    return filtered
 }

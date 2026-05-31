@@ -338,6 +338,14 @@ func TestAppVersionInfo(t *testing.T) {
 	}
 }
 
+func TestInitialFileLoadErrorMessage(t *testing.T) {
+	err := initialFileLoadErrorMessage(assertError("file not found: missing.md"))
+
+	if err != "Failed to load initial file: file not found: missing.md" {
+		t.Fatalf("initialFileLoadErrorMessage() = %q", err)
+	}
+}
+
 // Helper functions
 func boolPtr(b bool) *bool {
 	return &b
@@ -345,4 +353,10 @@ func boolPtr(b bool) *bool {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+type assertError string
+
+func (e assertError) Error() string {
+	return string(e)
 }

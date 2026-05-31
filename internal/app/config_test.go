@@ -2,17 +2,29 @@ package app
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 )
 
-func TestNewConfigManager(t *testing.T) {
-	// Save original os.Args
+func newTestConfigManager(t *testing.T, args ...string) *ConfigManager {
+	t.Helper()
+
 	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
+	t.Cleanup(func() { os.Args = originalArgs })
 
-	os.Args = []string{"md-reader"}
+	if len(args) == 0 {
+		os.Args = []string{"md-reader"}
+	} else {
+		os.Args = args
+	}
 
-	cm := NewConfigManager()
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+
+	return NewConfigManager()
+}
+
+func TestNewConfigManager(t *testing.T) {
+	cm := newTestConfigManager(t)
 	if cm == nil {
 		t.Fatal("NewConfigManager() returned nil")
 	}
@@ -58,13 +70,7 @@ func TestNewConfigManager(t *testing.T) {
 }
 
 func TestConfigManagerGettersAndSetters(t *testing.T) {
-	// Save original os.Args
-	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
-
-	os.Args = []string{"md-reader"}
-
-	cm := NewConfigManager()
+	cm := newTestConfigManager(t)
 
 	// Test initial values
 	if !cm.UseInlineHTML() {
@@ -122,13 +128,7 @@ func TestConfigManagerGettersAndSetters(t *testing.T) {
 }
 
 func TestValidateAlertCalloutStyle(t *testing.T) {
-	// Save original os.Args
-	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
-
-	os.Args = []string{"md-reader"}
-
-	cm := NewConfigManager()
+	cm := newTestConfigManager(t)
 
 	tests := []struct {
 		name     string
@@ -183,13 +183,7 @@ func TestValidateAlertCalloutStyle(t *testing.T) {
 }
 
 func TestGetApplicationConfig(t *testing.T) {
-	// Save original os.Args
-	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
-
-	os.Args = []string{"md-reader"}
-
-	cm := NewConfigManager()
+	cm := newTestConfigManager(t)
 
 	useInlineHTML, useSanitize := cm.GetApplicationConfig()
 	if !useInlineHTML {
@@ -218,13 +212,7 @@ func TestGetApplicationConfig(t *testing.T) {
 }
 
 func TestGetAlertCalloutConfig(t *testing.T) {
-	// Save original os.Args
-	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
-
-	os.Args = []string{"md-reader"}
-
-	cm := NewConfigManager()
+	cm := newTestConfigManager(t)
 
 	style := cm.GetAlertCalloutConfig()
 	if style != "GFMPlus" {
@@ -246,13 +234,7 @@ func TestGetAlertCalloutConfig(t *testing.T) {
 }
 
 func TestApplyCliOverrides(t *testing.T) {
-	// Save original os.Args
-	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
-
-	os.Args = []string{"md-reader"}
-
-	cm := NewConfigManager()
+	cm := newTestConfigManager(t)
 
 	// Initial values should be defaults (true)
 	if !cm.UseInlineHTML() || !cm.UseSanitize() || !cm.UseStripH1() {
@@ -287,18 +269,7 @@ func TestApplyCliOverrides(t *testing.T) {
 }
 
 func TestSaveAndLoadConfig(t *testing.T) {
-	// This test is complex because it involves file system operations
-	// and the config manager uses os.UserHomeDir() which can't be easily mocked.
-	// For now, we'll test the core functionality without file operations.
-
-	// Save original os.Args
-	originalArgs := os.Args
-	defer func() { os.Args = originalArgs }()
-
-	os.Args = []string{"test-md-reader"}
-
-	// Create config manager
-	cm := NewConfigManager()
+	cm := newTestConfigManager(t, "test-md-reader")
 
 	// Test that we can set and get configuration
 	newConfig := &Config{
@@ -335,6 +306,15 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	err := cm.SaveConfig()
 	if err != nil {
 		t.Errorf("SaveConfig() error = %v", err)
+	}
+
+	if _, err := os.Stat(cm.configPath); err != nil {
+		t.Fatalf("SaveConfig() did not create config file %q: %v", cm.configPath, err)
+	}
+
+	wantConfigPath := filepath.Join(os.Getenv("XDG_CONFIG_HOME"), "test-md-reader", "test-md-reader.json")
+	if cm.configPath != wantConfigPath {
+		t.Fatalf("configPath = %q, want %q", cm.configPath, wantConfigPath)
 	}
 }
 
@@ -394,8 +374,8 @@ func TestGetAppNameFromExecutable(t *testing.T) {
 func TestAlertCalloutStylesConstant(t *testing.T) {
 	// Test that the AlertCalloutStyles map is properly defined
 	expectedStyles := map[string]string{
-		"GFMStrict":      "GFM Alerts (Standard 5 Alert Types)",
-		"GFMWithAliases": "GFM Alerts (GFM + Aliases [e.g., notes = note])",
+		"GFMStrict":      "Strict GFM Alerts (Standard 5 Alert Types)",
+		"GFMWithAliases": "GFM Alerts + Aliases (GFM + Aliases [e.g., notes = note])",
 		"GFMPlus":        "GFM Alerts Plus (GFM + Some Obsidian-Style Callouts)",
 		"Obsidian":       "Obsidian-Style (Obsidian Icons and Callout Names)",
 	}
