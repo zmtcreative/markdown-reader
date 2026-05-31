@@ -68,6 +68,30 @@ func TestGetArgs(t *testing.T) {
 			expectedFile: stringPtr("first.md"),
 			expectedHelp: nil,
 		},
+		{
+			name:         "unknown long flag is ignored",
+			args:         []string{"md-reader", "--unknown"},
+			expectedFile: nil,
+			expectedHelp: nil,
+		},
+		{
+			name:         "unknown flag before file flag is ignored",
+			args:         []string{"md-reader", "--unknown", "--file", "test.md"},
+			expectedFile: stringPtr("test.md"),
+			expectedHelp: nil,
+		},
+		{
+			name:         "unknown short flag before positional file is ignored",
+			args:         []string{"md-reader", "-z", "test.md"},
+			expectedFile: stringPtr("test.md"),
+			expectedHelp: nil,
+		},
+		{
+			name:         "unknown equals flag is ignored",
+			args:         []string{"md-reader", "--unknown=value", "--file", "test.md"},
+			expectedFile: stringPtr("test.md"),
+			expectedHelp: nil,
+		},
 	}
 
 	for _, tt := range tests {

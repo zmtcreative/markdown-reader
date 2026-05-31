@@ -23,8 +23,8 @@ func main() {
     // Handle command-line arguments FIRST ---
     cliArgs, _ := cli.GetArgs()
 
-	// We ignore the error from GetArgs, since the app will start with default values
-	// if there are no command-line arguments or if parsing fails.
+	// Unknown CLI flags are intentionally ignored so the GUI app can tolerate
+	// wrapper- or launcher-added arguments while still honoring --file/-f.
 
     // Create an instance of the mdrApp structure, passing the parsed CLI arguments
 	// This will initialize the application with the command-line arguments.
