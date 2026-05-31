@@ -1,6 +1,8 @@
 package app
 
 import (
+	"os"
+	"strings"
 	"testing"
 )
 
@@ -115,4 +117,70 @@ func TestStripFirstH1(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProcessDocumentMetadataEscapesUnsafeTitleSources(t *testing.T) {
+	tempFile := createTempDocumentFile(t)
+
+	tests := []struct {
+		name               string
+		useFrontmatterTitle bool
+		extractedTitle     string
+		frontmatter        map[string]any
+		wantContains       string
+		wantNotContains    string
+	}{
+		{
+			name:               "frontmatter title is escaped",
+			useFrontmatterTitle: true,
+			extractedTitle:     "ignored",
+			frontmatter: map[string]any{
+				"title": `<img src=x onerror="alert('xss')">`,
+			},
+			wantContains:    `&lt;img src=x onerror=&#34;alert(&#39;xss&#39;)&#34;&gt;`,
+			wantNotContains: `<img src=x onerror="alert('xss')">`,
+		},
+		{
+			name:               "extracted title is escaped",
+			useFrontmatterTitle: false,
+			extractedTitle:     `<b>unsafe heading</b>`,
+			frontmatter:        map[string]any{},
+			wantContains:       `&lt;b&gt;unsafe heading&lt;/b&gt;`,
+			wantNotContains:    `<b>unsafe heading</b>`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dp := &DocumentProcessor{
+				configManager: &ConfigManager{
+					config: &Config{
+						Application: ApplicationOptions{
+							UseFrontmatterTitle: tt.useFrontmatterTitle,
+						},
+					},
+				},
+			}
+
+			docTitle, _, _ := dp.processDocumentMetadata(tempFile, tt.extractedTitle, tt.frontmatter)
+
+			if !strings.Contains(docTitle, tt.wantContains) {
+				t.Fatalf("processDocumentMetadata() title = %q, want substring %q", docTitle, tt.wantContains)
+			}
+			if strings.Contains(docTitle, tt.wantNotContains) {
+				t.Fatalf("processDocumentMetadata() title = %q, should not contain raw HTML %q", docTitle, tt.wantNotContains)
+			}
+		})
+	}
+}
+
+func createTempDocumentFile(t *testing.T) string {
+	t.Helper()
+
+	filePath := t.TempDir() + `\document.md`
+	if err := os.WriteFile(filePath, []byte("# test\n"), 0644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	return filePath
 }
