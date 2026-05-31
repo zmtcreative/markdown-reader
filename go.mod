@@ -2,19 +2,15 @@ module md-reader
 
 go 1.24.5
 
-replace github.com/ZMT-Creative/gm-alert-callouts => ../gm-alert-callouts
+// replace github.com/zmtcreative/gm-alert-callouts => ../gm-alert-callouts
 
-// replace github.com/ZMT-Creative/gm-block-attributes => ../gm-block-attributes
-// replace github.com/ZMT-Creative/gm-fancy-lists => ../gm-fancy-lists
+// replace github.com/zmtcreative/gm-block-attributes => ../gm-block-attributes
+// replace github.com/zmtcreative/gm-fancy-lists => ../gm-fancy-lists
 
-// replace github.com/ZMT-Creative/gm-sectionwrapper => ../gm-sectionwrapper
+// replace github.com/zmtcreative/gm-sectionwrapper => ../gm-sectionwrapper
 
 require (
 	github.com/FurqanSoftware/goldmark-d2 v0.0.0-20250728083049-c971ca586592
-	// github.com/ZMT-Creative/gm-alert-callouts v0.6.0
-	// github.com/ZMT-Creative/gm-alert-callouts v0.0.0
-	github.com/ZMT-Creative/gm-fancy-lists v0.2.0
-	github.com/ZMT-Creative/gm-sectionwrapper v0.2.0
 	github.com/alecthomas/chroma/v2 v2.19.0
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/kingreatwill/goldmark-katex/v2 v2.1.0
@@ -25,10 +21,14 @@ require (
 	github.com/spf13/viper v1.20.1
 	github.com/stefanfritsch/goldmark-fences v1.0.0
 	github.com/tidwall/gjson v1.18.0
-	github.com/wailsapp/wails/v2 v2.10.2
+	github.com/wailsapp/wails/v2 v2.12.0
 	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-emoji v1.0.3
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
+	// github.com/zmtcreative/gm-alert-callouts v0.6.0
+	// github.com/zmtcreative/gm-alert-callouts v0.0.0
+	github.com/zmtcreative/gm-fancy-lists v0.3.0
+	github.com/zmtcreative/gm-sectionwrapper v0.3.0
 	go.abhg.dev/goldmark/anchor v0.2.0
 	go.abhg.dev/goldmark/frontmatter v0.2.0
 	go.abhg.dev/goldmark/mermaid v0.5.0
@@ -37,9 +37,10 @@ require (
 	oss.terrastruct.com/d2 v0.7.1
 )
 
-require github.com/ZMT-Creative/gm-alert-callouts v0.0.0-00010101000000-000000000000
+require github.com/zmtcreative/gm-alert-callouts v0.8.0
 
 require (
+	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/PuerkitoBio/goquery v1.10.3 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
@@ -58,6 +59,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
+	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
 	github.com/labstack/echo/v4 v4.13.4 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/leaanthony/go-ansi-parser v1.6.1 // indirect
@@ -83,7 +85,7 @@ require (
 	github.com/tkrajina/go-reflector v0.5.8 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	github.com/wailsapp/go-webview2 v1.0.21 // indirect
+	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect

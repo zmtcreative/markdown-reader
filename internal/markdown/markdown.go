@@ -12,14 +12,14 @@ import (
 	utils "md-reader/internal/utils"
 
 	// "md-reader/internal/gm-ext/sectionwrapper"
-	alertcallouts "github.com/ZMT-Creative/gm-alert-callouts"
-	sectionwrapper "github.com/ZMT-Creative/gm-sectionwrapper"
+	alertcallouts "github.com/zmtcreative/gm-alert-callouts"
+	sectionwrapper "github.com/zmtcreative/gm-sectionwrapper"
 	"oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
 
-	fancylists "github.com/ZMT-Creative/gm-fancy-lists"
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	figure "github.com/mangoumbrella/goldmark-figure"
+	fancylists "github.com/zmtcreative/gm-fancy-lists"
 
 	d2diagrams "github.com/FurqanSoftware/goldmark-d2"
 	katex "github.com/kingreatwill/goldmark-katex/v2"
