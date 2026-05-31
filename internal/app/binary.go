@@ -1,8 +1,10 @@
 package app
 
 import (
-    "os"
-    "unicode/utf8"
+	"errors"
+	"io"
+	"os"
+	"unicode/utf8"
 )
 
 // BinaryDetector handles binary file detection
@@ -25,7 +27,7 @@ func (bd *BinaryDetector) IsBinaryFile(filePath string) (bool, error) {
     // Read first 8KB to check for binary content (increased from 512 bytes)
     buffer := make([]byte, 8192)
     n, err := file.Read(buffer)
-    if err != nil && err.Error() != "EOF" {
+    if err != nil && !errors.Is(err, io.EOF) {
         return false, err
     }
 

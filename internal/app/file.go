@@ -18,6 +18,14 @@ type FileManager struct {
     docProcessor   *DocumentProcessor
 }
 
+func binaryCheckFailedMessage(filePath string) string {
+	return fmt.Sprintf("File MAY be binary: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(filePath))
+}
+
+func cannotOpenBinaryFileMessage(filePath string) string {
+	return fmt.Sprintf("Cannot open binary file: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(filePath))
+}
+
 // NewFileManager creates a new FileManager
 func NewFileManager(ctx context.Context, binaryDetector *BinaryDetector, docProcessor *DocumentProcessor) *FileManager {
     return &FileManager{
@@ -25,6 +33,24 @@ func NewFileManager(ctx context.Context, binaryDetector *BinaryDetector, docProc
         binaryDetector: binaryDetector,
         docProcessor:   docProcessor,
     }
+}
+
+// LoadFile validates and renders a selected markdown file.
+func (fm *FileManager) LoadFile(filePath string) error {
+    isBinary, err := fm.binaryDetector.IsBinaryFile(filePath)
+    if err != nil {
+        return fmt.Errorf("binary file check failed: %w", err)
+    }
+
+    if isBinary {
+        return fmt.Errorf("binary file cannot be opened: %s", filePath)
+    }
+
+    if err := fm.docProcessor.LoadAndDisplayMarkdown(filePath); err != nil {
+        return fmt.Errorf("failed to load file %s: %w", filePath, err)
+    }
+
+    return nil
 }
 
 // OpenFileMenuHandler handles the File > Open menu action
@@ -51,32 +77,25 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
 
     if selection != "" {
         log.Printf("##> LOG: User selected file: %s", selection)
-
-        // Check if the selected file is binary
-        isBinary, err := fm.binaryDetector.IsBinaryFile(selection)
-        if err != nil {
-            log.Printf("##> LOG: Error checking if file is binary %q: %v", selection, err)
-            runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
-                Type:    runtime.ErrorDialog,
-                Title:   "Binary File Check Failed",
-                Message: fmt.Sprintf("File MAY be binary: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(selection)),
-            })
-            return
-        }
-
-        if isBinary {
-            log.Printf("##> LOG: User selected a binary file: %s", selection)
-            runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
-                Type:    runtime.ErrorDialog,
-                Title:   "Cannot Open Binary File",
-                Message: fmt.Sprintf("Cannot open binary file: %s\n\nPlease select a text-based Markdown file (.md or .markdown).", filepath.Base(selection)),
-            })
-            return
-        }
-
-        err = fm.docProcessor.LoadAndDisplayMarkdown(selection)
+        err = fm.LoadFile(selection)
         if err != nil {
             log.Printf("##> LOG: Error loading selected Markdown file %q: %v", selection, err)
+            if strings.Contains(err.Error(), "binary file check failed") {
+                runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
+                    Type:    runtime.ErrorDialog,
+                    Title:   "Binary File Check Failed",
+                    Message: binaryCheckFailedMessage(selection),
+                })
+                return
+            }
+            if strings.Contains(err.Error(), "binary file cannot be opened") {
+                runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
+                    Type:    runtime.ErrorDialog,
+                    Title:   "Cannot Open Binary File",
+                    Message: cannotOpenBinaryFileMessage(selection),
+                })
+                return
+            }
             runtime.EventsEmit(fm.ctx, "error", "Failed to load selected file: "+err.Error())
         } else {
             log.Printf("##> LOG: Successfully loaded Markdown file: %s", selection)
