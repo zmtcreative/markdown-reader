@@ -162,7 +162,7 @@ func (a *App) domReady(ctx context.Context) {
 
     if a.currentFile != "" {
         log.Printf("##> LOG: Loading initial file from command line: %s", a.currentFile)
-        err := a.documentProcessor.LoadAndDisplayMarkdown(a.currentFile)
+        err := a.fileManager.LoadFile(a.currentFile)
         if err != nil {
             log.Printf("##> LOG: Error loading initial Markdown file %q: %v", a.currentFile, err)
             runtime.EventsEmit(a.ctx, "error", initialFileLoadErrorMessage(err))
