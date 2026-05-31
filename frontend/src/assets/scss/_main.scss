@@ -189,10 +189,6 @@ body[class] {
         &[nolabel]:has(code)::before {
             content: "";
             display: none;
-
-            & > code.chroma {
-                padding: 0.75rem 0.5rem;
-            }
         }
 
         &.nolabel:has(code),
