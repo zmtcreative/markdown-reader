@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 func newTestConfigManager(t *testing.T, args ...string) *ConfigManager {
@@ -390,5 +392,238 @@ func TestAlertCalloutStylesConstant(t *testing.T) {
 
 	if len(AlertCalloutStyles) != len(expectedStyles) {
 		t.Errorf("AlertCalloutStyles length = %d, want %d", len(AlertCalloutStyles), len(expectedStyles))
+	}
+}
+
+func TestConfigManagerMarkdownFeatureGetters(t *testing.T) {
+	cm := newTestConfigManager(t)
+
+	config := &Config{
+		Application: ApplicationOptions{
+			UseInlineHTML:            true,
+			UseSanitize:              false,
+			UseStripH1:               true,
+			UseFrontmatterTitle:      false,
+			FontFamily:               "Atkinson Hyperlegible",
+			FontSize:                 18,
+			FontFamilyMono:           "Cascadia Code",
+			FontSizeMono:             15,
+			UseAdvancedFontDetection: false,
+		},
+		Markdown: MarkdownOptions{
+			UseGFM:           false,
+			UsePHPMDExt:      true,
+			UseEmoji:         false,
+			UseMermaid:       true,
+			UseFigure:        false,
+			UseAnchor:        true,
+			UseFences:        false,
+			UseSections:      true,
+			UseHighlighting:  false,
+			UseFancyLists:    true,
+			UseAttributes:    false,
+			UseTypographic:   true,
+			UseAbbreviations: true,
+			UseKatex:         false,
+			UseD2Diagrams:    true,
+		},
+		AlertCallouts: AlertCalloutOptions{
+			UseAlertCallouts:  false,
+			AlertCalloutStyle: "Obsidian",
+		},
+	}
+
+	cm.SetConfig(config)
+
+	tests := []struct {
+		name string
+		got  bool
+		want bool
+	}{
+		{name: "UseInlineHTML", got: cm.UseInlineHTML(), want: true},
+		{name: "UseSanitize", got: cm.UseSanitize(), want: false},
+		{name: "UseStripH1", got: cm.UseStripH1(), want: true},
+		{name: "UseFrontmatterTitle", got: cm.UseFrontmatterTitle(), want: false},
+		{name: "UseGFM", got: cm.UseGFM(), want: false},
+		{name: "UsePHPMDExt", got: cm.UsePHPMDExt(), want: true},
+		{name: "UseEmoji", got: cm.UseEmoji(), want: false},
+		{name: "UseMermaid", got: cm.UseMermaid(), want: true},
+		{name: "UseFigure", got: cm.UseFigure(), want: false},
+		{name: "UseAnchor", got: cm.UseAnchor(), want: true},
+		{name: "UseFences", got: cm.UseFences(), want: false},
+		{name: "UseSections", got: cm.UseSections(), want: true},
+		{name: "UseHighlighting", got: cm.UseHighlighting(), want: false},
+		{name: "UseFancyLists", got: cm.UseFancyLists(), want: true},
+		{name: "UseAttributes", got: cm.UseAttributes(), want: false},
+		{name: "UseTypographic", got: cm.UseTypographic(), want: true},
+		{name: "UseAbbreviations", got: cm.UseAbbreviations(), want: true},
+		{name: "UseKatex", got: cm.UseKatex(), want: false},
+		{name: "UseD2Diagrams", got: cm.UseD2Diagrams(), want: true},
+		{name: "UseAlertCallouts", got: cm.UseAlertCallouts(), want: false},
+		{name: "GetUseAdvancedFontDetection", got: cm.GetUseAdvancedFontDetection(), want: false},
+	}
+
+	for _, tt := range tests {
+		if tt.got != tt.want {
+			t.Errorf("%s() = %v, want %v", tt.name, tt.got, tt.want)
+		}
+	}
+
+	if got := cm.AlertCalloutStyle(); got != "Obsidian" {
+		t.Fatalf("AlertCalloutStyle() = %q, want %q", got, "Obsidian")
+	}
+	if got := cm.GetFontFamily(); got != "Atkinson Hyperlegible" {
+		t.Fatalf("GetFontFamily() = %q, want %q", got, "Atkinson Hyperlegible")
+	}
+	if got := cm.GetFontSize(); got != 18.0 {
+		t.Fatalf("GetFontSize() = %v, want %v", got, 18.0)
+	}
+	if got := cm.GetFontFamilyMono(); got != "Cascadia Code" {
+		t.Fatalf("GetFontFamilyMono() = %q, want %q", got, "Cascadia Code")
+	}
+	if got := cm.GetFontSizeMono(); got != 15.0 {
+		t.Fatalf("GetFontSizeMono() = %v, want %v", got, 15.0)
+	}
+
+	cm.SetFontFamily("Literata")
+	cm.SetFontSize(20)
+	cm.SetFontFamilyMono("Fira Code")
+	cm.SetFontSizeMono(13)
+	cm.SetUseAdvancedFontDetection(true)
+
+	if got := cm.GetFontFamily(); got != "Literata" {
+		t.Fatalf("GetFontFamily() after SetFontFamily() = %q, want %q", got, "Literata")
+	}
+	if got := cm.GetFontSize(); got != 20.0 {
+		t.Fatalf("GetFontSize() after SetFontSize() = %v, want %v", got, 20.0)
+	}
+	if got := cm.GetFontFamilyMono(); got != "Fira Code" {
+		t.Fatalf("GetFontFamilyMono() after SetFontFamilyMono() = %q, want %q", got, "Fira Code")
+	}
+	if got := cm.GetFontSizeMono(); got != 13.0 {
+		t.Fatalf("GetFontSizeMono() after SetFontSizeMono() = %v, want %v", got, 13.0)
+	}
+	if !cm.GetUseAdvancedFontDetection() {
+		t.Fatal("GetUseAdvancedFontDetection() = false after setter, want true")
+	}
+}
+
+func TestLoadConfigFallsBackOnInvalidJSON(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := filepath.Join(configDir, "broken.json")
+	if err := os.WriteFile(configPath, []byte(`{"application":{"font_size":"bad"}`), 0644); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+
+	v := viper.New()
+	v.SetConfigFile(configPath)
+	v.SetConfigType("json")
+
+	cm := &ConfigManager{
+		config:     &Config{},
+		configPath: configPath,
+		viper:      v,
+	}
+
+	cm.loadConfig()
+
+	if !cm.config.Application.UseInlineHTML {
+		t.Fatal("UseInlineHTML default fallback = false, want true")
+	}
+	if !cm.config.Markdown.UsePHPMDExt {
+		t.Fatal("UsePHPMDExt default fallback = false, want true")
+	}
+	if cm.config.Markdown.UseAbbreviations {
+		t.Fatal("UseAbbreviations default fallback = true, want false")
+	}
+	if cm.config.AlertCallouts.AlertCalloutStyle != "GFMPlus" {
+		t.Fatalf("AlertCalloutStyle fallback = %q, want %q", cm.config.AlertCallouts.AlertCalloutStyle, "GFMPlus")
+	}
+	if cm.config.Application.FontFamily == "" || cm.config.Application.FontFamilyMono == "" {
+		t.Fatal("fallback font families should not be empty")
+	}
+}
+
+func TestLoadConfigUsesDefaultsWhenFileMissing(t *testing.T) {
+	configDir := t.TempDir()
+	configPath := filepath.Join(configDir, "missing.json")
+	v := viper.New()
+	v.SetConfigFile(configPath)
+	v.SetConfigType("json")
+	v.SetDefault("application.use_inline_html", true)
+	v.SetDefault("application.use_sanitize_html", true)
+	v.SetDefault("application.use_strip_h1", true)
+	v.SetDefault("application.use_frontmatter_title", true)
+	v.SetDefault("application.font_family", "Verdana")
+	v.SetDefault("application.font_size", 16.0)
+	v.SetDefault("application.font_family_mono", "Consolas")
+	v.SetDefault("application.font_size_mono", 14.0)
+	v.SetDefault("application.use_advanced_font_detection", true)
+	v.SetDefault("markdown.use_gfm", true)
+	v.SetDefault("markdown.use_php_md_ext", true)
+	v.SetDefault("markdown.use_emoji", true)
+	v.SetDefault("markdown.use_mermaid", true)
+	v.SetDefault("markdown.use_figure", true)
+	v.SetDefault("markdown.use_anchor", true)
+	v.SetDefault("markdown.use_fences", true)
+	v.SetDefault("markdown.use_sections", true)
+	v.SetDefault("markdown.use_highlighting", true)
+	v.SetDefault("markdown.use_fancylists", true)
+	v.SetDefault("markdown.use_attributes", true)
+	v.SetDefault("markdown.use_typographic", true)
+	v.SetDefault("markdown.use_abbreviations", false)
+	v.SetDefault("markdown.use_katex", true)
+	v.SetDefault("markdown.use_d2_diagrams", true)
+	v.SetDefault("alert_callouts.use_alertcallouts", true)
+	v.SetDefault("alert_callouts.alertcallout_style", "GFMPlus")
+
+	cm := &ConfigManager{
+		config:     &Config{},
+		configPath: configPath,
+		viper:      v,
+	}
+
+	cm.loadConfig()
+
+	if !cm.UseInlineHTML() || !cm.UseSanitize() || !cm.UsePHPMDExt() {
+		t.Fatal("missing config file did not preserve default values")
+	}
+	if cm.GetFontFamily() == "" || cm.GetFontFamilyMono() == "" {
+		t.Fatal("missing config file did not preserve default font values")
+	}
+	if cm.AlertCalloutStyle() != "GFMPlus" {
+		t.Fatalf("AlertCalloutStyle() = %q, want %q", cm.AlertCalloutStyle(), "GFMPlus")
+	}
+}
+
+func TestGetConfigDirUsesXDGConfigHome(t *testing.T) {
+	xdgHome := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", xdgHome)
+
+	configDir := getConfigDir("md-reader")
+	want := filepath.Join(xdgHome, "md-reader")
+
+	if configDir != want {
+		t.Fatalf("getConfigDir() = %q, want %q", configDir, want)
+	}
+	if info, err := os.Stat(configDir); err != nil || !info.IsDir() {
+		t.Fatalf("getConfigDir() did not create directory %q: %v", configDir, err)
+	}
+}
+
+func TestGetConfigDirFallsBackToCurrentDirectoryWhenHomeUnavailable(t *testing.T) {
+	originalHomeDir := osUserHomeDir
+	osUserHomeDir = func() (string, error) {
+		return "", os.ErrNotExist
+	}
+	defer func() { osUserHomeDir = originalHomeDir }()
+	t.Setenv("XDG_CONFIG_HOME", "")
+
+	configDir := getConfigDir("md-reader")
+	if configDir != "." {
+		t.Fatalf("getConfigDir() = %q, want %q", configDir, ".")
+	}
+	if info, err := os.Stat(configDir); err != nil || !info.IsDir() {
+		t.Fatalf("getConfigDir() fallback directory check failed: %v", err)
 	}
 }
