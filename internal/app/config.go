@@ -9,6 +9,45 @@ import (
 	"github.com/spf13/viper"
 )
 
+var osUserHomeDir = os.UserHomeDir
+
+func defaultConfig() *Config {
+	return &Config{
+		Application: ApplicationOptions{
+			UseInlineHTML:            true,
+			UseSanitize:              true,
+			UseStripH1:               true,
+			UseFrontmatterTitle:      true,
+			FontFamily:               "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
+			FontSize:                 16.0,
+			FontFamilyMono:           "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace",
+			FontSizeMono:             14.0,
+			UseAdvancedFontDetection: true,
+		},
+		Markdown: MarkdownOptions{
+			UseGFM:           true,
+			UsePHPMDExt:      true,
+			UseEmoji:         true,
+			UseMermaid:       true,
+			UseFigure:        true,
+			UseAnchor:        true,
+			UseFences:        true,
+			UseSections:      true,
+			UseHighlighting:  true,
+			UseFancyLists:    true,
+			UseAttributes:    true,
+			UseTypographic:   true,
+			UseAbbreviations: false,
+			UseKatex:         true,
+			UseD2Diagrams:    true,
+		},
+		AlertCallouts: AlertCalloutOptions{
+			UseAlertCallouts:  true,
+			AlertCalloutStyle: "GFMPlus",
+		},
+	}
+}
+
 // Config represents the tabs in the settings dialog
 type Config struct {
 	Application        ApplicationOptions   `mapstructure:"application" json:"application"`         // Application
@@ -173,7 +212,7 @@ func getConfigDir(appName string) string {
 	if configPath := os.Getenv("XDG_CONFIG_HOME"); configPath != "" {
 		// Linux XDG standard
 		configDir = filepath.Join(configPath, appName)
-	} else if homeDir, err := os.UserHomeDir(); err == nil {
+	} else if homeDir, err := osUserHomeDir(); err == nil {
 		// Windows, macOS, and Linux fallback
 		switch {
 		case os.Getenv("OS") == "Windows_NT" || filepath.Separator == '\\':
@@ -203,6 +242,8 @@ func (cm *ConfigManager) loadConfig() {
 		} else {
 			// Config file found but another error occurred
 			fmt.Printf("Error reading config file: %v\n", err)
+			cm.config = defaultConfig()
+			return
 		}
 	}
 
@@ -210,40 +251,7 @@ func (cm *ConfigManager) loadConfig() {
 	if err := cm.viper.Unmarshal(cm.config); err != nil {
 		fmt.Printf("Error unmarshaling config: %v\n", err)
 		// Use defaults if unmarshal fails
-		cm.config = &Config{
-			Application: ApplicationOptions{
-				UseInlineHTML:  true,
-				UseSanitize:    true,
-				UseStripH1:     true,
-				UseFrontmatterTitle: true,
-				FontFamily:     "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
-				FontSize:       16.0,
-				FontFamilyMono: "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace",
-				FontSizeMono:   14.0,
-				UseAdvancedFontDetection: true,
-			},
-			Markdown: MarkdownOptions{
-				UseGFM:          true,
-				UsePHPMDExt:     true,
-				UseEmoji:        true,
-				UseMermaid:      true,
-				UseFigure:       true,
-				UseAnchor:       true,
-				UseFences:       true,
-				UseSections:     true,
-				UseHighlighting: true,
-				UseFancyLists:   true,
-				UseAttributes:   true,
-				UseTypographic:  true,
-				UseAbbreviations: false,
-				UseKatex:        true,
-				UseD2Diagrams:   true,
-			},
-			AlertCallouts: AlertCalloutOptions{
-				UseAlertCallouts:  true,
-				AlertCalloutStyle: "GFMPlus",
-			},
-		}
+		cm.config = defaultConfig()
 	}
 }
 
