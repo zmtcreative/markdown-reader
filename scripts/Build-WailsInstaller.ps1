@@ -146,9 +146,9 @@ function Get-DateStamp {
     $TicksPerDay = 24 * 6   # number of 10 minute intervals in a day
     $DayOfYear = $DateNow.DayOfYear - 1
     $HourTicksToday = $DateNow.Hour * 6
-    $TicksThisHour = int($DateNow.Minute / 10)
+    $TicksThisHour = [int]($DateNow.Minute / 10)
     $result = ($DayOfYear * $TicksPerDay) + $HourTicksToday + $TicksThisHour
-    return int($result)
+    return [int]$result
 }
 
 function Get-VersionHash {
@@ -167,23 +167,82 @@ function Get-VersionHash {
         [string]$TagName
     )
 
-    $thisVersionHash = @{}
+    $thisVersionHash = [ordered]@{
+        Major = $null
+        Minor = $null
+        Patch = $null
+        Prerelease = $null
+        Ahead = $null
+        Hash = $null
+        IsValid = $false
+    }
 
     if (-not $TagName) {
         Write-Host "No tag name provided. Please specify a tag name."
-        return
+        return [pscustomobject]$thisVersionHash
     }
 
-    if ( $TagName -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:[.+-](?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
+    $baseTag = $TagName
+    $ahead = $null
+    $hash = $null
+
+    if ($TagName -match '^(?<base>.+?)(?:-(?<ahead>\d+)-g(?<hash>[0-9a-fA-F]+))?$') {
+        $baseTag = $Matches.base
+        $ahead = $Matches.ahead
+        $hash = $Matches.hash
+    }
+
+    if ($baseTag -match '^v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*))?$') {
         $thisVersionHash["Major"] = $Matches.major
         $thisVersionHash["Minor"] = $Matches.minor
         $thisVersionHash["Patch"] = $Matches.patch
         $thisVersionHash["Prerelease"] = $Matches.prerelease
-        $thisVersionHash["Ahead"] = $Matches.ahead
-        $thisVersionHash["Hash"] = $Matches.hash
+        $thisVersionHash["Ahead"] = $ahead
+        $thisVersionHash["Hash"] = $hash
+        $thisVersionHash["IsValid"] = $true
     }
 
-    return $thisVersionHash
+    return [pscustomobject]$thisVersionHash
+}
+
+function Get-BuildVersionInfo {
+    <#
+    .SYNOPSIS
+        Converts a parsed Git tag into semantic and numeric build versions.
+    .DESCRIPTION
+        This function maps release and prerelease tags to the semantic version used by the app
+        and to the four-part numeric file version required by NSIS.
+    .PARAMETER VersionHash
+        The parsed version object returned by Get-VersionHash.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$VersionHash
+    )
+
+    $version = "$($VersionHash.Major).$($VersionHash.Minor).$($VersionHash.Patch)"
+    $fileVersionSuffix = 0
+    $releaseClasses = @("alpha", "beta", "rc", "patch")
+
+    if (-not [string]::IsNullOrWhiteSpace($VersionHash.Prerelease)) {
+        $version += "-$($VersionHash.Prerelease)"
+        if ($VersionHash.Prerelease -match '^(?<stage>alpha|beta|rc|patch)(?<number>\d+)?$') {
+            $stageName = $Matches.stage
+            $stageNumber = if ([string]::IsNullOrWhiteSpace($Matches.number)) { 0 } else { [int]$Matches.number }
+            $stageIndex = $releaseClasses.IndexOf($stageName) + 1
+            $fileVersionSuffix = ($stageIndex * 10000) + ($stageNumber * 100)
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($VersionHash.Ahead)) {
+        $version += "+$($VersionHash.Ahead)"
+        $fileVersionSuffix += [int]$VersionHash.Ahead
+    }
+
+    return [pscustomobject]@{
+        Version = $version
+        FileVersion = "$($VersionHash.Major).$($VersionHash.Minor).$($VersionHash.Patch).$fileVersionSuffix"
+    }
 }
 
 function Get-MostRecentTag {
@@ -524,37 +583,20 @@ function Invoke-WailsBuild {
     $Date = $(Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ")
     $Version = ""
     $FileVersion = ""
-    $RC = @("alpha", "beta", "rc", "")
     $Commit = $(git rev-parse --short HEAD)
     $CurrentCommitTag = $(git describe --tags HEAD 2> $null)
     $CurrentRepoTag = Get-MostRecentTag
-    if ( $CurrentCommitTag -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:-(?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
-        $Major = $Matches.major
-        $Minor = $Matches.minor
-        $Patch = $Matches.patch
-        $Prerelease = $Matches.prerelease
-        $Ahead = $Matches.ahead
-        $Hash = $Matches.hash
-        if ($Hash) { $Hash | Out-Null }  # suppress unused variable warning
-        $Version = $Major + "." + $Minor + "." + $Patch
-        $FileVersion = $Version
-        if ($Prerelease) {
-            if ($Prerelease -match "^(?<rc>alpha|beta|rc)?(?<rcnum>\d+)?$") {
-                $rcString = $Matches.rc
-                $rcNumber = [int]$Matches.rcnum || 0
-                $rcIDX = $RC.IndexOf($rcString) + 1
-            }
+    $CurrentCommitVersion = Get-VersionHash -TagName $CurrentCommitTag
+    $CurrentRepoVersion = Get-VersionHash -TagName $CurrentRepoTag
 
-            $PreReleaseNumber = ($rcIDX * 10000) + ($rcNumber * 100)
-            $Version += "-" + $Prerelease
-        }
-        if ($Ahead) {
-            $Version += "+" + $Ahead
-            if ($PreReleaseNumber) {
-                $PreReleaseNumber += $Ahead
-            }
-        }
-        $FileVersion = $FileVersion + '.' + $PreReleaseNumber
+    if ($CurrentCommitVersion.IsValid) {
+        $BuildVersionInfo = Get-BuildVersionInfo -VersionHash $CurrentCommitVersion
+        $Version = $BuildVersionInfo.Version
+        $FileVersion = $BuildVersionInfo.FileVersion
+    } elseif ($CurrentRepoVersion.IsValid) {
+        $BuildVersionInfo = Get-BuildVersionInfo -VersionHash $CurrentRepoVersion
+        $Version = $BuildVersionInfo.Version
+        $FileVersion = $BuildVersionInfo.FileVersion
     } else {
         $Version = "0.0.0-dev+${Commit}"
         $ds = Get-DateStamp
