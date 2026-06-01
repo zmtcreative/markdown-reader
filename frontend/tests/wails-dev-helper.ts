@@ -94,7 +94,7 @@ export class WailsDevHelper {
     }
 
     this.browser = await chromium.launch({
-      headless: false, // Set to true for headless testing
+      headless: !!process.env.CI,
       args: ['--disable-web-security', '--disable-features=VizDisplayCompositor'],
     });
 
