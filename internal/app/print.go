@@ -6,6 +6,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+var (
+    printEventsEmit    = runtime.EventsEmit
+    printSaveFileDialog = runtime.SaveFileDialog
+)
+
 // PrintManager handles printing functionality
 type PrintManager struct {
     ctx context.Context
@@ -18,13 +23,13 @@ func NewPrintManager(ctx context.Context) *PrintManager {
 
 // PrintContent prints the current HTML content
 func (pm *PrintManager) PrintContent() error {
-    runtime.EventsEmit(pm.ctx, "print-content")
+    printEventsEmit(pm.ctx, "print-content")
     return nil
 }
 
 // PrintContentToPDF exports the current content to PDF (Windows-specific)
 func (pm *PrintManager) PrintContentToPDF() error {
-    filePath, err := runtime.SaveFileDialog(pm.ctx, runtime.SaveDialogOptions{
+    filePath, err := printSaveFileDialog(pm.ctx, runtime.SaveDialogOptions{
         Title:           "Save as PDF",
         DefaultFilename: "document.pdf",
         Filters: []runtime.FileFilter{
@@ -39,6 +44,6 @@ func (pm *PrintManager) PrintContentToPDF() error {
         return nil // User cancelled
     }
 
-    runtime.EventsEmit(pm.ctx, "save-as-pdf", filePath)
+    printEventsEmit(pm.ctx, "save-as-pdf", filePath)
     return nil
 }

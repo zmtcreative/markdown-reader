@@ -7,6 +7,11 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+var (
+    errorEventsEmit    = runtime.EventsEmit
+    errorMessageDialog = runtime.MessageDialog
+)
+
 // ErrorHandler centralizes error handling and user notifications
 type ErrorHandler struct {
     ctx context.Context
@@ -22,12 +27,12 @@ func (eh *ErrorHandler) HandleError(err error, userMessage string, showDialog bo
     log.Printf("##> LOG: Error: %v", err)
 
     if showDialog {
-        runtime.MessageDialog(eh.ctx, runtime.MessageDialogOptions{
+        errorMessageDialog(eh.ctx, runtime.MessageDialogOptions{
             Type:    runtime.ErrorDialog,
             Title:   "Error",
             Message: userMessage,
         })
     } else {
-        runtime.EventsEmit(eh.ctx, "error", userMessage)
+        errorEventsEmit(eh.ctx, "error", userMessage)
     }
 }

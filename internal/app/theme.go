@@ -6,6 +6,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+var themeEventsEmit = runtime.EventsEmit
+
 // ThemeManager handles theme-related functionality
 type ThemeManager struct {
     ctx   context.Context
@@ -28,5 +30,5 @@ func (tm *ThemeManager) GetTheme() string {
 // SetTheme sets the theme and emits an event to the frontend
 func (tm *ThemeManager) SetTheme(theme string) {
     tm.theme = theme
-    runtime.EventsEmit(tm.ctx, "theme:changed", theme)
+    themeEventsEmit(tm.ctx, "theme:changed", theme)
 }
