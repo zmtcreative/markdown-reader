@@ -105,3 +105,174 @@ func BenchmarkGetValueFromMap(b *testing.B) {
 		GetValueFromMap(m, "testkey5")
 	}
 }
+
+func TestNormalizeMapKeys(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]any
+		validate func(t *testing.T, got map[string]any)
+	}{
+		{
+			name:  "nil input returns nil",
+			input: nil,
+			validate: func(t *testing.T, got map[string]any) {
+				if got != nil {
+					t.Fatalf("NormalizeMapKeys() = %#v, want nil", got)
+				}
+			},
+		},
+		{
+			name: "top-level keys lowercased",
+			input: map[string]any{
+				"Title": "Example",
+				"COUNT": 3,
+			},
+			validate: func(t *testing.T, got map[string]any) {
+				if got["title"] != "Example" {
+					t.Fatalf("got[title] = %#v, want %q", got["title"], "Example")
+				}
+				if got["count"] != 3 {
+					t.Fatalf("got[count] = %#v, want %d", got["count"], 3)
+				}
+				if _, exists := got["Title"]; exists {
+					t.Fatal("NormalizeMapKeys() kept original mixed-case key")
+				}
+			},
+		},
+		{
+			name: "nested maps are normalized recursively",
+			input: map[string]any{
+				"Meta": map[string]any{
+					"Author": "Ada",
+					"DETAILS": map[string]any{
+						"Reviewer": "Linus",
+					},
+				},
+			},
+			validate: func(t *testing.T, got map[string]any) {
+				meta, ok := got["meta"].(map[string]any)
+				if !ok {
+					t.Fatalf("got[meta] type = %T, want map[string]any", got["meta"])
+				}
+				if meta["author"] != "Ada" {
+					t.Fatalf("meta[author] = %#v, want %q", meta["author"], "Ada")
+				}
+				details, ok := meta["details"].(map[string]any)
+				if !ok {
+					t.Fatalf("meta[details] type = %T, want map[string]any", meta["details"])
+				}
+				if details["reviewer"] != "Linus" {
+					t.Fatalf("details[reviewer] = %#v, want %q", details["reviewer"], "Linus")
+				}
+			},
+		},
+		{
+			name: "non-map composite values are preserved",
+			input: map[string]any{
+				"Items": []string{"one", "two"},
+				"Flags": map[string]bool{"A": true},
+			},
+			validate: func(t *testing.T, got map[string]any) {
+				items, ok := got["items"].([]string)
+				if !ok {
+					t.Fatalf("got[items] type = %T, want []string", got["items"])
+				}
+				if len(items) != 2 || items[0] != "one" || items[1] != "two" {
+					t.Fatalf("items = %#v, want [one two]", items)
+				}
+				flags, ok := got["flags"].(map[string]bool)
+				if !ok {
+					t.Fatalf("got[flags] type = %T, want map[string]bool", got["flags"])
+				}
+				if !flags["A"] {
+					t.Fatalf("flags = %#v, want key A preserved", flags)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NormalizeMapKeys(tt.input)
+			if err != nil {
+				t.Fatalf("NormalizeMapKeys() error = %v", err)
+			}
+			if tt.validate != nil {
+				tt.validate(t, got)
+			}
+		})
+	}
+}
+
+func TestGetValue(t *testing.T) {
+	tests := []struct {
+		name     string
+		run      func(t *testing.T)
+	}{
+		{
+			name: "nil map returns zero value and false",
+			run: func(t *testing.T) {
+				got, ok := GetValue[string](nil, "title")
+				if ok {
+					t.Fatal("GetValue() ok = true, want false")
+				}
+				if got != "" {
+					t.Fatalf("GetValue() = %q, want empty string", got)
+				}
+			},
+		},
+		{
+			name: "missing key returns zero value and false",
+			run: func(t *testing.T) {
+				got, ok := GetValue[int](map[string]any{"count": 3}, "missing")
+				if ok {
+					t.Fatal("GetValue() ok = true, want false")
+				}
+				if got != 0 {
+					t.Fatalf("GetValue() = %d, want 0", got)
+				}
+			},
+		},
+		{
+			name: "matching type returns value and true",
+			run: func(t *testing.T) {
+				got, ok := GetValue[string](map[string]any{"title": "Reader"}, "title")
+				if !ok {
+					t.Fatal("GetValue() ok = false, want true")
+				}
+				if got != "Reader" {
+					t.Fatalf("GetValue() = %q, want %q", got, "Reader")
+				}
+			},
+		},
+		{
+			name: "type mismatch returns zero value and false",
+			run: func(t *testing.T) {
+				got, ok := GetValue[string](map[string]any{"count": 3}, "count")
+				if ok {
+					t.Fatal("GetValue() ok = true, want false")
+				}
+				if got != "" {
+					t.Fatalf("GetValue() = %q, want empty string", got)
+				}
+			},
+		},
+		{
+			name: "matching map value preserves typed map",
+			run: func(t *testing.T) {
+				value := map[string]any{"title": "Nested"}
+				got, ok := GetValue[map[string]any](map[string]any{"meta": value}, "meta")
+				if !ok {
+					t.Fatal("GetValue() ok = false, want true")
+				}
+				if got["title"] != "Nested" {
+					t.Fatalf("GetValue() map = %#v, want nested title preserved", got)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
+}
