@@ -1,5 +1,7 @@
 package app
 
+// This file was created to expand test coverage without adding more tests to document_test.go.
+
 import (
 	"context"
 	"io/fs"
