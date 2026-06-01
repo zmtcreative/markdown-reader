@@ -28,6 +28,11 @@ var aboutTemplate string
 //go:embed frontend/src/assets/html/license-short.html
 var licenseShort string
 
+var (
+    appEventsEmit = runtime.EventsEmit
+    appQuit       = runtime.Quit
+)
+
 // App struct
 type App struct {
     ctx                 context.Context
@@ -165,7 +170,7 @@ func (a *App) domReady(ctx context.Context) {
         err := a.fileManager.LoadFile(a.currentFile)
         if err != nil {
             log.Printf("##> LOG: Error loading initial Markdown file %q: %v", a.currentFile, err)
-            runtime.EventsEmit(a.ctx, "error", initialFileLoadErrorMessage(err))
+            appEventsEmit(a.ctx, "error", initialFileLoadErrorMessage(err))
         }
     } else {
         // Emit a welcome message if no initial file is provided
@@ -177,10 +182,10 @@ func (a *App) domReady(ctx context.Context) {
             " --file path/to/your/file.md</code>).</p>"
         renderData.HTML = welcomeHTML
         renderData.FrontmatterHTML = `<div class="frontmatter-container"><div class="frontmatter-header">No frontmatter</div></div>`
-        runtime.EventsEmit(a.ctx, "markdown-rendered", renderData)
+        appEventsEmit(a.ctx, "markdown-rendered", renderData)
     }
     if a.showHelp {
-        runtime.EventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
+        appEventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
     }
 }
 
@@ -207,23 +212,23 @@ func (a *App) menu() *menu.Menu {
     // })
     fileMenu.AddSeparator()
     fileMenu.AddText("Settings", keys.CmdOrCtrl("comma"), func(_ *menu.CallbackData) {
-        runtime.EventsEmit(a.ctx, "show-settings")
+        appEventsEmit(a.ctx, "show-settings")
     })
     fileMenu.AddSeparator()
     fileMenu.AddText("Exit", keys.CmdOrCtrl("q"), func(_ *menu.CallbackData) {
-        runtime.Quit(a.ctx)
+        appQuit(a.ctx)
     })
 
     // --- Add a new Help menu ---
     helpMenu := appMenu.AddSubmenu("Help")
     helpMenu.AddText("Command-Line Options", keys.CmdOrCtrl("h"), func(_ *menu.CallbackData) {
         // Emit an event to the frontend, sending the help text as data.
-        runtime.EventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
+        appEventsEmit(a.ctx, "show-help", "Command-Line Options", a.cmdlineOptions)
     })
     helpMenu.AddSeparator()
     helpMenu.AddText("About", keys.CmdOrCtrl("a"), func(_ *menu.CallbackData) {
         // Emit an event to the frontend, sending the version information as data.
-        runtime.EventsEmit(a.ctx, "show-help", "About", a.versionInfo)
+        appEventsEmit(a.ctx, "show-help", "About", a.versionInfo)
     })
 
     return appMenu
