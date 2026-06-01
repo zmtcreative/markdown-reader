@@ -11,6 +11,14 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
+var (
+    fileOpenDialog       = runtime.OpenFileDialog
+    fileEventsEmit       = runtime.EventsEmit
+    fileMessageDialog    = runtime.MessageDialog
+    fileBinaryCheck      = func(detector *BinaryDetector, filePath string) (bool, error) { return detector.IsBinaryFile(filePath) }
+    fileLoadAndDisplayMD = func(processor *DocumentProcessor, filePath string) error { return processor.LoadAndDisplayMarkdown(filePath) }
+)
+
 // FileManager handles file operations and dialog interactions
 type FileManager struct {
     ctx            context.Context
@@ -37,7 +45,7 @@ func NewFileManager(ctx context.Context, binaryDetector *BinaryDetector, docProc
 
 // LoadFile validates and renders a selected markdown file.
 func (fm *FileManager) LoadFile(filePath string) error {
-    isBinary, err := fm.binaryDetector.IsBinaryFile(filePath)
+    isBinary, err := fileBinaryCheck(fm.binaryDetector, filePath)
     if err != nil {
         return fmt.Errorf("binary file check failed: %w", err)
     }
@@ -46,7 +54,7 @@ func (fm *FileManager) LoadFile(filePath string) error {
         return fmt.Errorf("binary file cannot be opened: %s", filePath)
     }
 
-    if err := fm.docProcessor.LoadAndDisplayMarkdown(filePath); err != nil {
+    if err := fileLoadAndDisplayMD(fm.docProcessor, filePath); err != nil {
         return fmt.Errorf("failed to load file %s: %w", filePath, err)
     }
 
@@ -58,7 +66,7 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
     log.Println("##> LOG: File -> Open menu item clicked. Opening file dialog...")
 
     // Open a file dialog to allow the user to select a Markdown file.
-    selection, err := runtime.OpenFileDialog(fm.ctx, runtime.OpenDialogOptions{
+    selection, err := fileOpenDialog(fm.ctx, runtime.OpenDialogOptions{
         Title: "Open Markdown File",
         Filters: []runtime.FileFilter{
             {DisplayName: "Markdown Files (*.md;*.markdown)", Pattern: "*.md;*.markdown"},
@@ -71,7 +79,7 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
             return
         }
         log.Printf("##> LOG: Error opening file dialog: %v", err)
-        runtime.EventsEmit(fm.ctx, "error", "Failed to open file dialog: "+err.Error())
+        fileEventsEmit(fm.ctx, "error", "Failed to open file dialog: "+err.Error())
         return
     }
 
@@ -81,7 +89,7 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
         if err != nil {
             log.Printf("##> LOG: Error loading selected Markdown file %q: %v", selection, err)
             if strings.Contains(err.Error(), "binary file check failed") {
-                runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
+                fileMessageDialog(fm.ctx, runtime.MessageDialogOptions{
                     Type:    runtime.ErrorDialog,
                     Title:   "Binary File Check Failed",
                     Message: binaryCheckFailedMessage(selection),
@@ -89,14 +97,14 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
                 return
             }
             if strings.Contains(err.Error(), "binary file cannot be opened") {
-                runtime.MessageDialog(fm.ctx, runtime.MessageDialogOptions{
+                fileMessageDialog(fm.ctx, runtime.MessageDialogOptions{
                     Type:    runtime.ErrorDialog,
                     Title:   "Cannot Open Binary File",
                     Message: cannotOpenBinaryFileMessage(selection),
                 })
                 return
             }
-            runtime.EventsEmit(fm.ctx, "error", "Failed to load selected file: "+err.Error())
+            fileEventsEmit(fm.ctx, "error", "Failed to load selected file: "+err.Error())
         } else {
             log.Printf("##> LOG: Successfully loaded Markdown file: %s", selection)
             *currentFile = selection // Update currentFile to the newly opened file
