@@ -221,20 +221,9 @@ function Update-ProjectNSI {
 
     Write-Host -ForegroundColor Cyan "Updating NSI project file: $ProjectNSIPath"
 
-    $RC = @("alpha", "beta", "rc", "patch", "")
     $tmpVersionHash = Get-VersionHash -TagName $TagName
-    $FileVersion = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
-    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
-        if ($tmpVersionHash.Prerelease -match "^(?<rc>alpha|beta|rc)?(?<rcnum>\d+)?$") {
-            $rcString = $Matches.rc
-            $rcNumber = [int]$Matches.rcnum || 0
-            $rcIDX = $RC.IndexOf($rcString) + 1
-        }
-
-        $PreReleaseNumber = ($rcIDX * 10000) + ($rcNumber * 100)
-        # $tmpVersionHash.Prerelease = $PreReleaseNumber.ToString("D5")
-        $FileVersion += ".${PreReleaseNumber}"
-    }
+    $BuildVersionInfo = Get-BuildVersionInfo -VersionHash $tmpVersionHash
+    $FileVersion = $BuildVersionInfo.FileVersion
 
     $NSIData = Get-Content -Path $ProjectNSIPath
     $NewNSIData = @()
@@ -298,10 +287,8 @@ function Update-WailsJSON {
     }
 
     $tmpVersionHash = Get-VersionHash -TagName $TagName
-    $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
-    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
-        $Version += "-" + $tmpVersionHash.Prerelease
-    }
+    $BuildVersionInfo = Get-BuildVersionInfo -VersionHash $tmpVersionHash
+    $Version = $BuildVersionInfo.Version
 
     Write-Host -ForegroundColor Cyan "Updating wails.json with version value: $Version"
     $WailsData = Get-JsonContent -Path $WailsJsonPath
@@ -343,10 +330,8 @@ function Update-PackageJSON {
     }
 
     $tmpVersionHash = Get-VersionHash -TagName $TagName
-    $Version = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
-    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
-        $Version += "-" + $tmpVersionHash.Prerelease
-    }
+    $BuildVersionInfo = Get-BuildVersionInfo -VersionHash $tmpVersionHash
+    $Version = $BuildVersionInfo.Version
 
     Write-Host -ForegroundColor Cyan "Updating package.json with version value: $Version"
     $PackageData = Get-JsonContent -Path $PackageJsonPath
@@ -387,20 +372,9 @@ function Update-InfoJSON {
         return
     }
 
-    $RC = @("alpha", "beta", "rc", "patch", "")
     $tmpVersionHash = Get-VersionHash -TagName $TagName
-    $FileVersion = "$($tmpVersionHash.Major).$($tmpVersionHash.Minor).$($tmpVersionHash.Patch)"
-    if (-not [string]::IsNullOrWhiteSpace($tmpVersionHash.Prerelease)) {
-        if ($tmpVersionHash.Prerelease -match "^(?<rc>alpha|beta|rc)?(?<rcnum>\d+)?$") {
-            $rcString = $Matches.rc
-            $rcNumber = [int]$Matches.rcnum || 0
-            $rcIDX = $RC.IndexOf($rcString) + 1
-        }
-
-        $PreReleaseNumber = ($rcIDX * 10000) + ($rcNumber * 100)
-        # $tmpVersionHash.Prerelease = $PreReleaseNumber.ToString("D5")
-        $FileVersion += ".${PreReleaseNumber}"
-    }
+    $BuildVersionInfo = Get-BuildVersionInfo -VersionHash $tmpVersionHash
+    $FileVersion = $BuildVersionInfo.FileVersion
 
     Write-Host -ForegroundColor Cyan "Updating info.json:"
     $VIData = Get-JsonContent -Path $InfoJsonPath
@@ -449,23 +423,82 @@ function Get-VersionHash {
         [string]$TagName
     )
 
-    $thisVersionHash = @{}
+    $thisVersionHash = [ordered]@{
+        Major = $null
+        Minor = $null
+        Patch = $null
+        Prerelease = $null
+        Ahead = $null
+        Hash = $null
+        IsValid = $false
+    }
 
     if (-not $TagName) {
         Write-Host "No tag name provided. Please specify a tag name."
-        return
+        return [pscustomobject]$thisVersionHash
     }
 
-    if ( $TagName -match "v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>(?:0|[1-9]\d*|\w+\d*)))(?:[.+-](?<ahead>\d+)(?:-g?(?<hash>[0-9a-fA-F]+))?)?$") {
+    $baseTag = $TagName
+    $ahead = $null
+    $hash = $null
+
+    if ($TagName -match '^(?<base>.+?)(?:-(?<ahead>\d+)-g(?<hash>[0-9a-fA-F]+))?$') {
+        $baseTag = $Matches.base
+        $ahead = $Matches.ahead
+        $hash = $Matches.hash
+    }
+
+    if ($baseTag -match '^v?(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:-(?<prerelease>[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*))?$') {
         $thisVersionHash["Major"] = $Matches.major
         $thisVersionHash["Minor"] = $Matches.minor
         $thisVersionHash["Patch"] = $Matches.patch
         $thisVersionHash["Prerelease"] = $Matches.prerelease
-        $thisVersionHash["Ahead"] = $Matches.ahead
-        $thisVersionHash["Hash"] = $Matches.hash
+        $thisVersionHash["Ahead"] = $ahead
+        $thisVersionHash["Hash"] = $hash
+        $thisVersionHash["IsValid"] = $true
     }
 
-    return $thisVersionHash
+    return [pscustomobject]$thisVersionHash
+}
+
+function Get-BuildVersionInfo {
+    <#
+    .SYNOPSIS
+        Converts a parsed Git tag into semantic and numeric build versions.
+    .DESCRIPTION
+        This function maps release and prerelease tags to the semantic version used by the app
+        and to the four-part numeric file version required by NSIS.
+    .PARAMETER VersionHash
+        The parsed version object returned by Get-VersionHash.
+    #>
+    param (
+        [Parameter(Mandatory = $true)]
+        [psobject]$VersionHash
+    )
+
+    $version = "$($VersionHash.Major).$($VersionHash.Minor).$($VersionHash.Patch)"
+    $fileVersionSuffix = 0
+    $releaseClasses = @("alpha", "beta", "rc", "patch")
+
+    if (-not [string]::IsNullOrWhiteSpace($VersionHash.Prerelease)) {
+        $version += "-$($VersionHash.Prerelease)"
+        if ($VersionHash.Prerelease -match '^(?<stage>alpha|beta|rc|patch)(?<number>\d+)?$') {
+            $stageName = $Matches.stage
+            $stageNumber = if ([string]::IsNullOrWhiteSpace($Matches.number)) { 0 } else { [int]$Matches.number }
+            $stageIndex = $releaseClasses.IndexOf($stageName) + 1
+            $fileVersionSuffix = ($stageIndex * 10000) + ($stageNumber * 100)
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($VersionHash.Ahead)) {
+        $version += "+$($VersionHash.Ahead)"
+        $fileVersionSuffix += [int]$VersionHash.Ahead
+    }
+
+    return [pscustomobject]@{
+        Version = $version
+        FileVersion = "$($VersionHash.Major).$($VersionHash.Minor).$($VersionHash.Patch).$fileVersionSuffix"
+    }
 }
 
 function Set-NewTag {
@@ -626,7 +659,15 @@ function Get-NextTagName {
         [object]$VersionHash
     )
 
-    $tmpVersionHash = $VersionHash.Clone()
+    $tmpVersionHash = [pscustomobject]@{
+        Major = $VersionHash.Major
+        Minor = $VersionHash.Minor
+        Patch = $VersionHash.Patch
+        Prerelease = $VersionHash.Prerelease
+        Ahead = $VersionHash.Ahead
+        Hash = $VersionHash.Hash
+        IsValid = $VersionHash.IsValid
+    }
     $nextTagName = ""
     $prstatus = ""
     $prnumber = $null
