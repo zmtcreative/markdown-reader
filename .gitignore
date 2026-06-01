@@ -5,6 +5,7 @@ tmp/**/*
 scratch/**/*
 
 package-lock.json
+!frontend/package-lock.json
 package.json.md5
 
 # Binaries for programs and plugins
