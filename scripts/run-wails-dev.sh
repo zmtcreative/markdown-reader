@@ -78,7 +78,7 @@ invoke_wails_dev() {
         exit 1
     }
 
-    local sample_file="${project_root}/docs/sample.md"
+    local sample_file="${project_root}/assets/docs/sample.md"
 
     # If file path is provided and exists, use it instead of default
     if [[ -n "$file_path" ]]; then
