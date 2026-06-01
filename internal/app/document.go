@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"html"
@@ -19,6 +20,11 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/yuin/goldmark"
+)
+
+var (
+    documentEventsEmit = runtime.EventsEmit
+    documentReadFile   = os.ReadFile
 )
 
 // MarkdownRenderData contains all data needed for the markdown-rendered event
@@ -59,7 +65,7 @@ func NewDocumentProcessorWithStyle(ctx context.Context, configManager *ConfigMan
 // converts its content to HTML using Goldmark, and then emits the HTML
 // to the frontend via the "markdownLoaded" event.
 func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
-    mdContent, err := os.ReadFile(filePath)
+    mdContent, err := documentReadFile(filePath)
     if err != nil {
         if os.IsNotExist(err) {
             return fmt.Errorf("file not found: %s", filePath)
@@ -81,7 +87,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
         Date:        "",
         FrontmatterHTML: "",
     }
-    runtime.EventsEmit(dp.ctx, "markdown-rendered", tmpData)
+    documentEventsEmit(dp.ctx, "markdown-rendered", tmpData)
     // End-of-Note
 
     // Detect and handle UTF-16 BOMs, and convert to UTF-8 if necessary
@@ -101,6 +107,8 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
             }
         }
     }
+
+    mdContent = bytes.TrimPrefix(mdContent, []byte{0xEF, 0xBB, 0xBF})
 
     // Normalize line endings to Unix-style (LF)
     mdContent = []byte(strings.ReplaceAll(string(mdContent), "\r\n", "\n"))
@@ -142,7 +150,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     }
 
     // Emit the converted HTML to the frontend
-    runtime.EventsEmit(dp.ctx, "markdown-rendered", renderData)
+    documentEventsEmit(dp.ctx, "markdown-rendered", renderData)
 
     // Handle document type classes
     dp.updateDocumentClasses(docType)
@@ -240,17 +248,17 @@ func (dp *DocumentProcessor) updateDocumentClasses(docType string) {
 
 // AddDocClass adds the class to html and body elements
 func (dp *DocumentProcessor) AddDocClass(thisClass ...string) {
-    runtime.EventsEmit(dp.ctx, "add-doc-class", thisClass)
+    documentEventsEmit(dp.ctx, "add-doc-class", thisClass)
 }
 
 // RemoveDocClass removes the class from html and body elements
 func (dp *DocumentProcessor) RemoveDocClass(thisClass ...string) {
-    runtime.EventsEmit(dp.ctx, "remove-doc-class", thisClass)
+    documentEventsEmit(dp.ctx, "remove-doc-class", thisClass)
 }
 
 // ToggleDocClass toggles the class on html and body elements
 func (dp *DocumentProcessor) ToggleDocClass(thisClass ...string) {
-    runtime.EventsEmit(dp.ctx, "toggle-doc-class", thisClass)
+    documentEventsEmit(dp.ctx, "toggle-doc-class", thisClass)
 }
 
 // CleanupHTMLContent refines the generated HTML for better rendering.
