@@ -27,13 +27,11 @@ if (Test-Path -Path "$tmpProjectRoot\wails.json") {
 function Invoke-WailsDev {
     Push-Location $ProjectRoot -StackName 'ProjectRoot'
 
-    $sample_file = "${ProjectRoot}\docs\sample.md"
+    $sample_file = "${ProjectRoot}\assets\docs\sample.md"
 
-    # if ($args.Length -gt 0) {
-        if (Test-Path $FilePath -ErrorAction SilentlyContinue) {
-            $sample_file = $FilePath
-        }
-    # }
+    if (Test-Path $FilePath -ErrorAction SilentlyContinue) {
+        $sample_file = $FilePath
+    }
 
     if ($Clean) {
         Write-Host -ForegroundColor Cyan "Running: wails build --clean"
