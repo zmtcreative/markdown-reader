@@ -1,5 +1,7 @@
 package main
 
+// This file was created to expand test coverage without adding more tests to app_test.go.
+
 import (
 	"context"
 	"os"

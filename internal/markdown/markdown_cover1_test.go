@@ -1,5 +1,7 @@
 package markdown
 
+// This file was created to expand test coverage without adding more tests to markdown_test.go.
+
 import (
 	"strings"
 	"testing"
