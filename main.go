@@ -19,6 +19,29 @@ var (
 	Date    = "unknown"
 )
 
+func buildWailsAppOptions(mdrApp *App) *options.App {
+	return &options.App{
+		Title:     "Markdown Reader",
+		MinWidth:  616,
+		MinHeight: 539,
+		// MaxWidth: 1296,
+		// MaxHeight: 1020,
+		Width:  1040,
+		Height: 984,
+		AssetServer: &assetserver.Options{
+			Assets: assets,
+		},
+		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		OnStartup:        mdrApp.startup,
+		OnDomReady:       mdrApp.domReady,
+		OnShutdown:       mdrApp.shutdown,
+		Menu:             mdrApp.menu(),
+		Bind: []interface{}{
+			mdrApp,
+		},
+	}
+}
+
 func main() {
     // Handle command-line arguments FIRST ---
     cliArgs, _ := cli.GetArgs()
@@ -43,26 +66,7 @@ func main() {
 	//         - Make sure Height and/or Width do not exceed the screen dimensions
 
 	// Create application with options
-	werr := wails.Run(&options.App{
-		Title:  "Markdown Reader",
-		MinWidth: 616,
-		MinHeight: 539,
-		// MaxWidth: 1296,
-		// MaxHeight: 1020,
-		Width:  1040,
-		Height: 984,
-		AssetServer: &assetserver.Options{
-			Assets: assets,
-		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        mdrApp.startup,
-		OnDomReady:       mdrApp.domReady,
-		OnShutdown:       mdrApp.shutdown,
-		Menu:             mdrApp.menu(), // Add the menu here
-		Bind: []interface{}{
-			mdrApp,
-		},
-	})
+	werr := wails.Run(buildWailsAppOptions(mdrApp))
 
 	if werr != nil {
 		println("Error:", werr.Error())
