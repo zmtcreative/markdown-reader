@@ -9,7 +9,32 @@ import (
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	gohtml "golang.org/x/net/html"
 )
+
+func renderSanitizedMarkdown(t *testing.T, input string) string {
+	t.Helper()
+
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,
+			&SanitizeHTMLExtension{},
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			html.WithHardWraps(),
+			html.WithUnsafe(),
+		),
+	)
+
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(input), &buf); err != nil {
+		t.Fatalf("md.Convert() error = %v", err)
+	}
+	return buf.String()
+}
 
 func TestHTMLSanitizeAsExtension(t *testing.T) {
 	tests := []struct {
@@ -225,5 +250,209 @@ func TestDisallowedLinks(t *testing.T) {
 				t.Errorf("Got: %s", result)
 			}
 		})
+	}
+}
+
+func TestMarkdownLinksHandleAnchorsTargetsAndDisallowedURLs(t *testing.T) {
+	tests := []struct {
+		name            string
+		input           string
+		wantContains    []string
+		wantNotContains []string
+	}{
+		{
+			name:            "internal anchor does not get target blank",
+			input:           `[Jump](#section-1)`,
+			wantContains:    []string{`href="#section-1"`},
+			wantNotContains: []string{`target="_blank"`},
+		},
+		{
+			name:         "external safe link gets target blank",
+			input:        `[Docs](https://example.com/readme.md)`,
+			wantContains: []string{`href="https://example.com/readme.md"`, `target="_blank"`},
+		},
+		{
+			name:  "disallowed link gets warning title and broken file svg",
+			input: `[Installer](https://example.com/setup.exe "Download")`,
+			wantContains: []string{
+				`class="disallowed bad-href"`,
+				`bad-href="https://example.com/setup.exe"`,
+				`title="Download (Link to 'https://example.com/setup.exe' is disallowed by policy)"`,
+				`<svg`,
+			},
+			wantNotContains: []string{`target="_blank"`},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := renderSanitizedMarkdown(t, tt.input)
+			for _, expected := range tt.wantContains {
+				if !strings.Contains(result, expected) {
+					t.Fatalf("result missing %q\nresult: %s", expected, result)
+				}
+			}
+			for _, forbidden := range tt.wantNotContains {
+				if strings.Contains(result, forbidden) {
+					t.Fatalf("result unexpectedly contains %q\nresult: %s", forbidden, result)
+				}
+			}
+		})
+	}
+}
+
+func TestMarkdownImagesRenderAltTitleAndDisallowedState(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		wantContains []string
+	}{
+		{
+			name:  "allowed image preserves src alt and title",
+			input: `![Architecture Diagram](https://example.com/diagram.png "System Diagram")`,
+			wantContains: []string{
+				`src="https://example.com/diagram.png"`,
+				`alt="Architecture Diagram"`,
+				`title="System Diagram"`,
+			},
+		},
+		{
+			name:  "disallowed image rewrites src and preserves alt",
+			input: `![Binary Payload](https://example.com/payload.dll "Payload")`,
+			wantContains: []string{
+				`class="disallowed bad-src"`,
+				`bad-src="https://example.com/payload.dll"`,
+				`alt="Binary Payload"`,
+				`title="Payload"`,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := renderSanitizedMarkdown(t, tt.input)
+			for _, expected := range tt.wantContains {
+				if !strings.Contains(result, expected) {
+					t.Fatalf("result missing %q\nresult: %s", expected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestAddTargetBlank(t *testing.T) {
+	tests := []struct {
+		name          string
+		node          *gohtml.Node
+		wantTarget    bool
+		wantTargetVal string
+	}{
+		{
+			name: "external link gets target blank",
+			node: &gohtml.Node{Type: gohtml.ElementNode, Data: "a", Attr: []gohtml.Attribute{{Key: attrHref, Val: "https://example.com"}}},
+			wantTarget: true,
+			wantTargetVal: attrTargetBlank,
+		},
+		{
+			name: "internal anchor does not get target",
+			node: &gohtml.Node{Type: gohtml.ElementNode, Data: "a", Attr: []gohtml.Attribute{{Key: attrHref, Val: "#section"}}},
+			wantTarget: false,
+		},
+		{
+			name: "existing target is preserved",
+			node: &gohtml.Node{Type: gohtml.ElementNode, Data: "a", Attr: []gohtml.Attribute{{Key: attrHref, Val: "https://example.com"}, {Key: attrTarget, Val: "_self"}}},
+			wantTarget: true,
+			wantTargetVal: "_self",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			addTargetBlank(tt.node)
+			target := ""
+			for _, attr := range tt.node.Attr {
+				if attr.Key == attrTarget {
+					target = attr.Val
+					break
+				}
+			}
+			if tt.wantTarget && target != tt.wantTargetVal {
+				t.Fatalf("target = %q, want %q", target, tt.wantTargetVal)
+			}
+			if !tt.wantTarget && target != "" {
+				t.Fatalf("target = %q, want empty", target)
+			}
+		})
+	}
+}
+
+func TestExtractExtension(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantBase string
+		wantExt  string
+	}{
+		{
+			name:     "simple file path",
+			input:    "https://example.com/files/readme.md",
+			wantBase: "readme.md",
+			wantExt:  ".md",
+		},
+		{
+			name:     "query string stays in base but extension remains empty",
+			input:    "https://example.com/download?file=setup.exe",
+			wantBase: "download?file=setup.exe",
+			wantExt:  ".exe",
+		},
+		{
+			name:     "fragment remains part of base when passed directly",
+			input:    "manual.pdf#page-2",
+			wantBase: "manual.pdf#page-2",
+			wantExt:  ".pdf#page-2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			base, ext := extractExtension(tt.input)
+			if base != tt.wantBase || ext != tt.wantExt {
+				t.Fatalf("extractExtension() = (%q, %q), want (%q, %q)", base, ext, tt.wantBase, tt.wantExt)
+			}
+		})
+	}
+}
+
+func TestIsValidFragment(t *testing.T) {
+	tests := []struct {
+		fragment string
+		want     bool
+	}{
+		{fragment: "", want: true},
+		{fragment: "section-1", want: true},
+		{fragment: "anchor_name", want: true},
+		{fragment: "bad fragment", want: false},
+		{fragment: "bad/slash", want: false},
+		{fragment: "bad?query", want: false},
+	}
+
+	for _, tt := range tests {
+		if got := isValidFragment(tt.fragment); got != tt.want {
+			t.Fatalf("isValidFragment(%q) = %v, want %v", tt.fragment, got, tt.want)
+		}
+	}
+}
+
+func TestResizeSVG(t *testing.T) {
+	original := `<svg width="24" height="24" viewBox="0 0 24 24"></svg>`
+
+	resized := resizeSVG(original, 16, 20)
+	if !strings.Contains(resized, `width="16px"`) || !strings.Contains(resized, `height="20px"`) {
+		t.Fatalf("resizeSVG() explicit resize = %q", resized)
+	}
+
+	square := resizeSVG(original, 0, 18)
+	if !strings.Contains(square, `width="18px"`) || !strings.Contains(square, `height="18px"`) {
+		t.Fatalf("resizeSVG() square resize = %q", square)
 	}
 }
