@@ -216,6 +216,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           body: ${{ steps.release_notes.outputs.body }}
+          make_latest: legacy
           files: |
             release-assets/*.zip
             release-assets/*.zip.sha1
