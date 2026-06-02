@@ -62,6 +62,7 @@ else
 fi
 
 frontend_dir="$project_root/frontend"
+frontend_dist_dir="$frontend_dir/dist"
 
 required_apt_packages=(
     build-essential
@@ -153,14 +154,6 @@ else
     echo "frontend/package-lock.json not found; npm install will be used"
 fi
 
-if [[ $skip_go_tests -eq 0 ]]; then
-    print_section "Go Tests"
-    run_checked go test ./...
-else
-    print_section "Go Tests"
-    echo "Skipped"
-fi
-
 if [[ $skip_frontend -eq 0 ]]; then
     print_section "Frontend Install"
     cd "$frontend_dir" || fail "Could not change to frontend directory: $frontend_dir"
@@ -176,6 +169,18 @@ if [[ $skip_frontend -eq 0 ]]; then
     cd "$project_root" || fail "Could not change back to project root directory: $project_root"
 else
     print_section "Frontend Install/Build"
+    echo "Skipped"
+
+    if [[ ! -d "$frontend_dist_dir" ]]; then
+        fail "Frontend build output not found at $frontend_dist_dir. Run without --skip-frontend or build frontend assets first."
+    fi
+fi
+
+if [[ $skip_go_tests -eq 0 ]]; then
+    print_section "Go Tests"
+    run_checked go test ./...
+else
+    print_section "Go Tests"
     echo "Skipped"
 fi
 
