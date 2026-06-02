@@ -121,6 +121,18 @@ jobs:
           $zipPath = Join-Path $installer.DirectoryName ($installer.BaseName + '.zip')
           Compress-Archive -Path $installer.FullName -DestinationPath $zipPath -Force
 
+      - name: Write zip hashes
+        shell: pwsh
+        run: |
+          $zipFile = Get-ChildItem -Path build/bin -Filter *-installer.zip | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $zipFile) {
+            throw 'No installer zip file found in build/bin.'
+          }
+          $sha256Hash = (Get-FileHash $zipFile.FullName -Algorithm SHA256).Hash
+          $sha1Hash = (Get-FileHash $zipFile.FullName -Algorithm SHA1).Hash
+          "$sha256Hash  $($zipFile.Name)" | Out-File -FilePath ($zipFile.FullName + '.sha256') -Encoding utf8
+          "$sha1Hash  $($zipFile.Name)" | Out-File -FilePath ($zipFile.FullName + '.sha1') -Encoding utf8
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -146,8 +158,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-assets/*.exe
             release-assets/*.zip
-            release-assets/*.sha1
-            release-assets/*.sha256
+            release-assets/*.zip.sha1
+            release-assets/*.zip.sha256
           generate_release_notes: true
