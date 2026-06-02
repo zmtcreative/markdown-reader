@@ -102,6 +102,16 @@ jobs:
         shell: pwsh
         run: ./scripts/Build-WailsInstaller.ps1 -NSIS
 
+      - name: Zip installer package
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path build/bin -Filter *-installer.exe | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $installer) {
+            throw 'No NSIS installer executable found in build/bin.'
+          }
+          $zipPath = Join-Path $installer.DirectoryName ($installer.BaseName + '.zip')
+          Compress-Archive -Path $installer.FullName -DestinationPath $zipPath -Force
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
         with:
@@ -128,6 +138,7 @@ jobs:
         with:
           files: |
             release-assets/*.exe
+            release-assets/*.zip
             release-assets/*.sha1
             release-assets/*.sha256
           generate_release_notes: true
