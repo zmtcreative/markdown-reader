@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Notes
 
 - Ongoing development updates will be collected here until the next tagged release.
+- This application currently is only being compiled for Windows, but the Go and Wails frameworks are multi-platform and this application could (in theory) be compiled on Linux and MacOS, though we haven't tested this yet.
 
 ## v0.2.1 - 2026-06-01
 
