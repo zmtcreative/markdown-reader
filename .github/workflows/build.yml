@@ -163,6 +163,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = '${{ github.ref_name }}'
+          $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'release-notes.md'
           $lines = Get-Content CHANGELOG.md
           $start = $null
           $end = $lines.Count
@@ -189,12 +190,26 @@ jobs:
             throw "Changelog section for tag $tag is empty"
           }
 
-          $body | Out-File -FilePath release-notes.md -Encoding utf8
+          $body | Out-File -FilePath $releaseNotesPath -Encoding utf8
+
+      - name: Verify extracted release notes
+        shell: pwsh
+        run: |
+          $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'release-notes.md'
+          if (-not (Test-Path $releaseNotesPath)) {
+            throw "Expected release notes file was not created: $releaseNotesPath"
+          }
+          $content = Get-Content $releaseNotesPath -Raw
+          if ([string]::IsNullOrWhiteSpace($content)) {
+            throw "Extracted release notes file is empty: $releaseNotesPath"
+          }
+          Write-Host "Release notes extracted to: $releaseNotesPath"
+          Write-Host $content
 
       - name: Publish tagged release assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
-          body_path: release-notes.md
+          body_path: ${{ github.workspace }}/release-notes.md
           files: |
             release-assets/*.zip
             release-assets/*.zip.sha1
