@@ -193,6 +193,7 @@ jobs:
           $body | Out-File -FilePath $releaseNotesPath -Encoding utf8
 
       - name: Verify extracted release notes
+        id: release_notes
         shell: pwsh
         run: |
           $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'release-notes.md'
@@ -206,10 +207,15 @@ jobs:
           Write-Host "Release notes extracted to: $releaseNotesPath"
           Write-Host $content
 
+          $delimiter = [guid]::NewGuid().ToString()
+          "body<<$delimiter" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $content | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $delimiter | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Publish tagged release assets
         uses: softprops/action-gh-release@v3
         with:
-          body_path: ${{ github.workspace }}/release-notes.md
+          body: ${{ steps.release_notes.outputs.body }}
           files: |
             release-assets/*.zip
             release-assets/*.zip.sha1
