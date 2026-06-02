@@ -2,7 +2,7 @@
 
 usage() {
     echo "Usage: $0 [OPTIONS]"
-    echo "Verify WSL/Linux build prerequisites and run repo validation steps"
+    echo "Verify WSL/Linux (Ubuntu) build prerequisites and run repo validation steps"
     echo ""
     echo "Options:"
     echo "  --skip-go-tests         Skip 'go test ./...'"
@@ -89,6 +89,11 @@ print_section() {
     echo "== $1 =="
 }
 
+fail() {
+    echo "Error: $1" >&2
+    exit 1
+}
+
 record_change() {
     changes_made+=("$1")
 }
@@ -162,6 +167,34 @@ report_current_version() {
     fi
 
     echo "$label target version: $target_version"
+}
+
+verify_ubuntu_wsl_distro() {
+    local distro_id
+    local distro_like
+    local distro_name
+
+    if [[ ! -r /etc/os-release ]]; then
+        fail "Could not read /etc/os-release to verify the WSL distro"
+    fi
+
+    distro_id=""
+    distro_like=""
+    distro_name=""
+
+    # shellcheck disable=SC1091
+    . /etc/os-release
+
+    distro_id="${ID:-}"
+    distro_like="${ID_LIKE:-}"
+    distro_name="${PRETTY_NAME:-${NAME:-unknown}}"
+
+    if [[ "$distro_id" == "ubuntu" || " $distro_like " == *" ubuntu "* ]]; then
+        echo "Ubuntu-based distro detected: $distro_name"
+        return 0
+    fi
+
+    fail "This script supports Ubuntu-based WSL distros only. Detected: $distro_name"
 }
 
 run_privileged() {
@@ -446,6 +479,7 @@ uname -a
 
 if grep -qi microsoft /proc/version 2>/dev/null; then
     echo "WSL environment detected"
+    verify_ubuntu_wsl_distro
 else
     echo "Warning: This does not appear to be WSL. Continuing anyway."
 fi
