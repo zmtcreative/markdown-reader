@@ -1,4 +1,4 @@
-name: Build Windows App
+name: Test/Build/Release Markdown Reader
 
 on:
   push:
