@@ -92,9 +92,15 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Install NSIS
+        shell: pwsh
+        run: |
+          choco install nsis -y
+          Get-Command makensis
+
       - name: Build Windows application
         shell: pwsh
-        run: ./scripts/Build-WailsInstaller.ps1 -Build
+        run: ./scripts/Build-WailsInstaller.ps1 -NSIS
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
