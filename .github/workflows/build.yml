@@ -95,7 +95,16 @@ jobs:
       - name: Install NSIS
         shell: pwsh
         run: |
-          choco install nsis -y
+          winget install --id NSIS.NSIS --exact --silent --accept-package-agreements --accept-source-agreements
+          $nsisDir = @(
+            (Join-Path ${env:ProgramFiles(x86)} 'NSIS'),
+            (Join-Path $env:ProgramFiles 'NSIS')
+          ) | Where-Object { Test-Path (Join-Path $_ 'makensis.exe') } | Select-Object -First 1
+          if (-not $nsisDir) {
+            throw 'NSIS installed, but makensis.exe was not found in the expected install directories.'
+          }
+          $nsisDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $env:Path += ';' + $nsisDir
           Get-Command makensis
 
       - name: Build Windows application
