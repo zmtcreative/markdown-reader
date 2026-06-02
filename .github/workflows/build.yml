@@ -148,17 +148,54 @@ jobs:
       contents: write
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
           name: markdown-reader-windows
           path: release-assets
 
+      - name: Extract changelog section for tag
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $lines = Get-Content CHANGELOG.md
+          $start = $null
+          $end = $lines.Count
+
+          for ($index = 0; $index -lt $lines.Count; $index++) {
+            if ($lines[$index] -match "^##\s+$([regex]::Escape($tag))(\s+-\s+.*)?$") {
+              $start = $index + 1
+              continue
+            }
+
+            if ($start -ne $null -and $lines[$index] -match '^##\s+') {
+              $end = $index
+              break
+            }
+          }
+
+          if ($start -eq $null) {
+            throw "No changelog section found for tag $tag in CHANGELOG.md"
+          }
+
+          $bodyLines = $lines[$start..($end - 1)]
+          $body = ($bodyLines -join "`n").Trim()
+          if ([string]::IsNullOrWhiteSpace($body)) {
+            throw "Changelog section for tag $tag is empty"
+          }
+
+          $body | Out-File -FilePath release-notes.md -Encoding utf8
+
       - name: Publish tagged release assets
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-notes.md
           files: |
             release-assets/*.zip
             release-assets/*.zip.sha1
             release-assets/*.zip.sha256
-          generate_release_notes: true
