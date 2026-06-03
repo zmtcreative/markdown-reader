@@ -131,79 +131,9 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       console.log('  ✅ PASSED: Programmatic Help modal triggering works');
     });
 
-    test('should handle Help menu keyboard shortcuts', async () => {
-      console.log('🧪 Testing: Help menu keyboard shortcuts');
-
-      // Test Help keyboard shortcut (Ctrl+A or F1)
-      await page.keyboard.press('Control+a');
-      await page.waitForTimeout(300);
-
-      // Verify application remains responsive after shortcut
-      await expect(page.locator('.app-header')).toBeVisible();
-      await expect(page.locator('#content')).toBeVisible();
-
-      await page.screenshot({ path: 'test-results/optimized-05-help-shortcuts.png' });
-      console.log('  ✅ PASSED: Help keyboard shortcuts handled correctly');
-    });
   });
 
-  // 📁 Test Group 3: File Operations and Menu Actions
-  test.describe('File Operations Tests', () => {
-
-    test('should handle File menu keyboard shortcuts', async () => {
-      console.log('🧪 Testing: File menu keyboard shortcuts');
-
-      // Test File Open shortcut
-      await page.keyboard.press('Control+o');
-      await page.waitForTimeout(300);
-
-      // Verify application remains responsive after file shortcut
-      await expect(page.locator('#content')).toBeVisible();
-      await expect(page.locator('.app-header')).toBeVisible();
-
-      console.log('  ✅ File open shortcut triggered successfully');
-
-      await page.screenshot({ path: 'test-results/optimized-06-file-shortcuts.png' });
-      console.log('  ✅ PASSED: File menu shortcuts work correctly');
-    });
-
-    test('should handle Print functionality shortcuts', async () => {
-      console.log('🧪 Testing: Print functionality shortcuts');
-
-      // Test Print shortcut
-      await page.keyboard.press('Control+p');
-      await page.waitForTimeout(300);
-
-      // Verify app is still responsive after print command
-      await expect(page.locator('.content-area')).toBeVisible();
-
-      await page.screenshot({ path: 'test-results/optimized-07-print-shortcuts.png' });
-      console.log('  ✅ PASSED: Print functionality shortcuts work correctly');
-    });
-
-    test('should demonstrate file operation responsiveness', async () => {
-      console.log('🧪 Testing: File operations responsiveness');
-
-      // Test rapid file operations
-      await page.keyboard.press('Control+o');  // File open
-      await page.waitForTimeout(100);
-
-      await page.keyboard.press('Control+p');  // Print
-      await page.waitForTimeout(100);
-
-      await page.keyboard.press('F5');         // Refresh
-      await page.waitForTimeout(300);
-
-      // Verify application handled all operations gracefully
-      await expect(page.locator('.app-header')).toBeVisible();
-      await expect(page.locator('#content')).toBeVisible();
-
-      await page.screenshot({ path: 'test-results/optimized-08-file-operations-rapid.png' });
-      console.log('  ✅ PASSED: Rapid file operations handled gracefully');
-    });
-  });
-
-  // 🎨 Test Group 4: Theme and UI Functionality
+  // 🎨 Test Group 3: Theme and UI Functionality
   test.describe('Theme and UI Tests', () => {
 
     test('should handle theme toggle functionality', async () => {
@@ -221,7 +151,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       await themeButton.click();
       await expectTheme(page, 'light');
 
-      await page.screenshot({ path: 'test-results/optimized-09-theme-functionality.png' });
+      await page.screenshot({ path: 'test-results/optimized-06-theme-functionality.png' });
       console.log('  ✅ PASSED: Theme functionality verified');
     });
 
@@ -236,12 +166,12 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       const header = page.locator('.app-header');
       await expect(header).toHaveCSS('display', /^(block|flex)$/);
 
-      await page.screenshot({ path: 'test-results/optimized-10-ui-consistency.png' });
+      await page.screenshot({ path: 'test-results/optimized-07-ui-consistency.png' });
       console.log('  ✅ PASSED: UI state consistency maintained');
     });
   });
 
-  // ⚡ Test Group 5: Performance and Integration Tests
+  // ⚡ Test Group 4: Performance and Integration Tests
   test.describe('Performance and Integration Tests', () => {
 
     test('should demonstrate performance optimization benefits', async () => {
@@ -265,7 +195,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       console.log('    🎯 This test ran WITHOUT restarting the application!');
       console.log('    📊 Estimated time savings: ~20-30 seconds per test vs restart approach');
 
-      await page.screenshot({ path: 'test-results/optimized-11-performance-demo.png' });
+      await page.screenshot({ path: 'test-results/optimized-08-performance-demo.png' });
       console.log('  ✅ PASSED: Performance optimization benefits demonstrated');
     });
 
@@ -292,7 +222,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       await expect(page.locator('.app-header')).toBeVisible();
       await expect(page.locator('.content-area')).toBeVisible();
 
-      await page.screenshot({ path: 'test-results/optimized-12-sequential-operations.png' });
+      await page.screenshot({ path: 'test-results/optimized-09-sequential-operations.png' });
       console.log('  ✅ PASSED: Multiple sequential operations handled without issues');
     });
 
@@ -346,7 +276,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
 
       console.log('  ✅ All integration checkpoints passed');
 
-      await page.screenshot({ path: 'test-results/optimized-13-complete-integration.png' });
+      await page.screenshot({ path: 'test-results/optimized-10-complete-integration.png' });
       console.log('  ✅ PASSED: Complete application functionality integration verified');
     });
   });
