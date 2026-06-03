@@ -74,6 +74,7 @@ if ($Build -or $NSIS -or $UPX) {
 $FileList = @(
     "wails.json",
     "frontend/package.json",
+    "frontend/package-lock.json",
     "build/windows/info.json",
     "build/windows/installer/project.nsi"
 )
