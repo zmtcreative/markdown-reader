@@ -43,8 +43,7 @@ export default defineConfig({
     actionTimeout: 15000, // Extended for WebView2 interactions
     navigationTimeout: 30000, // Extended for Wails dev server connection
 
-    /* Browser settings */
-    headless: false,
+    /* Browser settings are selected per project and mirrored in WailsDevHelper. */
   },
 
   /* Split suites by execution expectations. */
@@ -53,6 +52,7 @@ export default defineConfig({
       name: 'headless-safe',
       testMatch: ['main-test-suite.spec.ts', 'fast-sequential-tests.spec.ts'],
       use: {
+        headless: true,
         viewport: { width: 1280, height: 720 },
       },
     },
@@ -60,6 +60,7 @@ export default defineConfig({
       name: 'interactive-native',
       testMatch: ['interactive-shortcuts.spec.ts'],
       use: {
+        headless: false,
         viewport: { width: 1280, height: 720 },
       },
     },

@@ -8,7 +8,7 @@ test.describe('Interactive Native Shortcut Tests', () => {
 
   test.beforeAll(async () => {
     console.log('🚀 Starting Wails application for interactive shortcut tests...');
-    wailsDev = new WailsDevHelper();
+    wailsDev = new WailsDevHelper({ runtimeMode: 'interactive' });
     page = await wailsDev.launchAndConnect();
     await wailsDev.waitForAppReady(page);
     console.log('✅ Interactive application session ready');

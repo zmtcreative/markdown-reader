@@ -10,7 +10,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
   // 🚀 Start application ONCE before all tests (major performance improvement)
   test.beforeAll(async () => {
     console.log('🚀 Starting Wails application for entire test suite...');
-    wailsDev = new WailsDevHelper();
+    wailsDev = new WailsDevHelper({ runtimeMode: 'headless' });
     page = await wailsDev.launchAndConnect();
     await wailsDev.waitForAppReady(page);
     console.log(' ✅ Application ready - will be shared across all tests for maximum performance');
