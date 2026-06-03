@@ -1,10 +1,14 @@
 # Optimized Playwright Testing Script for Wails Application
-# This script runs the optimized Playwright test suite using Wails dev environment
-# Tests automatically manage their own Wails dev server - no build required
-# Note: Tests always run in headed mode (visible browser) for Wails debugging
+# This script runs the Playwright frontend suites using the Wails dev environment.
+# Tests automatically manage their own Wails dev server - no build required.
 
 param(
-    [string]$TestSuite = "main", # Options: "main", "fast", "all"
+    [ValidateSet("main", "fast", "interactive", "all")]
+    [string]$TestSuite = "main",
+
+    [ValidateSet("auto", "headless", "interactive")]
+    [string]$RuntimeMode = "auto",
+
     [switch]$ShowReport = $false
 )
 
@@ -46,10 +50,14 @@ Write-Host "ℹ️ Tests will manage Wails dev server automatically (no build re
 Write-Host "📦 Installing Playwright dependencies..." -ForegroundColor Yellow
 Set-Location "frontend"
 
+$packageLockPath = Join-Path $PWD "package-lock.json"
+$installCommand = if ($env:CI -or (Test-Path $packageLockPath)) { "ci" } else { "install" }
+
 try {
-    npm install
+    Write-Host "📥 Using npm $installCommand for frontend dependencies" -ForegroundColor Gray
+    & npm $installCommand
     if ($LASTEXITCODE -ne 0) {
-        throw "npm install failed"
+        throw "npm $installCommand failed"
     }
     Write-Host "✅ Dependencies installed!" -ForegroundColor Green
 } catch {
@@ -82,46 +90,64 @@ Write-Host "📁 Test results directory prepared: $testResultsDir" -ForegroundCo
 # Determine which test suite to run
 Write-Host "🧪 Running Optimized Playwright Test Suite (with Wails dev server)..." -ForegroundColor Yellow
 
-$playwrightArgs = @("test")
+$selectedScript = $null
+$runtimeModeValue = $null
 
 # Add test suite selection
 switch ($TestSuite.ToLower()) {
     "main" {
-        $playwrightArgs += "main-test-suite.spec.ts"
-        Write-Host "🎯 Running Main Test Suite (comprehensive, optimized)" -ForegroundColor Blue
+        $selectedScript = "test:e2e:main"
+        $runtimeModeValue = "headless"
+        Write-Host "🎯 Running Main Test Suite (comprehensive, headless-safe)" -ForegroundColor Blue
     }
     "fast" {
-        $playwrightArgs += "fast-sequential-tests.spec.ts"
-        Write-Host "⚡ Running Fast Sequential Test Suite (performance demo)" -ForegroundColor Blue
+        $selectedScript = "test:e2e:fast"
+        $runtimeModeValue = "headless"
+        Write-Host "⚡ Running Fast Sequential Test Suite (performance demo, headless-safe)" -ForegroundColor Blue
+    }
+    "interactive" {
+        $selectedScript = "test:e2e:interactive"
+        $runtimeModeValue = "interactive"
+        Write-Host "👁️ Running Interactive Native Shortcut Suite" -ForegroundColor Blue
     }
     "all" {
+        $selectedScript = "test:e2e:all"
         Write-Host "🔄 Running All Available Test Suites" -ForegroundColor Blue
-    }
-    default {
-        $playwrightArgs += "main-test-suite.spec.ts"
-        Write-Host "🎯 Running Main Test Suite (default)" -ForegroundColor Blue
     }
 }
 
-# Essential Playwright configuration
-$playwrightArgs += "--workers=1"  # Essential for Wails dev server stability
+$requestedRuntimeMode = if ($RuntimeMode -eq "auto") { $runtimeModeValue } else { $RuntimeMode }
 
-Write-Host "👁️ Running tests with visible browser (headed mode - hardcoded for Wails debugging)" -ForegroundColor Blue
+if ($requestedRuntimeMode) {
+    Write-Host "🖥️ Runtime mode: $requestedRuntimeMode" -ForegroundColor Blue
+} else {
+    Write-Host "🖥️ Runtime mode: suite defaults" -ForegroundColor Blue
+}
 
 Write-Host "ℹ️ Tests will automatically:" -ForegroundColor Cyan
 Write-Host "   • Start Wails dev server (wails dev)" -ForegroundColor Gray
-Write-Host "   • Connect to visible browser for Wails debugging" -ForegroundColor Gray
+Write-Host "   • Connect using the selected Playwright runtime mode" -ForegroundColor Gray
 Write-Host "   • Run optimized test suite with shared app instances" -ForegroundColor Gray
 Write-Host "   • Clean up Wails dev server when complete" -ForegroundColor Gray
 
 try {
-    # Build the command string
-    $commandString = "npx playwright $($playwrightArgs -join ' ')"
-    Write-Host "🎬 Executing: $commandString" -ForegroundColor Gray
+    $previousRuntimeMode = $env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE
+    if ($requestedRuntimeMode) {
+        $env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE = $requestedRuntimeMode
+    } else {
+        Remove-Item Env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE -ErrorAction SilentlyContinue
+    }
 
-    # Execute using Invoke-Expression to handle the command properly
-    Invoke-Expression $commandString
+    Write-Host "🎬 Executing: npm run $selectedScript" -ForegroundColor Gray
+
+    & npm run $selectedScript
     $testExitCode = $LASTEXITCODE
+
+    if ($null -ne $previousRuntimeMode) {
+        $env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE = $previousRuntimeMode
+    } else {
+        Remove-Item Env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE -ErrorAction SilentlyContinue
+    }
 
     if ($testExitCode -eq 0) {
         Write-Host "✅ All tests passed!" -ForegroundColor Green
@@ -129,6 +155,11 @@ try {
         Write-Host "⚠️ Some tests failed (exit code: $testExitCode)" -ForegroundColor Yellow
     }
 } catch {
+    if ($null -ne $previousRuntimeMode) {
+        $env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE = $previousRuntimeMode
+    } else {
+        Remove-Item Env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE -ErrorAction SilentlyContinue
+    }
     Write-Error "❌ Failed to run tests: $_"
     exit 1
 }

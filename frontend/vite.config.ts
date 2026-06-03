@@ -8,6 +8,14 @@ import autoprefixer from 'autoprefixer'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  test: {
+    environment: 'jsdom',
+    globals: false,
+    setupFiles: './vitest.setup.ts',
+    css: true,
+    restoreMocks: true,
+    clearMocks: true,
+  },
   css: {
     preprocessorOptions: {
       scss: {
