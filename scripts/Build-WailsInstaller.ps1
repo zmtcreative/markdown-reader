@@ -23,6 +23,8 @@
         Implies -Build. Create the NSIS installer after building.
     .PARAMETER UPX
         Implies -Build. Use UPX to compress the executable file.
+    .PARAMETER RunAllTests
+        Run the full frontend test suite when invoking Run-AllTests.ps1 before building.
 #>
 
 #Requires -Version 7.0
@@ -37,7 +39,9 @@ param (
     [switch]$NSIS,
     [Parameter(Mandatory = $false, HelpMessage = "(Implies -Build) Use UPX to compress the executable file.")]
     [Alias("u","c","compress","compact")]
-    [switch]$UPX
+    [switch]$UPX,
+    [Parameter(Mandatory = $false, HelpMessage = "Run the full frontend test suite before building.")]
+    [switch]$RunAllTests
 )
 
 # Set up script and project paths
@@ -556,6 +560,35 @@ function New-FileHashes {
     Pop-Location -StackName "NewFileHashes"
 }
 
+function Invoke-AllTests {
+    $allTestsScript = Join-Path $ScriptRoot "Run-AllTests.ps1"
+
+    if (-not (Test-Path -Path $allTestsScript -PathType Leaf)) {
+        Write-Host -ForegroundColor Red "Could not find test runner script: $allTestsScript"
+        return $false
+    }
+
+    $allTestArgs = @("-Silent")
+
+    if ($RunAllTests) {
+        Write-Host -ForegroundColor Yellow "Running ALL tests (please wait)..."
+        $allTestArgs += "-RunAllTests"
+    } else {
+        Write-Host -ForegroundColor Yellow "Running tests (please wait)..."
+    }
+
+    & $allTestsScript @allTestArgs
+    $testExitCode = $LASTEXITCODE
+
+    if ($testExitCode -eq 0) {
+        Write-Host -ForegroundColor Green "  --[ALL TESTS PASSED]--"
+        return $true
+    }
+
+    Write-Host -ForegroundColor Red "  **[FAILED]**"
+    return $false
+}
+
 function Invoke-WailsBuild {
     <#
     .SYNOPSIS
@@ -626,6 +659,10 @@ function Invoke-WailsBuild {
     }
 
     if ($Build) {
+        if (-not (Invoke-AllTests)) {
+            return
+        }
+
         if ($NSIS) {
             Update-ProjectNSI -ProjectNSIPath $ProjectNSI -FileVersion $FileVersion
         }
