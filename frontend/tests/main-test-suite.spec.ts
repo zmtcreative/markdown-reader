@@ -117,7 +117,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
         page,
         'show-help',
         'About Markdown Reader',
-        '<div><h3>Markdown Reader</h3><p>Version: 0.1.0-beta2</p><p>Optimized Test Suite</p></div>'
+        '<div><h3>Markdown Reader</h3><p>Version: 0.0.0-dev</p><p>Optimized Test Suite</p></div>'
       );
 
       await expect(page.locator('#help-modal-overlay')).toBeVisible();
