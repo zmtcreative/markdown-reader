@@ -567,9 +567,15 @@ function New-FileHashes {
 
 function Invoke-AllTests {
     $allTestsScript = Join-Path $ScriptRoot "Run-AllTests.ps1"
+    $powerShellExe = Join-Path $PSHOME "pwsh.exe"
 
     if (-not (Test-Path -Path $allTestsScript -PathType Leaf)) {
         Write-Host -ForegroundColor Red "Could not find test runner script: $allTestsScript"
+        return $false
+    }
+
+    if (-not (Test-Path -Path $powerShellExe -PathType Leaf)) {
+        Write-Host -ForegroundColor Red "Could not find pwsh.exe under PSHOME: $powerShellExe"
         return $false
     }
 
@@ -582,7 +588,7 @@ function Invoke-AllTests {
         Write-Host -ForegroundColor Yellow "Running tests (please wait)..."
     }
 
-    & $allTestsScript @allTestArgs
+    & $powerShellExe -NoProfile -File $allTestsScript @allTestArgs
     $testExitCode = $LASTEXITCODE
 
     if ($testExitCode -eq 0) {
