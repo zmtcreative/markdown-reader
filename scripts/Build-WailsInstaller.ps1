@@ -25,6 +25,8 @@
         Implies -Build. Use UPX to compress the executable file.
     .PARAMETER RunAllTests
         Run the full frontend test suite when invoking Run-AllTests.ps1 before building.
+    .PARAMETER NoTests
+        Bypass Run-AllTests.ps1 before building.
 #>
 
 #Requires -Version 7.0
@@ -41,7 +43,9 @@ param (
     [Alias("u","c","compress","compact")]
     [switch]$UPX,
     [Parameter(Mandatory = $false, HelpMessage = "Run the full frontend test suite before building.")]
-    [switch]$RunAllTests
+    [switch]$RunAllTests,
+    [Parameter(Mandatory = $false, HelpMessage = "Bypass running tests before building.")]
+    [switch]$NoTests
 )
 
 # Set up script and project paths
@@ -659,7 +663,7 @@ function Invoke-WailsBuild {
     }
 
     if ($Build) {
-        if (-not (Invoke-AllTests)) {
+        if ((-not $NoTests) -and (-not (Invoke-AllTests))) {
             return
         }
 
