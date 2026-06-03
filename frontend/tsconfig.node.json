@@ -6,11 +6,13 @@
     "allowSyntheticDefaultImports": true,
     "types": [
       "node",
-      "@playwright/test"
+      "@playwright/test",
+      "vitest/globals"
     ]
   },
   "include": [
     "vite.config.ts",
+    "vitest.setup.ts",
     "playwright.config.ts",
     "tests/**/*.ts"
   ]
