@@ -10,7 +10,7 @@ test.describe('Fast Sequential Tests - Single App Instance', () => {
   // Start application ONCE before all tests
   test.beforeAll(async () => {
     console.log('🚀 Starting Wails application once for all tests...');
-    wailsDev = new WailsDevHelper();
+    wailsDev = new WailsDevHelper({ runtimeMode: 'headless' });
     page = await wailsDev.launchAndConnect();
     await wailsDev.waitForAppReady(page);
     console.log('✅ Application ready - will be shared across all tests');
