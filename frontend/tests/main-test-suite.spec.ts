@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import WailsDevHelper from './wails-dev-helper';
 import { Page } from '@playwright/test';
+import { emitRuntimeEvent, expectTheme } from './runtime-test-helpers';
 
 test.describe("Markdown Reader - Optimized Test Suite\n", () => {
   let wailsDev: WailsDevHelper;
@@ -9,7 +10,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
   // 🚀 Start application ONCE before all tests (major performance improvement)
   test.beforeAll(async () => {
     console.log('🚀 Starting Wails application for entire test suite...');
-    wailsDev = new WailsDevHelper();
+    wailsDev = new WailsDevHelper({ runtimeMode: 'headless' });
     page = await wailsDev.launchAndConnect();
     await wailsDev.waitForAppReady(page);
     console.log(' ✅ Application ready - will be shared across all tests for maximum performance');
@@ -59,10 +60,15 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
 
       // Verify initial state
       await expect(page.locator('#content')).toContainText('No markdown file specified');
+      await expect(page.locator('.help-overlay')).toBeHidden();
+      await expect(page.locator('.settings-overlay')).toBeHidden();
+      await expect(page.locator('.frontmatter-section')).toBeHidden();
 
       // Verify page title
       const title = await page.title();
       expect(title).toBe('Markdown Reader');
+
+      await expectTheme(page, 'light');
 
       await page.screenshot({ path: 'test-results/optimized-01-app-display.png' });
       console.log('  ✅ PASSED: Application loads and displays correctly');
@@ -96,6 +102,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       await expect(page.locator('#help-modal-overlay')).toBeAttached();
       await expect(page.locator('#help-modal-content')).toBeAttached();
       await expect(page.locator('#help-modal-close')).toBeAttached();
+      await expect(page.locator('#help-modal-overlay')).toBeHidden();
 
       console.log('  ✅ Help modal elements verified in DOM');
 
@@ -106,101 +113,27 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
     test('should handle programmatic Help modal triggering', async () => {
       console.log('🧪 Testing: Programmatic Help modal functionality');
 
-      // Test programmatic modal opening (simulating backend event)
-      await page.evaluate(() => {
-        const helpTitle = 'About Markdown Reader';
-        const helpText = '<div><h3>Markdown Reader</h3><p>Version: 0.1.0-beta2</p><p>Optimized Test Suite</p></div>';
+      await emitRuntimeEvent(
+        page,
+        'show-help',
+        'About Markdown Reader',
+        '<div><h3>Markdown Reader</h3><p>Version: 0.0.0-dev</p><p>Optimized Test Suite</p></div>'
+      );
 
-        // Simulate the show-help event that would come from Go backend
-        const event = new CustomEvent('show-help', {
-          detail: { title: helpTitle, text: helpText }
-        });
-        window.dispatchEvent(event);
-      });
+      await expect(page.locator('#help-modal-overlay')).toBeVisible();
+      await expect(page.locator('.help-body')).toContainText('Markdown Reader');
+      await expect(page.locator('.help-body')).toContainText('Optimized Test Suite');
 
-      // Wait for modal processing
-      await page.waitForTimeout(1000);
-
-      // Verify modal infrastructure still works after event
-      await expect(page.locator('#help-modal-overlay')).toBeAttached();
+      await page.click('#help-modal-close');
+      await expect(page.locator('#help-modal-overlay')).toBeHidden();
 
       await page.screenshot({ path: 'test-results/optimized-04-help-modal-programmatic.png' });
       console.log('  ✅ PASSED: Programmatic Help modal triggering works');
     });
 
-    test('should handle Help menu keyboard shortcuts', async () => {
-      console.log('🧪 Testing: Help menu keyboard shortcuts');
-
-      // Test Help keyboard shortcut (Ctrl+A or F1)
-      await page.keyboard.press('Control+a');
-      await page.waitForTimeout(300);
-
-      // Verify application remains responsive after shortcut
-      await expect(page.locator('.app-header')).toBeVisible();
-      await expect(page.locator('#content')).toBeVisible();
-
-      await page.screenshot({ path: 'test-results/optimized-05-help-shortcuts.png' });
-      console.log('  ✅ PASSED: Help keyboard shortcuts handled correctly');
-    });
   });
 
-  // 📁 Test Group 3: File Operations and Menu Actions
-  test.describe('File Operations Tests', () => {
-
-    test('should handle File menu keyboard shortcuts', async () => {
-      console.log('🧪 Testing: File menu keyboard shortcuts');
-
-      // Test File Open shortcut
-      await page.keyboard.press('Control+o');
-      await page.waitForTimeout(300);
-
-      // Verify application remains responsive after file shortcut
-      await expect(page.locator('#content')).toBeVisible();
-      await expect(page.locator('.app-header')).toBeVisible();
-
-      console.log('  ✅ File open shortcut triggered successfully');
-
-      await page.screenshot({ path: 'test-results/optimized-06-file-shortcuts.png' });
-      console.log('  ✅ PASSED: File menu shortcuts work correctly');
-    });
-
-    test('should handle Print functionality shortcuts', async () => {
-      console.log('🧪 Testing: Print functionality shortcuts');
-
-      // Test Print shortcut
-      await page.keyboard.press('Control+p');
-      await page.waitForTimeout(300);
-
-      // Verify app is still responsive after print command
-      await expect(page.locator('.content-area')).toBeVisible();
-
-      await page.screenshot({ path: 'test-results/optimized-07-print-shortcuts.png' });
-      console.log('  ✅ PASSED: Print functionality shortcuts work correctly');
-    });
-
-    test('should demonstrate file operation responsiveness', async () => {
-      console.log('🧪 Testing: File operations responsiveness');
-
-      // Test rapid file operations
-      await page.keyboard.press('Control+o');  // File open
-      await page.waitForTimeout(100);
-
-      await page.keyboard.press('Control+p');  // Print
-      await page.waitForTimeout(100);
-
-      await page.keyboard.press('F5');         // Refresh
-      await page.waitForTimeout(300);
-
-      // Verify application handled all operations gracefully
-      await expect(page.locator('.app-header')).toBeVisible();
-      await expect(page.locator('#content')).toBeVisible();
-
-      await page.screenshot({ path: 'test-results/optimized-08-file-operations-rapid.png' });
-      console.log('  ✅ PASSED: Rapid file operations handled gracefully');
-    });
-  });
-
-  // 🎨 Test Group 4: Theme and UI Functionality
+  // 🎨 Test Group 3: Theme and UI Functionality
   test.describe('Theme and UI Tests', () => {
 
     test('should handle theme toggle functionality', async () => {
@@ -209,21 +142,16 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       // Look for theme toggle button
       const themeButton = page.locator('.theme-toggle-btn');
 
-      if (await themeButton.isVisible()) {
-        await themeButton.click();
-        await page.waitForTimeout(400);
-        console.log('  ✅ Theme toggle button clicked successfully');
+      await expect(themeButton).toBeVisible();
+      await expectTheme(page, 'light');
 
-        // Verify theme change didn't break the app
-        await expect(page.locator('.app-header')).toBeVisible();
-      } else {
-        console.log('    ℹ️ Theme toggle button not found - testing other theme functionality');
+      await themeButton.click();
+      await expectTheme(page, 'dark');
 
-        // Test that we can still interact with the UI
-        await expect(page.locator('body')).toBeVisible();
-      }
+      await themeButton.click();
+      await expectTheme(page, 'light');
 
-      await page.screenshot({ path: 'test-results/optimized-09-theme-functionality.png' });
+      await page.screenshot({ path: 'test-results/optimized-06-theme-functionality.png' });
       console.log('  ✅ PASSED: Theme functionality verified');
     });
 
@@ -238,12 +166,12 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       const header = page.locator('.app-header');
       await expect(header).toHaveCSS('display', /^(block|flex)$/);
 
-      await page.screenshot({ path: 'test-results/optimized-10-ui-consistency.png' });
+      await page.screenshot({ path: 'test-results/optimized-07-ui-consistency.png' });
       console.log('  ✅ PASSED: UI state consistency maintained');
     });
   });
 
-  // ⚡ Test Group 5: Performance and Integration Tests
+  // ⚡ Test Group 4: Performance and Integration Tests
   test.describe('Performance and Integration Tests', () => {
 
     test('should demonstrate performance optimization benefits', async () => {
@@ -267,7 +195,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       console.log('    🎯 This test ran WITHOUT restarting the application!');
       console.log('    📊 Estimated time savings: ~20-30 seconds per test vs restart approach');
 
-      await page.screenshot({ path: 'test-results/optimized-11-performance-demo.png' });
+      await page.screenshot({ path: 'test-results/optimized-08-performance-demo.png' });
       console.log('  ✅ PASSED: Performance optimization benefits demonstrated');
     });
 
@@ -294,7 +222,7 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       await expect(page.locator('.app-header')).toBeVisible();
       await expect(page.locator('.content-area')).toBeVisible();
 
-      await page.screenshot({ path: 'test-results/optimized-12-sequential-operations.png' });
+      await page.screenshot({ path: 'test-results/optimized-09-sequential-operations.png' });
       console.log('  ✅ PASSED: Multiple sequential operations handled without issues');
     });
 
@@ -308,23 +236,47 @@ test.describe("Markdown Reader - Optimized Test Suite\n", () => {
       await expect(page.locator('.content-area')).toBeVisible();
       await expect(page.locator('#content')).toBeVisible();
 
-      // 2. Modal Infrastructure
-      await expect(page.locator('#help-modal-overlay')).toBeAttached();
+      // 2. Runtime-driven markdown rendering
+      await emitRuntimeEvent(page, 'markdown-rendered', {
+        html: '<p>Rendered integration body</p><div>\\(x+y\\)</div>',
+        title: 'Integration Title',
+        date: '2026-06-03',
+        frontmatter_html: '<div class="frontmatter-container"><span class="fm-key">title</span><span class="fm-string">Integration Title</span></div>'
+      });
+      await expect(page).toHaveTitle('Integration Title');
+      await expect(page.locator('.document-title')).toContainText('Integration Title');
+      await expect(page.locator('.document-dates')).toContainText('2026-06-03');
+      await expect(page.locator('#content')).toContainText('Rendered integration body');
 
-      // 3. Keyboard Shortcuts
-      await page.keyboard.press('Control+o');
-      await page.waitForTimeout(100);
+      // 3. Frontmatter toggle updates visible state
+      await page.click('.frontmatter-toggle-btn');
+      await expect(page.locator('.frontmatter-section')).toBeVisible();
+      await expect(page.locator('.frontmatter-section')).toContainText('Integration Title');
 
-      // 4. Application Responsiveness
-      await expect(page.locator('#content')).toBeVisible();
+      // 4. Runtime-driven help and settings dialogs
+      await emitRuntimeEvent(page, 'show-help', 'Integration Help', '<p>Integration help body</p>');
+      await expect(page.locator('#help-modal-overlay')).toBeVisible();
+      await expect(page.locator('#help-modal-text')).toContainText('Integration help body');
+      await page.click('#help-modal-close');
+      await expect(page.locator('#help-modal-overlay')).toBeHidden();
 
-      // 5. State Management
-      const contentText = await page.locator('#content').textContent();
-      expect(contentText).toBeTruthy();
+      await emitRuntimeEvent(page, 'show-settings');
+      await expect(page.locator('#settings-overlay')).toBeVisible();
+      await page.click('#settings-close');
+      await expect(page.locator('#settings-overlay')).toBeHidden();
+
+      // 5. Runtime doc-class and error handling
+      await emitRuntimeEvent(page, 'add-doc-class', 'techdoc');
+      await expect(page.locator('html')).toHaveClass(/techdoc/);
+      await emitRuntimeEvent(page, 'toggle-doc-class', 'techdoc');
+      await expect(page.locator('html')).not.toHaveClass(/techdoc/);
+      await emitRuntimeEvent(page, 'error', 'Integration failure');
+      await expect(page.locator('.error-message')).toContainText('Integration failure');
+      await expect(page.locator('#content')).toContainText('An error occurred');
 
       console.log('  ✅ All integration checkpoints passed');
 
-      await page.screenshot({ path: 'test-results/optimized-13-complete-integration.png' });
+      await page.screenshot({ path: 'test-results/optimized-10-complete-integration.png' });
       console.log('  ✅ PASSED: Complete application functionality integration verified');
     });
   });

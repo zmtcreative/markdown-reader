@@ -1,10 +1,34 @@
 import { chromium, Page, Browser } from '@playwright/test';
 
+export type RuntimeMode = 'headless' | 'interactive';
+
+export interface WailsDevHelperOptions {
+  runtimeMode?: RuntimeMode;
+}
+
 export class WailsDevHelper {
   private browser: Browser | null = null;
   private page: Page | null = null;
   private appProcess: any = null; // ChildProcess type
   private devUrl: string = '';
+  private runtimeMode: RuntimeMode;
+
+  constructor(options: WailsDevHelperOptions = {}) {
+    this.runtimeMode = this.resolveRuntimeMode(options.runtimeMode);
+  }
+
+  private resolveRuntimeMode(runtimeMode?: RuntimeMode): RuntimeMode {
+    const envRuntimeMode = process.env.MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE;
+    if (envRuntimeMode === 'headless' || envRuntimeMode === 'interactive') {
+      return envRuntimeMode;
+    }
+
+    if (runtimeMode) {
+      return runtimeMode;
+    }
+
+    return process.env.CI ? 'headless' : 'interactive';
+  }
 
   /**
    * Launch the Wails development server
@@ -93,8 +117,11 @@ export class WailsDevHelper {
       throw new Error('No Wails dev URL found. Make sure to call launchWailsDev() first.');
     }
 
+    const headless = this.runtimeMode === 'headless';
+    console.log(`🖥️ Launching Playwright browser in ${this.runtimeMode} mode...`);
+
     this.browser = await chromium.launch({
-      headless: !!process.env.CI,
+      headless,
       args: ['--disable-web-security', '--disable-features=VizDisplayCompositor'],
     });
 

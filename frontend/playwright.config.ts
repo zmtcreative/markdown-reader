@@ -1,7 +1,11 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 /**
- * Optimized Playwright configuration for Wails WebView2 testing
+ * Optimized Playwright configuration for Wails browser testing.
+ *
+ * The suite is split into:
+ * - headless-safe suites for runtime-driven UI coverage
+ * - interactive suites for native keyboard/menu flows
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -39,18 +43,25 @@ export default defineConfig({
     actionTimeout: 15000, // Extended for WebView2 interactions
     navigationTimeout: 30000, // Extended for Wails dev server connection
 
-    /* Browser settings */
-    headless: false, // Keep visible for debugging Wails applications
+    /* Browser settings are selected per project and mirrored in WailsDevHelper. */
   },
 
-  /* WebView2 testing project */
+  /* Split suites by execution expectations. */
   projects: [
     {
-      name: 'webview2',
+      name: 'headless-safe',
       testMatch: ['main-test-suite.spec.ts', 'fast-sequential-tests.spec.ts'],
       use: {
-        channel: 'msedge', // Use Edge WebView2 runtime for compatibility
-        viewport: { width: 1280, height: 720 }, // Consistent viewport for screenshots
+        headless: true,
+        viewport: { width: 1280, height: 720 },
+      },
+    },
+    {
+      name: 'interactive-native',
+      testMatch: ['interactive-shortcuts.spec.ts'],
+      use: {
+        headless: false,
+        viewport: { width: 1280, height: 720 },
       },
     },
   ],

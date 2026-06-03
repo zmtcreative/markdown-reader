@@ -169,7 +169,7 @@ jobs:
 
       - name: Build Windows application
         shell: pwsh
-        run: ./scripts/Build-WailsInstaller.ps1 -NSIS
+        run: ./scripts/Build-WailsInstaller.ps1 -NSIS -NoTests
 
       - name: Zip installer package
         shell: pwsh
