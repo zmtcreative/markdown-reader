@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import WailsDevHelper from './wails-dev-helper';
 import { Page } from '@playwright/test';
+import { emitRuntimeEvent, expectTheme } from './runtime-test-helpers';
 
 test.describe('Fast Sequential Tests - Single App Instance', () => {
   let wailsDev: WailsDevHelper;
@@ -54,6 +55,8 @@ test.describe('Fast Sequential Tests - Single App Instance', () => {
     await expect(page.locator('.app-header')).toBeVisible();
     await expect(page.locator('.content-area')).toBeVisible();
     await expect(page.locator('#content')).toBeVisible();
+    await expect(page.locator('#content')).toContainText('No markdown file specified');
+    await expectTheme(page, 'light');
 
     await page.screenshot({ path: 'test-results/fast-01-app-content.png' });
     console.log('✅ Test 1 PASSED - Basic functionality verified');
@@ -66,18 +69,16 @@ test.describe('Fast Sequential Tests - Single App Instance', () => {
     // Verify Help modal elements exist
     await expect(page.locator('#help-modal-overlay')).toBeAttached();
     await expect(page.locator('#help-modal-content')).toBeAttached();
+    await expect(page.locator('#help-modal-overlay')).toBeHidden();
 
-    // Test programmatic modal trigger
-    await page.evaluate(() => {
-      const helpTitle = 'About';
-      const helpText = '<div><h3>Markdown Reader</h3><p>Fast testing!</p></div>';
-      const event = new CustomEvent('show-help', {
-        detail: { title: helpTitle, text: helpText }
-      });
-      window.dispatchEvent(event);
-    });
+    await emitRuntimeEvent(page, 'show-help', 'About', '<div><h3>Markdown Reader</h3><p>Fast testing!</p></div>');
 
-    await page.waitForTimeout(800);
+    await expect(page.locator('#help-modal-overlay')).toBeVisible();
+    await expect(page.locator('#help-modal-text')).toContainText('Fast testing!');
+
+    await page.click('#help-modal-close');
+    await expect(page.locator('#help-modal-overlay')).toBeHidden();
+
     await page.screenshot({ path: 'test-results/fast-02-help-modal.png' });
     console.log('✅ Test 2 PASSED - Help modal functionality verified');
   });
@@ -102,19 +103,13 @@ test.describe('Fast Sequential Tests - Single App Instance', () => {
   test('should handle theme operations', async () => {
     console.log('🧪 Running Test 4: Theme operations');
 
-    // Look for theme toggle
-    const themeButton = page.locator('button:has-text("Toggle Theme")');
+    const themeButton = page.locator('.theme-toggle-btn');
 
-    if (await themeButton.isVisible()) {
-      await themeButton.click();
-      await page.waitForTimeout(400);
-      console.log('✅ Theme toggle clicked successfully');
-    } else {
-      console.log('ℹ️ Theme button not visible, testing other theme functionality');
-    }
+    await expect(themeButton).toBeVisible();
+    await expectTheme(page, 'light');
 
-    // Verify app is still working
-    await expect(page.locator('.app-header')).toBeVisible();
+    await themeButton.click();
+    await expectTheme(page, 'dark');
 
     await page.screenshot({ path: 'test-results/fast-04-theme-operations.png' });
     console.log('✅ Test 4 PASSED - Theme operations handled correctly');
