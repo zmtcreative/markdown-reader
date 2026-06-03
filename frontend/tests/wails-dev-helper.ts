@@ -18,13 +18,13 @@ export class WailsDevHelper {
   }
 
   private resolveRuntimeMode(runtimeMode?: RuntimeMode): RuntimeMode {
-    if (runtimeMode) {
-      return runtimeMode;
-    }
-
     const envRuntimeMode = process.env.MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE;
     if (envRuntimeMode === 'headless' || envRuntimeMode === 'interactive') {
       return envRuntimeMode;
+    }
+
+    if (runtimeMode) {
+      return runtimeMode;
     }
 
     return process.env.CI ? 'headless' : 'interactive';
