@@ -90,49 +90,31 @@ Write-Host "📁 Test results directory prepared: $testResultsDir" -ForegroundCo
 # Determine which test suite to run
 Write-Host "🧪 Running Optimized Playwright Test Suite (with Wails dev server)..." -ForegroundColor Yellow
 
-$playwrightArgs = @("test")
-$selectedFiles = @()
-$selectedProject = $null
+$selectedScript = $null
 $runtimeModeValue = $null
 
 # Add test suite selection
 switch ($TestSuite.ToLower()) {
     "main" {
-        $selectedFiles = @("tests/main-test-suite.spec.ts")
-        $selectedProject = "headless-safe"
+        $selectedScript = "test:e2e:main"
         $runtimeModeValue = "headless"
         Write-Host "🎯 Running Main Test Suite (comprehensive, headless-safe)" -ForegroundColor Blue
     }
     "fast" {
-        $selectedFiles = @("tests/fast-sequential-tests.spec.ts")
-        $selectedProject = "headless-safe"
+        $selectedScript = "test:e2e:fast"
         $runtimeModeValue = "headless"
         Write-Host "⚡ Running Fast Sequential Test Suite (performance demo, headless-safe)" -ForegroundColor Blue
     }
     "interactive" {
-        $selectedFiles = @("tests/interactive-shortcuts.spec.ts")
-        $selectedProject = "interactive-native"
+        $selectedScript = "test:e2e:interactive"
         $runtimeModeValue = "interactive"
         Write-Host "👁️ Running Interactive Native Shortcut Suite" -ForegroundColor Blue
     }
     "all" {
-        $selectedFiles = @(
-            "tests/main-test-suite.spec.ts",
-            "tests/fast-sequential-tests.spec.ts",
-            "tests/interactive-shortcuts.spec.ts"
-        )
+        $selectedScript = "test:e2e:all"
         Write-Host "🔄 Running All Available Test Suites" -ForegroundColor Blue
     }
 }
-
-$playwrightArgs += $selectedFiles
-
-if ($selectedProject) {
-    $playwrightArgs += "--project=$selectedProject"
-}
-
-# Essential Playwright configuration
-$playwrightArgs += "--workers=1"  # Essential for Wails dev server stability
 
 $requestedRuntimeMode = if ($RuntimeMode -eq "auto") { $runtimeModeValue } else { $RuntimeMode }
 
@@ -156,9 +138,9 @@ try {
         Remove-Item Env:MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE -ErrorAction SilentlyContinue
     }
 
-    Write-Host "🎬 Executing: npx playwright $($playwrightArgs -join ' ')" -ForegroundColor Gray
+    Write-Host "🎬 Executing: npm run $selectedScript" -ForegroundColor Gray
 
-    & npx playwright @playwrightArgs
+    & npm run $selectedScript
     $testExitCode = $LASTEXITCODE
 
     if ($null -ne $previousRuntimeMode) {
