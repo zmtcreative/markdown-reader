@@ -79,6 +79,28 @@ $FileList = @(
     "build/windows/installer/project.nsi"
 )
 
+$TestCacheSchemaVersion = 1
+$TestCacheDirectory = Join-Path (Join-Path $ProjectRoot "tmp") "test-cache"
+$TestCachePath = Join-Path $TestCacheDirectory "build-wailsinstaller-tests.json"
+$TestImpactPaths = @(
+    ':(glob)**/*.go',
+    'go.mod',
+    'go.sum',
+    'frontend/src/',
+    'frontend/tests/',
+    'frontend/package.json',
+    'frontend/package-lock.json',
+    'frontend/playwright.config.ts',
+    'frontend/vite.config.ts',
+    'frontend/vitest.setup.ts',
+    'frontend/index.html',
+    'frontend/tsconfig.json',
+    'frontend/tsconfig.node.json',
+    'wailsjs/',
+    'scripts/Run-AllTests.ps1',
+    'scripts/Run-FrontendTests.ps1'
+)
+
 function Get-JsonContent {
     <#
     .SYNOPSIS
@@ -137,6 +159,225 @@ function Set-JsonContent {
         catch {
             Write-Error "Failed to write JSON to '$Path'. Error: $_"
         }
+    }
+}
+
+function Get-RequestedFrontendTestSuite {
+    if ($RunAllTests) {
+        return "all"
+    }
+
+    return "fast"
+}
+
+function Test-CachedFrontendSuiteSatisfiesRequest {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$CachedSuite,
+        [Parameter(Mandatory = $true)]
+        [string]$RequestedSuite
+    )
+
+    if ([string]::IsNullOrWhiteSpace($CachedSuite)) {
+        return $false
+    }
+
+    if ($RequestedSuite -eq "all") {
+        return ($CachedSuite -eq "all")
+    }
+
+    return ($CachedSuite -eq "fast" -or $CachedSuite -eq "all")
+}
+
+function Test-GitCommitExists {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Commit
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Commit)) {
+        return $false
+    }
+
+    & git rev-parse --verify --quiet "$Commit^{commit}" 2>$null | Out-Null
+    return ($LASTEXITCODE -eq 0)
+}
+
+function Get-ShortGitCommit {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Commit
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Commit)) {
+        return $Commit
+    }
+
+    $shortCommit = (& git rev-parse --short=8 $Commit 2>$null)
+    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($shortCommit)) {
+        return $shortCommit.Trim()
+    }
+
+    if ($Commit.Length -le 8) {
+        return $Commit
+    }
+
+    return $Commit.Substring(0, 8)
+}
+
+function Get-TestImpactingChangesSinceCommit {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Commit
+    )
+
+    $diffArgs = @("diff", "--name-only", $Commit, "HEAD", "--") + $TestImpactPaths
+    $diffOutput = & git @diffArgs 2>$null
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "git diff failed while checking test-impacting changes from commit '$Commit'."
+    }
+
+    return @($diffOutput | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+}
+
+function Get-TestCacheRecord {
+    if (-not (Test-Path -Path $TestCachePath -PathType Leaf)) {
+        return $null
+    }
+
+    try {
+        return Get-Content -Raw -Path $TestCachePath | ConvertFrom-Json
+    }
+    catch {
+        Write-Host -ForegroundColor Yellow "Test cache is unreadable and will be ignored: $TestCachePath"
+        return $null
+    }
+}
+
+function Update-TestCacheRecord {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$TestedCommit,
+        [Parameter(Mandatory = $true)]
+        [string]$FrontendSuite
+    )
+
+    if (-not (Test-Path -Path $TestCacheDirectory -PathType Container)) {
+        New-Item -ItemType Directory -Path $TestCacheDirectory -Force | Out-Null
+    }
+
+    $cacheRecord = [pscustomobject][ordered]@{
+        SchemaVersion = $TestCacheSchemaVersion
+        Runner = "Run-AllTests.ps1"
+        Platform = "windows"
+        FrontendSuite = $FrontendSuite
+        TestedCommit = $TestedCommit
+        TestedAtUtc = (Get-Date -AsUTC -Format "yyyy-MM-ddTHH:mm:ssZ")
+        Success = $true
+    }
+
+    try {
+        Set-JsonContent -Path $TestCachePath -Value $cacheRecord
+    }
+    catch {
+        Write-Host -ForegroundColor Yellow "Failed to update test cache at '$TestCachePath'."
+    }
+}
+
+function Get-TestExecutionPlan {
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$RequestedSuite
+    )
+
+    $currentCommit = (git rev-parse HEAD 2>$null).Trim()
+    if ([string]::IsNullOrWhiteSpace($currentCommit)) {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Could not determine the current Git commit. Running tests before build."
+        }
+    }
+
+    $cacheRecord = Get-TestCacheRecord
+    if ($null -eq $cacheRecord) {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "No successful test cache was found. Running tests before build."
+        }
+    }
+
+    if (($cacheRecord.SchemaVersion -as [int]) -ne $TestCacheSchemaVersion) {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Test cache schema version changed. Running tests before build."
+        }
+    }
+
+    if (-not $cacheRecord.Success) {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Last cached test run was not successful. Running tests before build."
+        }
+    }
+
+    if ($cacheRecord.Runner -ne "Run-AllTests.ps1" -or $cacheRecord.Platform -ne "windows") {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Test cache was created by a different runner or platform. Running tests before build."
+        }
+    }
+
+    if (-not (Test-CachedFrontendSuiteSatisfiesRequest -CachedSuite $cacheRecord.FrontendSuite -RequestedSuite $RequestedSuite)) {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Cached frontend test scope does not satisfy the current build request. Running tests before build."
+        }
+    }
+
+    if (-not (Test-GitCommitExists -Commit $cacheRecord.TestedCommit)) {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Cached test commit is no longer available locally. Running tests before build."
+        }
+    }
+
+    $shortCurrentCommit = Get-ShortGitCommit -Commit $currentCommit
+    $shortTestedCommit = Get-ShortGitCommit -Commit $cacheRecord.TestedCommit
+
+    if ($cacheRecord.TestedCommit -eq $currentCommit) {
+        return [pscustomobject]@{
+            ShouldRun = $false
+            Reason = "Skipping tests: commit $shortCurrentCommit already has a successful cached test run."
+        }
+    }
+
+    try {
+        $changedFiles = Get-TestImpactingChangesSinceCommit -Commit $cacheRecord.TestedCommit
+    }
+    catch {
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Could not compare test-impacting changes since the cached test run. Running tests before build."
+        }
+    }
+
+    if ($changedFiles.Count -gt 0) {
+        $preview = @($changedFiles | Select-Object -First 5)
+        $previewText = $preview -join ", "
+        if ($changedFiles.Count -gt $preview.Count) {
+            $previewText += ", ..."
+        }
+
+        return [pscustomobject]@{
+            ShouldRun = $true
+            Reason = "Test-impacting changes were detected since commit ${shortTestedCommit}: $previewText"
+        }
+    }
+
+    return [pscustomobject]@{
+        ShouldRun = $false
+        Reason = "Skipping tests: no test-impacting changes were detected since successful tests on commit $shortTestedCommit."
     }
 }
 
@@ -568,6 +809,7 @@ function New-FileHashes {
 function Invoke-AllTests {
     $allTestsScript = Join-Path $ScriptRoot "Run-AllTests.ps1"
     $powerShellExe = Join-Path $PSHOME "pwsh.exe"
+    $requestedFrontendSuite = Get-RequestedFrontendTestSuite
 
     if (-not (Test-Path -Path $allTestsScript -PathType Leaf)) {
         Write-Host -ForegroundColor Red "Could not find test runner script: $allTestsScript"
@@ -592,6 +834,10 @@ function Invoke-AllTests {
     $testExitCode = $LASTEXITCODE
 
     if ($testExitCode -eq 0) {
+        $testedCommit = (git rev-parse HEAD 2>$null).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($testedCommit)) {
+            Update-TestCacheRecord -TestedCommit $testedCommit -FrontendSuite $requestedFrontendSuite
+        }
         Write-Host -ForegroundColor Green "  --[ALL TESTS PASSED]--"
         return $true
     }
@@ -670,8 +916,16 @@ function Invoke-WailsBuild {
     }
 
     if ($Build) {
-        if ((-not $NoTests) -and (-not (Invoke-AllTests))) {
-            return
+        if (-not $NoTests) {
+            $testExecutionPlan = Get-TestExecutionPlan -RequestedSuite (Get-RequestedFrontendTestSuite)
+            if ($testExecutionPlan.ShouldRun) {
+                Write-Host -ForegroundColor Yellow $testExecutionPlan.Reason
+                if (-not (Invoke-AllTests)) {
+                    return
+                }
+            } else {
+                Write-Host -ForegroundColor Cyan $testExecutionPlan.Reason
+            }
         }
 
         if ($NSIS) {
