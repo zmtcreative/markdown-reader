@@ -24,7 +24,12 @@
 
     <!-- Scrollable Main Content Area -->
     <main class="content-area">
-      <article v-html="renderedHTML" id="content" class="markdown-body"></article>
+      <div v-if="errorMessage" id="content" class="markdown-body error-content">
+        <h1>An error occurred:</h1>
+        <p>{{ errorMessage }}</p>
+        <p>Please try opening another file or check the file path.</p>
+      </div>
+      <article v-else v-html="renderedHTML" id="content" class="markdown-body"></article>
     </main>
   </div>
 
@@ -385,8 +390,7 @@ onMounted(async () => {
   EventsOn('error', (message: string) => {
     console.error('Received error event:', message);
     errorMessage.value = message; // Update the reactive error message.
-    // Optionally, display the error directly within the main content area for visibility.
-    renderedHTML.value = `<div style="color: #dc3545; padding: 20px; font-weight: bold; text-align: center;"><h1>An error occurred:</h1><p>${message}</p><p>Please try opening another file or check the file path.</p></div>`;
+    renderedHTML.value = '';
   });
 
   // Listen for an event from the Go backend to show the help dialog

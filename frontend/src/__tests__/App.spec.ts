@@ -159,10 +159,13 @@ describe('App.vue', () => {
     await wrapper.vm.$nextTick();
     expect(wrapper.get('#settings-overlay').isVisible()).toBe(true);
 
-    runtimeHandlers.get('error')!('Unable to load file');
+    runtimeHandlers.get('error')!('<img src=x onerror="alert(1)">Unable to load file');
     await wrapper.vm.$nextTick();
     expect(wrapper.get('.error-message').text()).toContain('Unable to load file');
     expect(wrapper.get('#content').text()).toContain('An error occurred');
+    expect(wrapper.get('#content').text()).toContain('<img src=x onerror="alert(1)">Unable to load file');
+    expect(wrapper.get('#content').html()).not.toContain('<img src=x onerror="alert(1)">');
+    expect(wrapper.get('#content').find('img').exists()).toBe(false);
   });
 
   it('toggles theme from the toolbar and delegates persistence to the backend', async () => {
