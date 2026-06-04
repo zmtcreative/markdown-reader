@@ -22,7 +22,7 @@ Compatibility aliases:
 
 With no options, the script runs:
   - go test ./...
-  - frontend fast Playwright tests in headless mode
+    - frontend fast Playwright tests in headless mode when Windows/WSL interop is available
 EOF
 }
 
@@ -43,9 +43,11 @@ else
 fi
 
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
+FRONTEND_PS_SCRIPT="$SCRIPT_ROOT/Run-FrontendTests.ps1"
 SILENT=0
 RUN_ALL_TESTS=0
 SHOW_FRONTEND_REPORT=0
+FRONTEND_TESTS_SKIPPED=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -108,100 +110,57 @@ run_go_tests() {
 
 run_frontend_tests() {
     local selected_script requested_runtime_mode install_command previous_runtime_mode had_previous_runtime_mode test_exit_code
+    local power_shell_exe frontend_ps_script_windows_path
 
     if [[ ! -d "$FRONTEND_DIR" ]]; then
         echo "Frontend directory not found: $FRONTEND_DIR" >&2
         return 1
     fi
 
+    if [[ ! -f "$FRONTEND_PS_SCRIPT" ]]; then
+        echo "Frontend test script not found: $FRONTEND_PS_SCRIPT" >&2
+        return 1
+    fi
+
     if [[ "$RUN_ALL_TESTS" -eq 1 ]]; then
-        selected_script="test:e2e:all"
-        requested_runtime_mode=""
+        selected_script="all"
+        requested_runtime_mode="auto"
     else
-        selected_script="test:e2e:fast"
+        selected_script="fast"
         requested_runtime_mode="headless"
     fi
 
-    pushd "$FRONTEND_DIR" >/dev/null || return 1
+    if command_exists pwsh.exe && command_exists wslpath; then
+        power_shell_exe="pwsh.exe"
+        frontend_ps_script_windows_path="$(wslpath -w "$FRONTEND_PS_SCRIPT")"
 
-    if [[ -n "${CI:-}" || -f "package-lock.json" ]]; then
-        install_command="ci"
-    else
-        install_command="install"
-    fi
-
-    if [[ "$SILENT" -eq 0 ]]; then
-        write_status "Installing frontend dependencies with npm $install_command..."
-    fi
-    if [[ "$SILENT" -eq 1 ]]; then
-        run_command npm "$install_command" >/dev/null 2>&1 || {
-            popd >/dev/null || true
-            return 1
-        }
-    else
-        run_command npm "$install_command" || {
-            popd >/dev/null || true
-            return 1
-        }
-    fi
-
-    if [[ "$SILENT" -eq 0 ]]; then
-        write_status "Ensuring Playwright browsers are installed..."
-    fi
-    if [[ "$SILENT" -eq 1 ]]; then
-        run_command npx playwright install chromium >/dev/null 2>&1 || {
-            popd >/dev/null || true
-            return 1
-        }
-    else
-        run_command npx playwright install chromium || {
-            popd >/dev/null || true
-            return 1
-        }
-    fi
-
-    rm -rf test-results
-    mkdir -p test-results
-
-    previous_runtime_mode="${MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE-}"
-    had_previous_runtime_mode=0
-    if [[ ${MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE+x} ]]; then
-        had_previous_runtime_mode=1
-    fi
-
-    if [[ -n "$requested_runtime_mode" ]]; then
-        export MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE="$requested_runtime_mode"
-    else
-        unset MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE || true
-    fi
-
-    if [[ "$SILENT" -eq 0 ]]; then
-        write_status "Running frontend tests via npm run $selected_script..."
-    fi
-
-    if [[ "$SILENT" -eq 1 ]]; then
-        run_command npm run "$selected_script" >/dev/null 2>&1
-        test_exit_code=$?
-    else
-        run_command npm run "$selected_script"
-        test_exit_code=$?
-    fi
-
-    if [[ "$had_previous_runtime_mode" -eq 1 ]]; then
-        export MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE="$previous_runtime_mode"
-    else
-        unset MARKDOWN_READER_PLAYWRIGHT_RUNTIME_MODE || true
-    fi
-
-    if [[ "$SHOW_FRONTEND_REPORT" -eq 1 ]]; then
         if [[ "$SILENT" -eq 0 ]]; then
-            write_status "Opening Playwright report..."
+            write_status "Running frontend tests via Run-FrontendTests.ps1 through pwsh.exe..."
         fi
-        run_command npx playwright show-report --host 127.0.0.1 --port 9323 >/dev/null 2>&1 || true
+
+        if [[ "$SHOW_FRONTEND_REPORT" -eq 1 ]]; then
+            if [[ "$SILENT" -eq 1 ]]; then
+                CI=true run_command "$power_shell_exe" -NoProfile -File "$frontend_ps_script_windows_path" -TestSuite "$selected_script" -RuntimeMode "$requested_runtime_mode" -ShowReport >/dev/null 2>&1
+            else
+                CI=true run_command "$power_shell_exe" -NoProfile -File "$frontend_ps_script_windows_path" -TestSuite "$selected_script" -RuntimeMode "$requested_runtime_mode" -ShowReport
+            fi
+        else
+            if [[ "$SILENT" -eq 1 ]]; then
+                CI=true run_command "$power_shell_exe" -NoProfile -File "$frontend_ps_script_windows_path" -TestSuite "$selected_script" -RuntimeMode "$requested_runtime_mode" >/dev/null 2>&1
+            else
+                CI=true run_command "$power_shell_exe" -NoProfile -File "$frontend_ps_script_windows_path" -TestSuite "$selected_script" -RuntimeMode "$requested_runtime_mode"
+            fi
+        fi
+
+        return $?
     fi
 
-    popd >/dev/null || true
-    return "$test_exit_code"
+    FRONTEND_TESTS_SKIPPED=1
+    if [[ "$SILENT" -eq 0 ]]; then
+        write_status "Skipping frontend Playwright tests: Windows/WSL interop is not available."
+        write_status "Development and frontend E2E testing are optimized for Windows and WSL/Ubuntu in this repository."
+    fi
+    return 0
 }
 
 invoke_test_command() {
@@ -234,24 +193,20 @@ if ! command_exists go; then
     exit 1
 fi
 
-if ! command_exists npm; then
-    echo "The 'npm' command is not available in PATH." >&2
-    exit 1
-fi
-
-if ! command_exists npx; then
-    echo "The 'npx' command is not available in PATH." >&2
-    exit 1
-fi
-
-if ! command_exists wails; then
-    echo "The 'wails' command is not available in PATH." >&2
-    exit 1
-fi
-
 if [[ ! -d "$FRONTEND_DIR" ]]; then
     echo "Could not find frontend directory: $FRONTEND_DIR" >&2
     exit 1
+fi
+
+if [[ ! -f "$FRONTEND_PS_SCRIPT" ]]; then
+    echo "Could not find frontend test script: $FRONTEND_PS_SCRIPT" >&2
+    exit 1
+fi
+
+if command_exists pwsh.exe && command_exists wslpath; then
+    :
+elif [[ "$SILENT" -eq 0 ]]; then
+    write_status "Windows/WSL interop is unavailable; frontend Playwright tests will be skipped."
 fi
 
 LAST_TEST_NAME=""
@@ -290,7 +245,9 @@ if [[ "$SILENT" -eq 0 ]]; then
         printf '[FAIL] %s (exit %s, duration %s)\n' "$GO_NAME" "$GO_EXIT_CODE" "$(format_duration "$GO_DURATION")"
     fi
 
-    if [[ "$FRONTEND_EXIT_CODE" -eq 0 ]]; then
+    if [[ "$FRONTEND_TESTS_SKIPPED" -eq 1 ]]; then
+        printf '[SKIP] %s (exit %s, duration %s)\n' "$FRONTEND_NAME" "$FRONTEND_EXIT_CODE" "$(format_duration "$FRONTEND_DURATION")"
+    elif [[ "$FRONTEND_EXIT_CODE" -eq 0 ]]; then
         printf '[PASS] %s (exit %s, duration %s)\n' "$FRONTEND_NAME" "$FRONTEND_EXIT_CODE" "$(format_duration "$FRONTEND_DURATION")"
     else
         printf '[FAIL] %s (exit %s, duration %s)\n' "$FRONTEND_NAME" "$FRONTEND_EXIT_CODE" "$(format_duration "$FRONTEND_DURATION")"
