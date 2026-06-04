@@ -306,11 +306,18 @@ jobs:
           name: markdown-reader-linux
           path: release-assets/linux
 
-      - name: Extract changelog section for tag
+      - name: Prepare release notes for tag
+        id: release_notes
         shell: pwsh
         run: |
           $tag = '${{ github.ref_name }}'
           $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'release-notes.md'
+          if (-not (Test-Path CHANGELOG.md)) {
+            Write-Host 'CHANGELOG.md was not found. Falling back to generated release notes.'
+            "use_changelog=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
+          }
+
           $lines = Get-Content CHANGELOG.md
           $start = $null
           $end = $lines.Count
@@ -328,41 +335,34 @@ jobs:
           }
 
           if ($start -eq $null) {
-            throw "No changelog section found for tag $tag in CHANGELOG.md"
+            Write-Host "No changelog section found for tag $tag in CHANGELOG.md. Falling back to generated release notes."
+            "use_changelog=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
           }
 
           $bodyLines = $lines[$start..($end - 1)]
           $body = ($bodyLines -join "`n").Trim()
           if ([string]::IsNullOrWhiteSpace($body)) {
-            throw "Changelog section for tag $tag is empty"
+            Write-Host "Changelog section for tag $tag is empty. Falling back to generated release notes."
+            "use_changelog=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            exit 0
           }
 
           $body | Out-File -FilePath $releaseNotesPath -Encoding utf8
-
-      - name: Verify extracted release notes
-        id: release_notes
-        shell: pwsh
-        run: |
-          $releaseNotesPath = Join-Path $env:GITHUB_WORKSPACE 'release-notes.md'
-          if (-not (Test-Path $releaseNotesPath)) {
-            throw "Expected release notes file was not created: $releaseNotesPath"
-          }
-          $content = Get-Content $releaseNotesPath -Raw
-          if ([string]::IsNullOrWhiteSpace($content)) {
-            throw "Extracted release notes file is empty: $releaseNotesPath"
-          }
           Write-Host "Release notes extracted to: $releaseNotesPath"
-          Write-Host $content
+          Write-Host $body
 
+          "use_changelog=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           $delimiter = [guid]::NewGuid().ToString()
           "body<<$delimiter" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-          $content | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          $body | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           $delimiter | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Publish tagged release assets
         uses: softprops/action-gh-release@v3
         with:
           body: ${{ steps.release_notes.outputs.body }}
+          generate_release_notes: ${{ steps.release_notes.outputs.use_changelog != 'true' }}
           make_latest: legacy
           files: |
             release-assets/windows/*.zip
