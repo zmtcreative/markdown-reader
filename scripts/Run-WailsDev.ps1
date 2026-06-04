@@ -3,6 +3,9 @@ param(
     [Parameter(Mandatory = $false, Position = 0, HelpMessage = "Path to the markdown file")]
     [Alias("file","f")]
     [string]$FilePath,
+    [Parameter(Mandatory = $false, HelpMessage = "Require the script to use the provided file path even if it doesn't exist (for testing error handling)")]
+    [Alias("force","test","t")]
+    [switch]$ForceFilePath,
     [Parameter(Mandatory = $false, HelpMessage = "Do a 'wails build --clean' before running 'wails dev'")]
     [Alias("c")]
     [switch]$Clean
@@ -29,7 +32,7 @@ function Invoke-WailsDev {
 
     $sample_file = "${ProjectRoot}\assets\docs\sample.md"
 
-    if (Test-Path $FilePath -ErrorAction SilentlyContinue) {
+    if ( $ForceFilePath -or (Test-Path $FilePath -ErrorAction SilentlyContinue) ) {
         $sample_file = $FilePath
     }
 
