@@ -9,10 +9,12 @@ Usage: build-wails-app.sh [OPTIONS]
 Build the Linux Markdown Reader artifacts from inside WSL/Ubuntu.
 
 Options:
-  -b, -build    Build the Linux executable only
-  -t, -tar      Implies -build and also create a tar.gz package
-  -d, -deb      Implies -build and prints a stub message for future .deb packaging
-  -h, --help    Show this help text
+  -b, --build        Build the Linux executable only
+  -t, --tar          Implies --build and creates a tar.gz package
+  -d, --deb          Implies --build and creates a .deb package (unimplemented)
+  --keep-stage-dir   Keep the temporary tar/deb packaging stage directory
+                       after a successful build
+  -h, --help         Show this help text
 
 With no options, the script reports repository cleanliness and the next build version.
 EOF
@@ -45,23 +47,27 @@ SHOW_VERSION_ONLY=1
 DO_BUILD=0
 DO_TAR=0
 DO_DEB=0
+KEEP_STAGE_DIR=0
 RESTORE_NEEDED=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        -b|-build)
+        -b|--build|-build)
             DO_BUILD=1
             SHOW_VERSION_ONLY=0
             ;;
-        -t|-tar)
+        -t|--tar|-tar)
             DO_TAR=1
             DO_BUILD=1
             SHOW_VERSION_ONLY=0
             ;;
-        -d|-deb)
+        -d|--deb|-deb)
             DO_DEB=1
             DO_BUILD=1
             SHOW_VERSION_ONLY=0
+            ;;
+        --keep-stage-dir)
+            KEEP_STAGE_DIR=1
             ;;
         -h|--help)
             usage
@@ -336,6 +342,11 @@ create_tar_package() {
     chmod +x "$stage_dir/md-reader"
 
     tar -C "$stage_dir" -czf "$archive_path" .
+
+    if [[ "$KEEP_STAGE_DIR" -eq 0 ]]; then
+        rm -rf "$stage_dir"
+    fi
+
     printf '%s\n' "$archive_path"
 }
 
