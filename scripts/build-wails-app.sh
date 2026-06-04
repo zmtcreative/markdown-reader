@@ -38,6 +38,7 @@ fi
 MANAGED_FILES=(
     "wails.json"
     "frontend/package.json"
+    "frontend/package-lock.json"
 )
 
 SHOW_VERSION_ONLY=1
