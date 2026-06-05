@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 - Ongoing development updates will be collected here until the next tagged release.
 
-## v0.5.0 - 2026-06-05
+## v0.5.1 - 2026-06-05
 
 This is the first public release of this Markdown Reader application. It supports most CommonMark specs and GitHub Markdown syntax.
 
