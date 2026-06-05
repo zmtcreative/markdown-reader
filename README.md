@@ -1,5 +1,8 @@
 # Markdown Reader
 
+[![License](https://img.shields.io/github/license/zmtcreative/markdown-reader)](./LICENSE.md)
+![GitHub Tag](https://img.shields.io/github/v/tag/zmtcreative/markdown-reader?sort=semver)
+
 ## About and Features
 
 This is a Markdown Reader written in Go using the Wails + Vue framework.
@@ -25,7 +28,7 @@ The reader supports the current CommonMark spec plus a wide range of Extension:
 - Frontmatter Parsing  (*currently can use the __Title:__ and __Date:__ entries in markdown frontmatter*)
 - Mermaid Diagrams and Charts
 - Image Figure Wrapping  (*provides a syntax for including captions with images*)
-[//]#: - Header Anchor Links
+<!-- - [//]#: - Header Anchor Links -->
 - Fenced DIVs  (*works similar to fenced code blocks but uses `:::` to surround sections you want to wrap with a DIV element*)
 - Header Section Wrapper  (*nested wrapping of heading and all their content to keep section levels together since `<H?>` headings don't wrap the sections they represent*)
 - Code Syntax Highlighting  (*provides syntax highlighting of fenced code blocks*)
@@ -42,7 +45,7 @@ The reader supports the current CommonMark spec plus a wide range of Extension:
 > Still in Beta stage.
 
 The application is useable in its current form, with extensive settings available to control
-which Markdown/Commonmark features and Extensions are displayed.
+which Markdown/Commonmark features and Extensions are displayed. The `File | Settings` dialog lets you change settings just for the current session or save the settings to a config file.
 
 The CSS styling for the application is still in-progress, so the look of rendered markdown may
 not be consistent, though it should be adequate for now.
@@ -51,3 +54,9 @@ __Very__ rudimentary printing support is available, but the CSS styling for prin
 not been tweaked, so print output will be useable but not necessarily ideal.
 
 Development is still ongoing.
+
+## Collaboration
+
+This application is currently being privately developed and we are not (currently) accepting collaborators, feature requests or pull-requests.
+
+The repository **is** public and you are welcome to fork the project and modify it as you see fit, provided you adhere to the [LICENSE](LICENSE) and provide attribution in your `README.md` or a `NOTICE.md` file in your forked repository.
