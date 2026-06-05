@@ -3,6 +3,8 @@
 [![License](https://img.shields.io/github/license/zmtcreative/markdown-reader)](./LICENSE.md)
 ![GitHub Tag](https://img.shields.io/github/v/tag/zmtcreative/markdown-reader?sort=semver)
 
+Copyright &copy; 2026 ZMT Creative LLC. All rights reserved.
+
 ## About and Features
 
 This is a Markdown Reader written in Go using the Wails + Vue framework.
