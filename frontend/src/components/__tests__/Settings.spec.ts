@@ -61,10 +61,12 @@ describe('Settings.vue', () => {
     });
 
     await vi.waitFor(() => expect(appApiMocks.GetSettings).toHaveBeenCalled());
+    await wrapper.get('#application-auto-refresh').setValue(false);
     await wrapper.get('form.settings-form').trigger('submit');
 
     await vi.waitFor(() => expect(appApiMocks.SaveSettings).toHaveBeenCalledTimes(1));
 
+    expect(appApiMocks.SaveSettings.mock.calls[0][0].application.use_auto_refresh).toBe(false);
     expect(appApiMocks.SaveSettings.mock.calls[0][0].application.font_family).toBe('Verdana');
     expect(wrapper.emitted('saved')).toHaveLength(1);
     expect(wrapper.emitted('close')).toHaveLength(1);

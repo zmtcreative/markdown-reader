@@ -88,9 +88,9 @@ func TestConfigManagerGettersAndSetters(t *testing.T) {
 	// Create new config and set it
 	newConfig := &Config{
 		Application: ApplicationOptions{
-			UseInlineHTML:  false,
-			UseSanitize:    false,
-			UseStripH1:     false,
+			UseInlineHTML:       false,
+			UseSanitize:         false,
+			UseStripH1:          false,
 			UseFrontmatterTitle: false,
 		},
 		Markdown: MarkdownOptions{
@@ -276,9 +276,9 @@ func TestSaveAndLoadConfig(t *testing.T) {
 	// Test that we can set and get configuration
 	newConfig := &Config{
 		Application: ApplicationOptions{
-			UseInlineHTML:  false,
-			UseSanitize:    false,
-			UseStripH1:     false,
+			UseInlineHTML:       false,
+			UseSanitize:         false,
+			UseStripH1:          false,
 			UseFrontmatterTitle: false,
 		},
 		Markdown: MarkdownOptions{
@@ -554,6 +554,7 @@ func TestLoadConfigUsesDefaultsWhenFileMissing(t *testing.T) {
 	v.SetDefault("application.use_sanitize_html", true)
 	v.SetDefault("application.use_strip_h1", true)
 	v.SetDefault("application.use_frontmatter_title", true)
+	v.SetDefault("application.use_auto_refresh", true)
 	v.SetDefault("application.font_family", "Verdana")
 	v.SetDefault("application.font_size", 16.0)
 	v.SetDefault("application.font_family_mono", "Consolas")
@@ -587,6 +588,9 @@ func TestLoadConfigUsesDefaultsWhenFileMissing(t *testing.T) {
 
 	if !cm.UseInlineHTML() || !cm.UseSanitize() || !cm.UsePHPMDExt() {
 		t.Fatal("missing config file did not preserve default values")
+	}
+	if !cm.UseAutoRefresh() {
+		t.Fatal("missing config file did not preserve auto refresh default value")
 	}
 	if cm.GetFontFamily() == "" || cm.GetFontFamilyMono() == "" {
 		t.Fatal("missing config file did not preserve default font values")

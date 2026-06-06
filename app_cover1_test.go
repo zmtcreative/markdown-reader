@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	internalapp "md-reader/internal/app"
 	"md-reader/internal/cli"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v2/pkg/menu"
 )
 
@@ -19,6 +21,52 @@ type capturedAppEvent struct {
 	ctx  context.Context
 	name string
 	data []interface{}
+}
+
+type fakeDocumentWatcher struct {
+	addCalls    []string
+	removeCalls []string
+	closed      bool
+	events      chan fsnotify.Event
+	errors      chan error
+}
+
+func newFakeDocumentWatcher() *fakeDocumentWatcher {
+	return &fakeDocumentWatcher{
+		events: make(chan fsnotify.Event),
+		errors: make(chan error),
+	}
+}
+
+func (w *fakeDocumentWatcher) Add(name string) error {
+	w.addCalls = append(w.addCalls, name)
+	return nil
+}
+
+func (w *fakeDocumentWatcher) Remove(name string) error {
+	w.removeCalls = append(w.removeCalls, name)
+	return nil
+}
+
+func (w *fakeDocumentWatcher) Close() error {
+	w.closed = true
+	close(w.events)
+	close(w.errors)
+	return nil
+}
+
+func (w *fakeDocumentWatcher) Events() <-chan fsnotify.Event {
+	return w.events
+}
+
+func (w *fakeDocumentWatcher) Errors() <-chan error {
+	return w.errors
+}
+
+type immediateTimer struct{}
+
+func (immediateTimer) Stop() bool {
+	return true
 }
 
 func newSection1TestApp(t *testing.T) *App {
@@ -368,6 +416,95 @@ func TestAppCurrentFileStateHelpers(t *testing.T) {
 	}
 	if app.GetCurrentFile() != `C:\docs\guide.md` {
 		t.Fatalf("GetCurrentFile() = %q, want %q", app.GetCurrentFile(), `C:\docs\guide.md`)
+	}
+}
+
+func TestAppSetCurrentFileStartsWatchingDirectory(t *testing.T) {
+	app := newSection1TestApp(t)
+	fakeWatcher := newFakeDocumentWatcher()
+	originalNewWatcher := newDocumentWatcher
+	newDocumentWatcher = func() (documentWatcher, error) {
+		return fakeWatcher, nil
+	}
+	t.Cleanup(func() {
+		newDocumentWatcher = originalNewWatcher
+	})
+
+	filePath := filepath.Join(t.TempDir(), "guide.md")
+	app.setCurrentFile(filePath)
+
+	if app.GetCurrentFile() != filePath {
+		t.Fatalf("GetCurrentFile() = %q, want %q", app.GetCurrentFile(), filePath)
+	}
+	if len(fakeWatcher.addCalls) != 1 || fakeWatcher.addCalls[0] != filepath.Dir(filePath) {
+		t.Fatalf("watcher add calls = %#v, want %q", fakeWatcher.addCalls, filepath.Dir(filePath))
+	}
+	if app.watchedFile != filepath.Clean(filePath) {
+		t.Fatalf("watchedFile = %q, want %q", app.watchedFile, filepath.Clean(filePath))
+	}
+}
+
+func TestAppHandleWatchedFileEventReloadsWhenAutoRefreshEnabled(t *testing.T) {
+	app := newSection1TestApp(t)
+	filePath := filepath.Join(t.TempDir(), "watched.md")
+	app.currentFile = filePath
+	app.watchedFile = filepath.Clean(filePath)
+
+	originalAfterFunc := appAfterFunc
+	originalLoadMarkdown := appLoadMarkdown
+	appAfterFunc = func(_ time.Duration, fn func()) appTimer {
+		fn()
+		return immediateTimer{}
+	}
+	reloadCalls := 0
+	appLoadMarkdown = func(_ *internalapp.DocumentProcessor, path string) error {
+		reloadCalls++
+		if path != filePath {
+			t.Fatalf("reload path = %q, want %q", path, filePath)
+		}
+		return nil
+	}
+	t.Cleanup(func() {
+		appAfterFunc = originalAfterFunc
+		appLoadMarkdown = originalLoadMarkdown
+	})
+
+	app.handleWatchedFileEvent(fsnotify.Event{Name: filePath, Op: fsnotify.Write})
+
+	if reloadCalls != 1 {
+		t.Fatalf("reloadCalls = %d, want 1", reloadCalls)
+	}
+}
+
+func TestAppHandleWatchedFileEventSkipsReloadWhenAutoRefreshDisabled(t *testing.T) {
+	app := newSection1TestApp(t)
+	filePath := filepath.Join(t.TempDir(), "watched.md")
+	settings := *app.GetSettings()
+	settings.Application.UseAutoRefresh = false
+	app.configManager.SetConfig(&settings)
+	app.currentFile = filePath
+	app.watchedFile = filepath.Clean(filePath)
+
+	originalAfterFunc := appAfterFunc
+	originalLoadMarkdown := appLoadMarkdown
+	appAfterFunc = func(_ time.Duration, fn func()) appTimer {
+		fn()
+		return immediateTimer{}
+	}
+	reloadCalls := 0
+	appLoadMarkdown = func(_ *internalapp.DocumentProcessor, _ string) error {
+		reloadCalls++
+		return nil
+	}
+	t.Cleanup(func() {
+		appAfterFunc = originalAfterFunc
+		appLoadMarkdown = originalLoadMarkdown
+	})
+
+	app.handleWatchedFileEvent(fsnotify.Event{Name: filePath, Op: fsnotify.Create})
+
+	if reloadCalls != 0 {
+		t.Fatalf("reloadCalls = %d, want 0", reloadCalls)
 	}
 }
 

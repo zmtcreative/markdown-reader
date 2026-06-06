@@ -9,6 +9,18 @@
       <!-- Right side - theme toggle and other action items -->
       <div class="toolbar-right">
         <button
+          @click="$emit('refresh')"
+          class="toolbar-btn refresh-btn"
+          title="Refresh"
+        >
+          <span
+            class="toolbar-icon refresh-icon"
+            v-html="refreshIconSvg"
+            aria-hidden="true"
+          />
+        </button>
+
+        <button
           @click="$emit('toggleFrontmatter')"
           class="toolbar-btn frontmatter-toggle-btn"
           :title="showFrontmatter ? 'Hide Frontmatter' : 'Show Frontmatter'"
@@ -44,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import refreshIconSvg from '../assets/images/lucide-refresh.svg?raw'
 import Icon from './Icon.vue'
 
 interface Props {
@@ -53,6 +66,7 @@ interface Props {
 
 defineProps<Props>()
 defineEmits<{
+  refresh: []
   toggleTheme: []
   toggleFrontmatter: []
 }>()
@@ -118,6 +132,21 @@ defineEmits<{
 
 .toolbar-icon {
   transition: transform 0.2s ease;
+}
+
+.refresh-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.refresh-icon :deep(svg) {
+  width: 18px;
+  height: 18px;
+  display: block;
+  stroke: currentColor;
 }
 
 /* Dark theme styles */

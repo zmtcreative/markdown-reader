@@ -4,6 +4,7 @@
     <Toolbar
       :currentTheme="currentTheme"
       :showFrontmatter="showFrontmatter"
+      @refresh="refreshCurrentDocument"
       @toggleTheme="toggleTheme"
       @toggleFrontmatter="toggleFrontmatter"
     />
@@ -51,7 +52,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick,onMounted, onUnmounted } from 'vue';
 import { EventsOn, EventsOff } from '../wailsjs/runtime/runtime';
-import { GetTheme, SetTheme, GetSettings, GetCurrentFont, GetCurrentMonospaceFont, HasCurrentFile } from '../wailsjs/go/main/App';
+import { GetTheme, SetTheme, GetCurrentFont, GetCurrentMonospaceFont, HasCurrentFile, ReloadCurrentDocument } from '../wailsjs/go/main/App';
 import Settings from './components/Settings.vue';
 import Help from './components/Help.vue';
 import Toolbar from './components/Toolbar.vue';
@@ -111,6 +112,16 @@ async function toggleTheme() {
 // Function to toggle the frontmatter visibility
 function toggleFrontmatter() {
   showFrontmatter.value = !showFrontmatter.value;
+}
+
+async function refreshCurrentDocument() {
+  try {
+    await ReloadCurrentDocument();
+  } catch (error) {
+    console.error('Error refreshing current document:', error);
+    errorMessage.value = String(error);
+    renderedHTML.value = '';
+  }
 }
 
 // Watch for changes in the theme and update the body class

@@ -128,6 +128,22 @@
                     </p>
                   </div>
 
+                  <!-- Auto Refresh -->
+                  <div class="setting-group">
+                    <label class="checkbox-label" for="application-auto-refresh">
+                      <input
+                        id="application-auto-refresh"
+                        type="checkbox"
+                        v-model="localSettings.application.use_auto_refresh"
+                      />
+                      <span class="checkbox-custom"></span>
+                      Auto Refresh Current File
+                    </label>
+                    <p class="setting-description">
+                      Automatically reload and rerender the current markdown file when it changes on disk.
+                    </p>
+                  </div>
+
                   <!-- Separator -->
                   <div class="setting-group separator">&nbsp;</div>
 
@@ -541,6 +557,7 @@ const createDefaultSettings = (): Settings => {
       use_sanitize_html: true,
       use_strip_h1: true,
       use_frontmatter_title: true,
+      use_auto_refresh: true,
       font_family: "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
       font_size: 16.0,
       font_family_mono: "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace",

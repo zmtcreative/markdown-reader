@@ -19,6 +19,7 @@ export namespace app {
 	    use_sanitize_html: boolean;
 	    use_strip_h1: boolean;
 	    use_frontmatter_title: boolean;
+	    use_auto_refresh: boolean;
 	    font_family: string;
 	    font_size: number;
 	    font_family_mono: string;
@@ -35,6 +36,7 @@ export namespace app {
 	        this.use_sanitize_html = source["use_sanitize_html"];
 	        this.use_strip_h1 = source["use_strip_h1"];
 	        this.use_frontmatter_title = source["use_frontmatter_title"];
+	        this.use_auto_refresh = source["use_auto_refresh"];
 	        this.font_family = source["font_family"];
 	        this.font_size = source["font_size"];
 	        this.font_family_mono = source["font_family_mono"];
