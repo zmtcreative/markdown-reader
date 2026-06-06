@@ -1,7 +1,7 @@
 # Markdown Reader
 
 [![License](https://img.shields.io/github/license/zmtcreative/markdown-reader)](./LICENSE.md)
-![GitHub Tag](https://img.shields.io/github/v/tag/zmtcreative/markdown-reader?sort=semver)
+![GitHub Release](https://img.shields.io/github/v/release/zmtcreative/markdown-reader?sort=semver)
 
 Copyright &copy; 2026 ZMT Creative LLC. All rights reserved.
 
