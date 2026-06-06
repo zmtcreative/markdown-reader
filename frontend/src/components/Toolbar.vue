@@ -13,10 +13,10 @@
           class="toolbar-btn refresh-btn"
           title="Refresh"
         >
-          <span
-            class="toolbar-icon refresh-icon"
-            v-html="refreshIconSvg"
-            aria-hidden="true"
+          <Icon
+            name="refresh"
+            :size="18"
+            class="toolbar-icon"
           />
         </button>
 
@@ -56,7 +56,6 @@
 </template>
 
 <script setup lang="ts">
-import refreshIconSvg from '../assets/images/lucide-refresh.svg?raw'
 import Icon from './Icon.vue'
 
 interface Props {
@@ -132,21 +131,6 @@ defineEmits<{
 
 .toolbar-icon {
   transition: transform 0.2s ease;
-}
-
-.refresh-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-}
-
-.refresh-icon :deep(svg) {
-  width: 18px;
-  height: 18px;
-  display: block;
-  stroke: currentColor;
 }
 
 /* Dark theme styles */
