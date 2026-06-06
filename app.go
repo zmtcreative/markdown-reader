@@ -676,10 +676,14 @@ func (a *App) handleWatchedFileEvent(event fsnotify.Event) {
 
 func (a *App) scheduleAutoRefresh() {
 	a.watchMu.Lock()
-	if a.autoRefreshTimer != nil {
-		a.autoRefreshTimer.Stop()
+	previousTimer := a.autoRefreshTimer
+	a.watchMu.Unlock()
+
+	if previousTimer != nil {
+		previousTimer.Stop()
 	}
-	a.autoRefreshTimer = appAfterFunc(autoRefreshDebounce, func() {
+
+	newTimer := appAfterFunc(autoRefreshDebounce, func() {
 		if !a.configManager.UseAutoRefresh() {
 			return
 		}
@@ -688,6 +692,9 @@ func (a *App) scheduleAutoRefresh() {
 			log.Printf("##> LOG: Warning: auto refresh failed for %q: %v", a.GetCurrentFile(), err)
 		}
 	})
+
+	a.watchMu.Lock()
+	a.autoRefreshTimer = newTimer
 	a.watchMu.Unlock()
 }
 

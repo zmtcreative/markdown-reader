@@ -69,6 +69,15 @@ func (immediateTimer) Stop() bool {
 	return true
 }
 
+type countingTimer struct {
+	stopCalls int
+}
+
+func (t *countingTimer) Stop() bool {
+	t.stopCalls++
+	return true
+}
+
 func newSection1TestApp(t *testing.T) *App {
 	t.Helper()
 
@@ -505,6 +514,71 @@ func TestAppHandleWatchedFileEventSkipsReloadWhenAutoRefreshDisabled(t *testing.
 
 	if reloadCalls != 0 {
 		t.Fatalf("reloadCalls = %d, want 0", reloadCalls)
+	}
+}
+
+func TestAppScheduleAutoRefreshStopsPreviousTimer(t *testing.T) {
+	app := newSection1TestApp(t)
+
+	previousTimer := &countingTimer{}
+	app.autoRefreshTimer = previousTimer
+
+	originalAfterFunc := appAfterFunc
+	originalLoadMarkdown := appLoadMarkdown
+	appAfterFunc = func(_ time.Duration, _ func()) appTimer {
+		return immediateTimer{}
+	}
+	appLoadMarkdown = func(_ *internalapp.DocumentProcessor, _ string) error {
+		return nil
+	}
+	t.Cleanup(func() {
+		appAfterFunc = originalAfterFunc
+		appLoadMarkdown = originalLoadMarkdown
+	})
+
+	app.scheduleAutoRefresh()
+
+	if previousTimer.stopCalls != 1 {
+		t.Fatalf("previousTimer.Stop() call count = %d, want 1", previousTimer.stopCalls)
+	}
+	if app.autoRefreshTimer == nil {
+		t.Fatal("autoRefreshTimer = nil, want non-nil")
+	}
+}
+
+func TestAppScheduleAutoRefreshWithImmediateCallbackDoesNotDeadlock(t *testing.T) {
+	app := newSection1TestApp(t)
+	filePath := filepath.Join(t.TempDir(), "immediate.md")
+	app.currentFile = filePath
+
+	originalAfterFunc := appAfterFunc
+	originalLoadMarkdown := appLoadMarkdown
+	appAfterFunc = func(_ time.Duration, fn func()) appTimer {
+		fn()
+		return immediateTimer{}
+	}
+	appLoadMarkdown = func(_ *internalapp.DocumentProcessor, path string) error {
+		if path != filePath {
+			t.Fatalf("reload path = %q, want %q", path, filePath)
+		}
+		return nil
+	}
+	t.Cleanup(func() {
+		appAfterFunc = originalAfterFunc
+		appLoadMarkdown = originalLoadMarkdown
+	})
+
+	done := make(chan struct{})
+	go func() {
+		app.scheduleAutoRefresh()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// expected
+	case <-time.After(2 * time.Second):
+		t.Fatal("scheduleAutoRefresh() timed out; possible deadlock")
 	}
 }
 

@@ -202,4 +202,24 @@ describe('App.vue', () => {
 
     await vi.waitFor(() => expect(appApiMocks.ReloadCurrentDocument).toHaveBeenCalledTimes(1));
   });
+
+  it('shows an error when manual refresh fails', async () => {
+    appApiMocks.ReloadCurrentDocument.mockRejectedValueOnce(new Error('reload failed'));
+
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          teleport: true,
+        },
+      },
+    });
+    await waitForRuntimeHandlers();
+
+    await wrapper.get('.refresh-btn').trigger('click');
+
+    await vi.waitFor(() => {
+      expect(wrapper.get('.error-message').text()).toContain('reload failed');
+    });
+  });
 });

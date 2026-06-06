@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import WailsDevHelper from './wails-dev-helper';
 import { Page } from '@playwright/test';
 import { emitRuntimeEvent, expectTheme } from './runtime-test-helpers';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 
 test.describe('Fast Sequential Tests - Single App Instance', () => {
   let wailsDev: WailsDevHelper;
@@ -160,5 +162,107 @@ test.describe('Fast Sequential Tests - Single App Instance', () => {
 
     await page.screenshot({ path: 'test-results/fast-06-performance-demo.png' });
     console.log('✅ Performance Test PASSED - Application reuse verified');
+  });
+
+  test('should manually refresh markdown content after tmp file edit', async () => {
+    console.log('🧪 Running Manual Refresh E2E against tmp file');
+
+    const tmpDir = path.resolve(process.cwd(), '..', 'tmp');
+    const tmpFilePath = path.join(tmpDir, 'playwright-manual-refresh.md');
+    const initialContent = '# Manual Refresh E2E\n\nInitial marker: before refresh';
+    const updatedContent = '# Manual Refresh E2E\n\nUpdated marker: after refresh';
+
+    await fs.mkdir(tmpDir, { recursive: true });
+    await fs.writeFile(tmpFilePath, initialContent, 'utf8');
+
+    try {
+      // Keep this test deterministic by disabling auto-refresh for the current session.
+      await page.evaluate(async () => {
+        const appApi = (window as any)?.go?.main?.App;
+        if (!appApi?.GetSettings || !appApi?.SaveSettingsSessionOnly) {
+          throw new Error('Go App settings APIs are unavailable');
+        }
+
+        const currentSettings = await appApi.GetSettings();
+        currentSettings.application.use_auto_refresh = false;
+        await appApi.SaveSettingsSessionOnly(currentSettings);
+      });
+
+      await page.evaluate(async (filePath: string) => {
+        const appApi = (window as any)?.go?.main?.App;
+        if (!appApi?.LoadAndDisplayMarkdown) {
+          throw new Error('Go App LoadAndDisplayMarkdown API is unavailable');
+        }
+        await appApi.LoadAndDisplayMarkdown(filePath);
+      }, tmpFilePath);
+
+      await expect(page.locator('#content')).toContainText('Initial marker: before refresh');
+
+      await fs.writeFile(tmpFilePath, updatedContent, 'utf8');
+
+      await page.click('.refresh-btn');
+      await expect(page.locator('#content')).toContainText('Updated marker: after refresh');
+      await expect(page.locator('#content')).not.toContainText('Initial marker: before refresh');
+
+      await page.screenshot({ path: 'test-results/fast-07-manual-refresh-tmp-file.png' });
+      console.log('✅ Manual Refresh E2E PASSED - content updated after toolbar refresh');
+    } finally {
+      await fs.unlink(tmpFilePath).catch(() => {
+        // Keep cleanup best-effort; tmp folder is intentionally unmanaged.
+      });
+    }
+  });
+
+  test('should not update content while auto-refresh is disabled until Refresh is clicked', async () => {
+    console.log('🧪 Running Disabled Auto-Refresh E2E against tmp file');
+
+    const tmpDir = path.resolve(process.cwd(), '..', 'tmp');
+    const tmpFilePath = path.join(tmpDir, 'playwright-disabled-auto-refresh.md');
+    const initialContent = '# Disabled Auto Refresh E2E\n\nStable marker: before manual refresh';
+    const updatedContent = '# Disabled Auto Refresh E2E\n\nChanged marker: after disk edit';
+
+    await fs.mkdir(tmpDir, { recursive: true });
+    await fs.writeFile(tmpFilePath, initialContent, 'utf8');
+
+    try {
+      await page.evaluate(async () => {
+        const appApi = (window as any)?.go?.main?.App;
+        if (!appApi?.GetSettings || !appApi?.SaveSettingsSessionOnly) {
+          throw new Error('Go App settings APIs are unavailable');
+        }
+
+        const currentSettings = await appApi.GetSettings();
+        currentSettings.application.use_auto_refresh = false;
+        await appApi.SaveSettingsSessionOnly(currentSettings);
+      });
+
+      await page.evaluate(async (filePath: string) => {
+        const appApi = (window as any)?.go?.main?.App;
+        if (!appApi?.LoadAndDisplayMarkdown) {
+          throw new Error('Go App LoadAndDisplayMarkdown API is unavailable');
+        }
+        await appApi.LoadAndDisplayMarkdown(filePath);
+      }, tmpFilePath);
+
+      await expect(page.locator('#content')).toContainText('Stable marker: before manual refresh');
+
+      await fs.writeFile(tmpFilePath, updatedContent, 'utf8');
+
+      // Wait briefly to allow watcher events to occur; content should remain unchanged while auto-refresh is disabled.
+      await page.waitForTimeout(800);
+      await expect(page.locator('#content')).toContainText('Stable marker: before manual refresh');
+      await expect(page.locator('#content')).not.toContainText('Changed marker: after disk edit');
+
+      await page.click('.refresh-btn');
+      await expect(page.locator('#content')).toContainText('Changed marker: after disk edit');
+      await expect(page.locator('#content')).not.toContainText('Stable marker: before manual refresh');
+
+      await page.screenshot({ path: 'test-results/fast-08-disabled-auto-refresh-manual-only.png' });
+      console.log('✅ Disabled Auto-Refresh E2E PASSED - manual refresh required as expected');
+    } finally {
+      await fs.unlink(tmpFilePath).catch(() => {
+        // Keep cleanup best-effort; tmp folder is intentionally unmanaged.
+      });
+    }
   });
 });

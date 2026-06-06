@@ -32,4 +32,20 @@ describe('Toolbar.vue', () => {
     expect(wrapper.get('.theme-toggle-btn').attributes('title')).toBe('Switch to light theme');
     expect(wrapper.get('.frontmatter-toggle-btn').attributes('title')).toBe('Hide Frontmatter');
   });
+
+  it('renders refresh before frontmatter and theme using the shared icon component', () => {
+    const wrapper = mount(Toolbar, {
+      props: {
+        currentTheme: 'light',
+        showFrontmatter: false,
+      },
+    });
+
+    const buttons = wrapper.findAll('.toolbar-right > .toolbar-btn');
+    expect(buttons[0].classes()).toContain('refresh-btn');
+    expect(buttons[1].classes()).toContain('frontmatter-toggle-btn');
+    expect(buttons[2].classes()).toContain('theme-toggle-btn');
+
+    expect(wrapper.find('.refresh-btn .lucide-refresh').exists()).toBe(true);
+  });
 });
