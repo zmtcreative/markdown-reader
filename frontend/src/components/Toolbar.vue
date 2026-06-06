@@ -9,6 +9,18 @@
       <!-- Right side - theme toggle and other action items -->
       <div class="toolbar-right">
         <button
+          @click="$emit('refresh')"
+          class="toolbar-btn refresh-btn"
+          title="Refresh"
+        >
+          <Icon
+            name="refresh"
+            :size="18"
+            class="toolbar-icon"
+          />
+        </button>
+
+        <button
           @click="$emit('toggleFrontmatter')"
           class="toolbar-btn frontmatter-toggle-btn"
           :title="showFrontmatter ? 'Hide Frontmatter' : 'Show Frontmatter'"
@@ -53,6 +65,7 @@ interface Props {
 
 defineProps<Props>()
 defineEmits<{
+  refresh: []
   toggleTheme: []
   toggleFrontmatter: []
 }>()

@@ -7,6 +7,7 @@ export function createConfigFixture(overrides: Partial<app.Config> = {}): app.Co
       use_sanitize_html: true,
       use_strip_h1: false,
       use_frontmatter_title: true,
+      use_auto_refresh: true,
       font_family: 'Verdana',
       font_size: 16,
       font_family_mono: 'Consolas',

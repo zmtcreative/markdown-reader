@@ -37,7 +37,10 @@ require (
 	oss.terrastruct.com/d2 v0.7.1
 )
 
-require github.com/zmtcreative/gm-alert-callouts v0.8.0
+require (
+	github.com/fsnotify/fsnotify v1.10.1
+	github.com/zmtcreative/gm-alert-callouts v0.8.0
+)
 
 require (
 	git.sr.ht/~jackmordaunt/go-toast/v2 v2.0.3 // indirect
@@ -50,7 +53,6 @@ require (
 	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dlclark/regexp2/v2 v2.1.1 // indirect
 	github.com/dop251/goja v0.0.0-20260311135729-065cd970411c // indirect
-	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.4+incompatible // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect

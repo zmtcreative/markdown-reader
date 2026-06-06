@@ -34,6 +34,7 @@ const appApiMocks = vi.hoisted(() => ({
   GetCurrentFont: vi.fn(),
   GetCurrentMonospaceFont: vi.fn(),
   HasCurrentFile: vi.fn(),
+  ReloadCurrentDocument: vi.fn(),
   GetAlertCalloutStyles: vi.fn(),
   GetAvailableFonts: vi.fn(),
   GetAvailableMonospaceFonts: vi.fn(),
@@ -68,6 +69,7 @@ describe('App.vue', () => {
     appApiMocks.GetCurrentFont.mockResolvedValue({ fontFamily: 'Verdana', fontSize: 16 });
     appApiMocks.GetCurrentMonospaceFont.mockResolvedValue({ fontFamily: 'Consolas', fontSize: 14 });
     appApiMocks.HasCurrentFile.mockResolvedValue(false);
+    appApiMocks.ReloadCurrentDocument.mockResolvedValue(undefined);
     appApiMocks.GetAlertCalloutStyles.mockResolvedValue({ GFMPlus: 'GitHub Flavored Markdown Plus' });
     appApiMocks.GetAvailableFonts.mockResolvedValue(['Verdana', 'Tahoma']);
     appApiMocks.GetAvailableMonospaceFonts.mockResolvedValue(['Consolas', 'Courier New']);
@@ -183,5 +185,41 @@ describe('App.vue', () => {
     await vi.waitFor(() => expect(appApiMocks.SetTheme).toHaveBeenCalledWith('dark'));
 
     expect(document.documentElement.className).toBe('dark');
+  });
+
+  it('manually reloads the current document from the toolbar refresh button', async () => {
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          teleport: true,
+        },
+      },
+    });
+    await waitForRuntimeHandlers();
+
+    await wrapper.get('.refresh-btn').trigger('click');
+
+    await vi.waitFor(() => expect(appApiMocks.ReloadCurrentDocument).toHaveBeenCalledTimes(1));
+  });
+
+  it('shows an error when manual refresh fails', async () => {
+    appApiMocks.ReloadCurrentDocument.mockRejectedValueOnce(new Error('reload failed'));
+
+    const wrapper = mount(App, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          teleport: true,
+        },
+      },
+    });
+    await waitForRuntimeHandlers();
+
+    await wrapper.get('.refresh-btn').trigger('click');
+
+    await vi.waitFor(() => {
+      expect(wrapper.get('.error-message').text()).toContain('reload failed');
+    });
   });
 });

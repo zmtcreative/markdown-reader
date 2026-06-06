@@ -18,6 +18,7 @@ func defaultConfig() *Config {
 			UseSanitize:              true,
 			UseStripH1:               true,
 			UseFrontmatterTitle:      true,
+			UseAutoRefresh:           true,
 			FontFamily:               "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif",
 			FontSize:                 16.0,
 			FontFamilyMono:           "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace",
@@ -50,47 +51,48 @@ func defaultConfig() *Config {
 
 // Config represents the tabs in the settings dialog
 type Config struct {
-	Application        ApplicationOptions   `mapstructure:"application" json:"application"`         // Application
-	Markdown           MarkdownOptions      `mapstructure:"markdown" json:"markdown"`               // Markdown Features
-	AlertCallouts      AlertCalloutOptions  `mapstructure:"alert_callouts" json:"alert_callouts"`   // Alert Callouts
+	Application   ApplicationOptions  `mapstructure:"application" json:"application"`       // Application
+	Markdown      MarkdownOptions     `mapstructure:"markdown" json:"markdown"`             // Markdown Features
+	AlertCallouts AlertCalloutOptions `mapstructure:"alert_callouts" json:"alert_callouts"` // Alert Callouts
 }
 
 // Application-Specific Settings
 type ApplicationOptions struct {
-	UseInlineHTML       bool    `mapstructure:"use_inline_html" json:"use_inline_html"`             // Inline HTML support (allow inline HTML in Markdown)
-	UseSanitize         bool    `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`         // HTML Sanitization (remove unsafe elements and links)
-	UseStripH1          bool    `mapstructure:"use_strip_h1" json:"use_strip_h1"`                     // Strip First H1
-	UseFrontmatterTitle bool    `mapstructure:"use_frontmatter_title" json:"use_frontmatter_title"` // Always Use Frontmatter Title if Available
-	FontFamily          string  `mapstructure:"font_family" json:"font_family"`                     // Selected font family
-	FontSize            float64 `mapstructure:"font_size" json:"font_size"`                         // Selected font size in pixels
-	FontFamilyMono      string  `mapstructure:"font_family_mono" json:"font_family_mono"`           // Selected monospace font family
-	FontSizeMono        float64 `mapstructure:"font_size_mono" json:"font_size_mono"`               // Selected monospace font size in pixels
-	UseAdvancedFontDetection bool `mapstructure:"use_advanced_font_detection" json:"use_advanced_font_detection"` // Use advanced monospace font detection
+	UseInlineHTML            bool    `mapstructure:"use_inline_html" json:"use_inline_html"`                         // Inline HTML support (allow inline HTML in Markdown)
+	UseSanitize              bool    `mapstructure:"use_sanitize_html" json:"use_sanitize_html"`                     // HTML Sanitization (remove unsafe elements and links)
+	UseStripH1               bool    `mapstructure:"use_strip_h1" json:"use_strip_h1"`                               // Strip First H1
+	UseFrontmatterTitle      bool    `mapstructure:"use_frontmatter_title" json:"use_frontmatter_title"`             // Always Use Frontmatter Title if Available
+	UseAutoRefresh           bool    `mapstructure:"use_auto_refresh" json:"use_auto_refresh"`                       // Automatically reload the current file when it changes on disk
+	FontFamily               string  `mapstructure:"font_family" json:"font_family"`                                 // Selected font family
+	FontSize                 float64 `mapstructure:"font_size" json:"font_size"`                                     // Selected font size in pixels
+	FontFamilyMono           string  `mapstructure:"font_family_mono" json:"font_family_mono"`                       // Selected monospace font family
+	FontSizeMono             float64 `mapstructure:"font_size_mono" json:"font_size_mono"`                           // Selected monospace font size in pixels
+	UseAdvancedFontDetection bool    `mapstructure:"use_advanced_font_detection" json:"use_advanced_font_detection"` // Use advanced monospace font detection
 }
 
 // Markdown-Specific Settings
 type MarkdownOptions struct {
-	UseGFM             bool   `mapstructure:"use_gfm" json:"use_gfm"`                         // GitHub Flavored Markdown
-	UsePHPMDExt        bool   `mapstructure:"use_php_md_ext" json:"use_php_md_ext"`           // PHP Markdown Extensions Support
-	UseEmoji           bool   `mapstructure:"use_emoji" json:"use_emoji"`                     // Emoji Support
-	UseMermaid         bool   `mapstructure:"use_mermaid" json:"use_mermaid"`                 // Mermaid Diagrams Support
-	UseFigure          bool   `mapstructure:"use_figure" json:"use_figure"`                   // Image Figure Wrapping Support
-	UseAnchor          bool   `mapstructure:"use_anchor" json:"use_anchor"`                   // Anchor Links on Headings
-	UseFences          bool   `mapstructure:"use_fences" json:"use_fences"`                   // Fenced DIVs
-	UseSections        bool   `mapstructure:"use_sections" json:"use_sections"`               // Wrap Headings in SECTION Elements
-	UseHighlighting    bool   `mapstructure:"use_highlighting" json:"use_highlighting"`       // Fenced Code Highlighting
-	UseFancyLists      bool   `mapstructure:"use_fancylists" json:"use_fancylists"`           // Allow Pandoc-Style Fancy Lists
-	UseAttributes      bool   `mapstructure:"use_attributes" json:"use_attributes"`           // Allow Custom Attributes (using '{.myclass}' syntax)
-	UseAbbreviations   bool   `mapstructure:"use_abbreviations" json:"use_abbreviations"`     // Allow Abbreviations (using `*[ABBR]: Abbreviations` syntax)
-	UseTypographic     bool   `mapstructure:"use_typographic" json:"use_typographic"`         // Typographic Extensions to Use Fancy Quotes
-	UseKatex           bool   `mapstructure:"use_katex" json:"use_katex"`                     // KaTeX Support for Mathematical Expressions
-	UseD2Diagrams      bool   `mapstructure:"use_d2_diagrams" json:"use_d2_diagrams"`         // D2 Diagrams Support
+	UseGFM           bool `mapstructure:"use_gfm" json:"use_gfm"`                     // GitHub Flavored Markdown
+	UsePHPMDExt      bool `mapstructure:"use_php_md_ext" json:"use_php_md_ext"`       // PHP Markdown Extensions Support
+	UseEmoji         bool `mapstructure:"use_emoji" json:"use_emoji"`                 // Emoji Support
+	UseMermaid       bool `mapstructure:"use_mermaid" json:"use_mermaid"`             // Mermaid Diagrams Support
+	UseFigure        bool `mapstructure:"use_figure" json:"use_figure"`               // Image Figure Wrapping Support
+	UseAnchor        bool `mapstructure:"use_anchor" json:"use_anchor"`               // Anchor Links on Headings
+	UseFences        bool `mapstructure:"use_fences" json:"use_fences"`               // Fenced DIVs
+	UseSections      bool `mapstructure:"use_sections" json:"use_sections"`           // Wrap Headings in SECTION Elements
+	UseHighlighting  bool `mapstructure:"use_highlighting" json:"use_highlighting"`   // Fenced Code Highlighting
+	UseFancyLists    bool `mapstructure:"use_fancylists" json:"use_fancylists"`       // Allow Pandoc-Style Fancy Lists
+	UseAttributes    bool `mapstructure:"use_attributes" json:"use_attributes"`       // Allow Custom Attributes (using '{.myclass}' syntax)
+	UseAbbreviations bool `mapstructure:"use_abbreviations" json:"use_abbreviations"` // Allow Abbreviations (using `*[ABBR]: Abbreviations` syntax)
+	UseTypographic   bool `mapstructure:"use_typographic" json:"use_typographic"`     // Typographic Extensions to Use Fancy Quotes
+	UseKatex         bool `mapstructure:"use_katex" json:"use_katex"`                 // KaTeX Support for Mathematical Expressions
+	UseD2Diagrams    bool `mapstructure:"use_d2_diagrams" json:"use_d2_diagrams"`     // D2 Diagrams Support
 }
 
 // Alert Callouts Settings
 type AlertCalloutOptions struct {
-	UseAlertCallouts   bool   `mapstructure:"use_alertcallouts" json:"use_alertcallouts"`     // GitHub and/or Obsidian Alert/Callouts
-	AlertCalloutStyle  string `mapstructure:"alertcallout_style" json:"alertcallout_style"`   // Select Alert Callout Style
+	UseAlertCallouts  bool   `mapstructure:"use_alertcallouts" json:"use_alertcallouts"`   // GitHub and/or Obsidian Alert/Callouts
+	AlertCalloutStyle string `mapstructure:"alertcallout_style" json:"alertcallout_style"` // Select Alert Callout Style
 }
 
 // ConfigManager handles configuration loading and saving
@@ -103,10 +105,10 @@ type ConfigManager struct {
 // AlertCalloutStyles defines the available alert callout styles
 // (Note to self: Do NOT change "GFMStrict" if you can help it -- this is being used as the fallback default)
 var AlertCalloutStyles = map[string]string{
-	"GFMStrict":     "Strict GFM Alerts (Standard 5 Alert Types)",
+	"GFMStrict":      "Strict GFM Alerts (Standard 5 Alert Types)",
 	"GFMWithAliases": "GFM Alerts + Aliases (GFM + Aliases [e.g., notes = note])",
-	"GFMPlus":       "GFM Alerts Plus (GFM + Some Obsidian-Style Callouts)",
-	"Obsidian":      "Obsidian-Style (Obsidian Icons and Callout Names)",
+	"GFMPlus":        "GFM Alerts Plus (GFM + Some Obsidian-Style Callouts)",
+	"Obsidian":       "Obsidian-Style (Obsidian Icons and Callout Names)",
 }
 
 // getAppNameFromExecutable extracts the application name from the executable path
@@ -160,6 +162,7 @@ func NewConfigManager() *ConfigManager {
 	v.SetDefault("application.use_sanitize_html", true)
 	v.SetDefault("application.use_strip_h1", true)
 	v.SetDefault("application.use_frontmatter_title", true)
+	v.SetDefault("application.use_auto_refresh", true)
 	v.SetDefault("application.font_family", "Verdana, Arial, Helvetica, Tahoma, Geneva, sans-serif")
 	v.SetDefault("application.font_size", 16.0)
 	v.SetDefault("application.font_family_mono", "Consolas, Monaco, DejaVu Sans Mono, Liberation Mono, Courier New, Courier, monospace")
@@ -272,6 +275,7 @@ func (cm *ConfigManager) SaveConfig() error {
 	cm.viper.Set("application.use_sanitize_html", cm.config.Application.UseSanitize)
 	cm.viper.Set("application.use_strip_h1", cm.config.Application.UseStripH1)
 	cm.viper.Set("application.use_frontmatter_title", cm.config.Application.UseFrontmatterTitle)
+	cm.viper.Set("application.use_auto_refresh", cm.config.Application.UseAutoRefresh)
 	cm.viper.Set("application.font_family", cm.config.Application.FontFamily)
 	cm.viper.Set("application.font_size", cm.config.Application.FontSize)
 	cm.viper.Set("application.font_family_mono", cm.config.Application.FontFamilyMono)
@@ -355,6 +359,10 @@ func (cm *ConfigManager) UseStripH1() bool {
 
 func (cm *ConfigManager) UseFrontmatterTitle() bool {
 	return cm.config.Application.UseFrontmatterTitle
+}
+
+func (cm *ConfigManager) UseAutoRefresh() bool {
+	return cm.config.Application.UseAutoRefresh
 }
 
 // Markdown-specific configuration getters
@@ -466,4 +474,8 @@ func (cm *ConfigManager) GetUseAdvancedFontDetection() bool {
 
 func (cm *ConfigManager) SetUseAdvancedFontDetection(useAdvanced bool) {
 	cm.config.Application.UseAdvancedFontDetection = useAdvanced
+}
+
+func (cm *ConfigManager) SetUseAutoRefresh(useAutoRefresh bool) {
+	cm.config.Application.UseAutoRefresh = useAutoRefresh
 }
