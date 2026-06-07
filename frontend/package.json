@@ -15,6 +15,7 @@
     "test:e2e:all": "playwright test tests/main-test-suite.spec.ts tests/fast-sequential-tests.spec.ts tests/interactive-shortcuts.spec.ts --workers=1"
   },
   "dependencies": {
+    "dompurify": "^3.1.7",
     "katex": "^0.17.0",
     "mermaid": "^11.9.0",
     "vue": "^3.2.37"
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@babel/types": "^7.18.10",
     "@playwright/test": "^1.55.0",
+    "@types/dompurify": "^3.0.5",
     "@vue/test-utils": "^2.4.6",
     "@types/katex": "^0.16.7",
     "@types/node": "^25.9.1",

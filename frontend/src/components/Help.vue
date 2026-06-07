@@ -12,7 +12,7 @@
               </div>
           </div>
           <div class="help-body">
-              <div id="help-modal-text" v-html="helpModalText"></div>
+              <div id="help-modal-text" v-html="sanitizedHelpText"></div>
           </div>
       </div>
   </div>
@@ -21,7 +21,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import DOMPurify from 'dompurify';
 
 // Props
 interface Props {
@@ -38,6 +39,15 @@ const emit = defineEmits<{
 // Modal reactive variables
 const helpModalTitle = ref('');
 const helpModalText = ref('');
+
+// Sanitized version of helpModalText for safe rendering with v-html
+const sanitizedHelpText = computed(() => {
+  return DOMPurify.sanitize(helpModalText.value, {
+    ALLOWED_TAGS: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'a', 'strong', 'em', 'code', 'pre', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'br', 'span', 'div'],
+    ALLOWED_ATTR: ['href', 'title', 'class', 'id', 'style', 'width', 'height', 'colspan', 'rowspan', 'cellpadding', 'cellspacing'],
+    ALLOW_DATA_ATTR: false
+  });
+});
 
 // Function to hide the modal
 function hideHelpModal() {
