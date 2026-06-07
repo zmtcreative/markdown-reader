@@ -84,11 +84,12 @@
                   </div>
 
                   <!-- Sanitize HTML -->
-                  <div class="setting-group">
+                  <div class="setting-group" :class="{ 'disabled-setting': isSanitizeDisabled }">
                     <label class="checkbox-label">
                       <input
                         type="checkbox"
                         v-model="localSettings.application.use_sanitize_html"
+                        :disabled="isSanitizeDisabled"
                       />
                       <span class="checkbox-custom"></span>
                       Sanitize HTML
@@ -531,7 +532,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick, computed } from 'vue';
 import { GetSettings, GetAlertCalloutStyles, SaveSettings, SaveSettingsSessionOnly, GetAvailableFonts, GetAvailableMonospaceFonts, GetAdvancedFontDetectionStatus, SetAdvancedFontDetection } from '../../wailsjs/go/main/App';
 import { app } from '../../wailsjs/go/models';
 
@@ -610,6 +611,19 @@ watch(() => props.show, async (newShow) => {
     activeTab.value = 'application';
     await loadSettings();
   }
+});
+
+// Watch for inline HTML changes to enforce security constraint
+watch(() => localSettings.value.application.use_inline_html, (newInlineHTML) => {
+  if (newInlineHTML) {
+    // Automatically enable sanitization when inline HTML is enabled
+    localSettings.value.application.use_sanitize_html = true;
+  }
+});
+
+// Computed property to determine if sanitize checkbox should be disabled
+const isSanitizeDisabled = computed(() => {
+  return localSettings.value.application.use_inline_html;
 });
 
 // Load current settings and alert callout styles
@@ -1012,6 +1026,19 @@ loadSettings();
 
 .setting-group:hover {
   background: var(--dialog-color-bg-hover);
+}
+
+.setting-group.disabled-setting {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.setting-group.disabled-setting .checkbox-label {
+  cursor: not-allowed;
+}
+
+.setting-group.disabled-setting input[type="checkbox"]:disabled {
+  cursor: not-allowed;
 }
 
 .setting-group.experimental p::before {
