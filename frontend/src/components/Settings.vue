@@ -79,7 +79,7 @@
                       Allow Inline HTML
                     </label>
                     <p class="setting-description">
-                      Allow raw HTML tags to be rendered in markdown content.
+                      Allow raw HTML tags to be rendered in markdown content.<br/><em>(Automatically enables <strong>Sanitize HTML</strong>)</em>
                     </p>
                   </div>
 
@@ -94,7 +94,7 @@
                       Sanitize HTML
                     </label>
                     <p class="setting-description">
-                      Remove potentially harmful HTML elements and URLs for safety.
+                      Remove potentially harmful HTML elements and URLs for safety.<br/><em>(Auto-enabled when <strong>Allow Inline HTML</strong> is enabled)</em>
                     </p>
                   </div>
 

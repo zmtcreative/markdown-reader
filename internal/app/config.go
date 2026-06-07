@@ -256,6 +256,12 @@ func (cm *ConfigManager) loadConfig() {
 		// Use defaults if unmarshal fails
 		cm.config = defaultConfig()
 	}
+
+	// Validate and enforce security constraint: inline HTML must always be sanitized
+	if cm.config.Application.UseInlineHTML && !cm.config.Application.UseSanitize {
+		fmt.Printf("Security: Enabling HTML sanitization (inline HTML requires sanitization)\n")
+		cm.config.Application.UseSanitize = true
+	}
 }
 
 // GetConfig returns the current configuration
@@ -263,8 +269,13 @@ func (cm *ConfigManager) GetConfig() *Config {
 	return cm.config
 }
 
-// SetConfig updates the configuration
+// SetConfig updates the configuration with validation
 func (cm *ConfigManager) SetConfig(newConfig *Config) {
+	// Validate and enforce security constraint: inline HTML must always be sanitized
+	if newConfig.Application.UseInlineHTML && !newConfig.Application.UseSanitize {
+		// Force sanitization to true when inline HTML is enabled to prevent XSS
+		newConfig.Application.UseSanitize = true
+	}
 	cm.config = newConfig
 }
 
@@ -322,6 +333,11 @@ func (cm *ConfigManager) ApplyCliOverrides(allowInlineHTML, sanitizeHTML, stripH
 	}
 	if stripH1 != nil {
 		cm.config.Application.UseStripH1 = *stripH1
+	}
+
+	// Validate and enforce security constraint: inline HTML must always be sanitized
+	if cm.config.Application.UseInlineHTML && !cm.config.Application.UseSanitize {
+		cm.config.Application.UseSanitize = true
 	}
 }
 
