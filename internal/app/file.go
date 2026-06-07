@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -17,6 +18,12 @@ var (
     fileMessageDialog    = runtime.MessageDialog
     fileBinaryCheck      = func(detector *BinaryDetector, filePath string) (bool, error) { return detector.IsBinaryFile(filePath) }
     fileLoadAndDisplayMD = func(processor *DocumentProcessor, filePath string) error { return processor.LoadAndDisplayMarkdown(filePath) }
+)
+
+// Custom error types for better error handling
+var (
+    ErrBinaryFileCheckFailed = errors.New("binary file check failed")
+    ErrBinaryFileCannotOpen  = errors.New("binary file cannot be opened")
 )
 
 // FileManager handles file operations and dialog interactions
@@ -47,11 +54,11 @@ func NewFileManager(ctx context.Context, binaryDetector *BinaryDetector, docProc
 func (fm *FileManager) LoadFile(filePath string) error {
     isBinary, err := fileBinaryCheck(fm.binaryDetector, filePath)
     if err != nil {
-        return fmt.Errorf("binary file check failed: %w", err)
+        return fmt.Errorf("%w: %w", ErrBinaryFileCheckFailed, err)
     }
 
     if isBinary {
-        return fmt.Errorf("binary file cannot be opened: %s", filePath)
+        return fmt.Errorf("%w: %s", ErrBinaryFileCannotOpen, filePath)
     }
 
     if err := fileLoadAndDisplayMD(fm.docProcessor, filePath); err != nil {
@@ -74,7 +81,10 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
         },
     })
     if err != nil {
-        if strings.Contains(err.Error(), "The user cancelled the dialog") || strings.Contains(err.Error(), "canceled") {
+        // Wails runtime doesn't provide a specific error type for cancellation.
+        // Check error message for cancellation indicators.
+        errMsg := strings.ToLower(err.Error())
+        if strings.Contains(errMsg, "cancelled") || strings.Contains(errMsg, "canceled") {
             log.Println("##> LOG: File dialog cancelled by user.")
             return
         }
@@ -88,7 +98,7 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
         err = fm.LoadFile(selection)
         if err != nil {
             log.Printf("##> LOG: Error loading selected Markdown file %q: %v", selection, err)
-            if strings.Contains(err.Error(), "binary file check failed") {
+            if errors.Is(err, ErrBinaryFileCheckFailed) {
                 fileMessageDialog(fm.ctx, runtime.MessageDialogOptions{
                     Type:    runtime.ErrorDialog,
                     Title:   "Binary File Check Failed",
@@ -96,7 +106,7 @@ func (fm *FileManager) OpenFileMenuHandler(_ *menu.CallbackData, currentFile *st
                 })
                 return
             }
-            if strings.Contains(err.Error(), "binary file cannot be opened") {
+            if errors.Is(err, ErrBinaryFileCannotOpen) {
                 fileMessageDialog(fm.ctx, runtime.MessageDialogOptions{
                     Type:    runtime.ErrorDialog,
                     Title:   "Cannot Open Binary File",
