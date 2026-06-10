@@ -395,11 +395,12 @@ func (a *App) SaveSettings(settings *app.Config) error {
 
 	// Update the current app settings
 
-	// Recreate the document processor with new settings
+	// Recreate the document processor and file manager under the watcher lock to
+	// prevent a data race with the file-watcher goroutine that reads these fields.
+	a.watchMu.Lock()
 	a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
-
-	// Update the file manager with the new document processor
 	a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
+	a.watchMu.Unlock()
 
 	// Automatically reload the current document to apply new settings
 	if a.currentFile != "" {
@@ -422,11 +423,12 @@ func (a *App) SaveSettingsSessionOnly(settings *app.Config) error {
 
 	// Update the current app settings
 
-	// Recreate the document processor with new settings
+	// Recreate the document processor and file manager under the watcher lock to
+	// prevent a data race with the file-watcher goroutine that reads these fields.
+	a.watchMu.Lock()
 	a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
-
-	// Update the file manager with the new document processor
 	a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
+	a.watchMu.Unlock()
 
 	// Automatically reload the current document to apply new settings
 	if a.currentFile != "" {
@@ -556,12 +558,16 @@ func (a *App) GetMonospaceFontsWithDetectionInfo() map[string]interface{} {
 }
 
 func (a *App) reloadCurrentDocument() error {
-	currentFile := a.GetCurrentFile()
+	a.watchMu.Lock()
+	currentFile := a.currentFile
+	processor := a.documentProcessor
+	a.watchMu.Unlock()
+
 	if currentFile == "" {
 		return fmt.Errorf("no document currently loaded")
 	}
 
-	if err := appLoadMarkdown(a.documentProcessor, currentFile); err != nil {
+	if err := appLoadMarkdown(processor, currentFile); err != nil {
 		return fmt.Errorf("failed to reload document %s: %w", currentFile, err)
 	}
 
