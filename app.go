@@ -675,14 +675,6 @@ func (a *App) handleWatchedFileEvent(event fsnotify.Event) {
 }
 
 func (a *App) scheduleAutoRefresh() {
-	a.watchMu.Lock()
-	previousTimer := a.autoRefreshTimer
-	a.watchMu.Unlock()
-
-	if previousTimer != nil {
-		previousTimer.Stop()
-	}
-
 	newTimer := appAfterFunc(autoRefreshDebounce, func() {
 		if !a.configManager.UseAutoRefresh() {
 			return
@@ -694,8 +686,13 @@ func (a *App) scheduleAutoRefresh() {
 	})
 
 	a.watchMu.Lock()
+	previousTimer := a.autoRefreshTimer
 	a.autoRefreshTimer = newTimer
 	a.watchMu.Unlock()
+
+	if previousTimer != nil {
+		previousTimer.Stop()
+	}
 }
 
 func sameDocumentPath(left, right string) bool {
