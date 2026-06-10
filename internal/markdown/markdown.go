@@ -534,16 +534,9 @@ func InitAlertCalloutsIcons(icondata string) map[string]string {
 				alias := strings.TrimSpace(parts[0])
 				primary := strings.TrimSpace(parts[1])
 				// Set alias to reference the primary icon (will be set after core icons are loaded)
+				// Forward-reference aliases (primary not yet seen) are resolved by the second pass below.
 				if svg, exists := ai[primary]; exists {
 					ai[alias] = svg
-				} else {
-					// Store for later processing if primary doesn't exist yet
-					// This handles the case where aliases are defined before their primary keys
-					defer func(alias, primary string) {
-						if svg, exists := ai[primary]; exists {
-							ai[alias] = svg
-						}
-					}(alias, primary)
 				}
 			}
 			continue
