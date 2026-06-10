@@ -244,10 +244,10 @@ func (cm *ConfigManager) loadConfig() {
 	if err := cm.viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found, use defaults
-			fmt.Printf("Config file not found, using defaults: %s\n", cm.configPath)
+			log.Printf("##> LOG: Config file not found, using defaults: %s", cm.configPath)
 		} else {
 			// Config file found but another error occurred
-			fmt.Printf("Error reading config file: %v\n", err)
+			log.Printf("##> LOG: Error reading config file: %v", err)
 			cm.config = defaultConfig()
 			return
 		}
@@ -255,14 +255,14 @@ func (cm *ConfigManager) loadConfig() {
 
 	// Unmarshal configuration into struct
 	if err := cm.viper.Unmarshal(cm.config); err != nil {
-		fmt.Printf("Error unmarshaling config: %v\n", err)
+		log.Printf("##> LOG: Error unmarshaling config: %v", err)
 		// Use defaults if unmarshal fails
 		cm.config = defaultConfig()
 	}
 
 	// Validate and enforce security constraint: inline HTML must always be sanitized
 	if cm.config.Application.UseInlineHTML && !cm.config.Application.UseSanitize {
-		fmt.Printf("Security: Enabling HTML sanitization (inline HTML requires sanitization)\n")
+		log.Printf("##> LOG: Security: Enabling HTML sanitization (inline HTML requires sanitization)")
 		cm.config.Application.UseSanitize = true
 	}
 }
