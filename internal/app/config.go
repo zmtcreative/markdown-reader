@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -231,7 +232,9 @@ func getConfigDir(appName string) string {
 	}
 
 	// Ensure directory exists
-	os.MkdirAll(configDir, 0755)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		log.Printf("##> LOG: Warning: could not create config directory %q: %v", configDir, err)
+	}
 
 	return configDir
 }
