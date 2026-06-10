@@ -97,7 +97,6 @@ type App struct {
 	appProgName        string            // Store the application name without extension
 	appProgNameWithExt string            // Store the application name with extension
 	showHelp           bool              // Flag to indicate if help should be shown
-	frontMatter        map[string]string // Store frontmatter data
 	cmdlineOptions     string            // Store command line options here
 	versionInfo        string            // Store version information
 
@@ -135,7 +134,6 @@ func NewApp(cliArgs *cli.CliArgs) *App {
 	setAboutString := setAbout(appProgNameWithExt)
 
 	return &App{
-		frontMatter:        map[string]string{},                             // Initialize an empty map for frontmatter
 		currentFile:        stringFromPtr(cliArgs.InitialFile, ""),          // Default to empty, can be set via CLI flag
 		appProgName:        stringFromPtr(cliArgs.AppProgName, "md-reader"), // Store the application name without extension
 		appProgNameWithExt: appProgNameWithExt,                              // Store the application name with extension

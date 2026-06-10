@@ -250,11 +250,6 @@ func TestNewApp(t *testing.T) {
 				t.Fatal("NewApp() returned nil")
 			}
 
-			// Check that frontMatter map is initialized
-			if app.frontMatter == nil {
-				t.Error("NewApp() frontMatter map is nil")
-			}
-
 			// Check that configManager is initialized
 			if app.configManager == nil {
 				t.Error("NewApp() configManager is nil")
