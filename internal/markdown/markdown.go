@@ -24,14 +24,6 @@ import (
 	d2diagrams "github.com/FurqanSoftware/goldmark-d2"
 	katex "github.com/kingreatwill/goldmark-katex/v2"
 
-	// d2dagrelayout "oss.terrastruct.com/d2/d2layouts/d2dagrelayout"
-
-	// d2themescatalog "oss.terrastruct.com/d2/d2themes/d2themescatalog"
-
-	// katex "github.com/kingreatwill/goldmark-katex/v2"
-	// d2diagrams "github.com/FurqanSoftware/goldmark-d2"
-	// d2themescatalog "oss.terrastruct.com/d2/d2themes/d2themescatalog"
-	// d2elklayout "oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	blockattr "github.com/mdigger/goldmark-attributes"
 	bracketedspan "github.com/nemunaire/goldmark-inline-attributes"
 	fences "github.com/stefanfritsch/goldmark-fences"

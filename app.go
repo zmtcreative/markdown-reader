@@ -341,34 +341,6 @@ func (a *App) ReloadCurrentDocument() error {
 	return a.reloadCurrentDocument()
 }
 
-// TODO: CLEANUP - These wrapper methods are never called from the frontend
-// The frontend uses its own JavaScript functions instead
-//
-// Analysis shows these methods exist but are never invoked from the Vue.js frontend.
-// The frontend handles DOM class manipulation directly via JavaScript.
-// These can be safely removed in a future cleanup since the functionality
-// is handled by the DocumentProcessor methods directly.
-//
-// // AddDocClass adds the class to html and body elements
-// func (a *App) AddDocClass(thisClass ...string) {
-//     a.documentProcessor.AddDocClass(thisClass...)
-// }
-//
-// // RemoveDocClass removes the class from html and body elements
-// func (a *App) RemoveDocClass(thisClass ...string) {
-//     a.documentProcessor.RemoveDocClass(thisClass...)
-// }
-//
-// // ToggleDocClass toggles the class on html and body elements
-// func (a *App) ToggleDocClass(thisClass ...string) {
-//     a.documentProcessor.ToggleDocClass(thisClass...)
-// }
-//
-// // OpenFileMenuHandler handles the File > Open menu action
-// func (a *App) OpenFileMenuHandler(data *menu.CallbackData) {
-//     a.fileManager.OpenFileMenuHandler(data, &a.currentFile)
-// }
-
 // Settings-related methods
 
 // GetSettings returns the current application settings

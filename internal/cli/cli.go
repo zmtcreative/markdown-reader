@@ -73,7 +73,6 @@ func GetArgs() (*CliArgs, error) {
     // Set values only if they were explicitly provided or inferred
     if initialFile != "" {
         args.InitialFile = &initialFile
-        // fmt.Printf("##> DEBUG (CLI): Initial file set to: %s\n", initialFile)
     }
 
     if flagHelp {
