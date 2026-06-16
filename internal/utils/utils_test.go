@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"os"
 	"testing"
 )
 
@@ -274,5 +275,86 @@ func TestGetValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, tt.run)
+	}
+}
+
+func TestGetExecutableBaseName(t *testing.T) {
+	// Save and restore original os.Args
+	originalArgs := os.Args
+	defer func() { os.Args = originalArgs }()
+
+	tests := []struct {
+		name           string
+		osArgs         []string
+		wantWithExt    string
+		wantWithoutExt string
+	}{
+		{
+			name:           "Windows path with extension",
+			osArgs:         []string{`C:\Program Files\App\md-reader.exe`},
+			wantWithExt:    "md-reader.exe",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Windows path without extension",
+			osArgs:         []string{`C:\Program Files\App\md-reader`},
+			wantWithExt:    "md-reader",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Unix path with extension",
+			osArgs:         []string{"/usr/local/bin/md-reader.exe"},
+			wantWithExt:    "md-reader.exe",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Unix path without extension",
+			osArgs:         []string{"/usr/local/bin/md-reader"},
+			wantWithExt:    "md-reader",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Just basename no path",
+			osArgs:         []string{"md-reader.exe"},
+			wantWithExt:    "md-reader.exe",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Empty os.Args uses fallback",
+			osArgs:         []string{},
+			wantWithExt:    "md-reader",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Windows relative path",
+			osArgs:         []string{`.\md-reader.exe`},
+			wantWithExt:    "md-reader.exe",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Unix relative path",
+			osArgs:         []string{"./md-reader"},
+			wantWithExt:    "md-reader",
+			wantWithoutExt: "md-reader",
+		},
+		{
+			name:           "Dot fallback",
+			osArgs:         []string{"."},
+			wantWithExt:    "md-reader",
+			wantWithoutExt: "md-reader",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			os.Args = tt.osArgs
+			gotWithExt, gotWithoutExt := GetExecutableBaseName()
+			if gotWithExt != tt.wantWithExt {
+				t.Errorf("GetExecutableBaseName() withExt = %q, want %q", gotWithExt, tt.wantWithExt)
+			}
+			if gotWithoutExt != tt.wantWithoutExt {
+				t.Errorf("GetExecutableBaseName() withoutExt = %q, want %q", gotWithoutExt, tt.wantWithoutExt)
+			}
+		})
 	}
 }

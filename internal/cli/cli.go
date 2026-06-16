@@ -3,8 +3,9 @@ package cli
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
+
+	"md-reader/internal/utils"
 
 	flag "github.com/spf13/pflag"
 )
@@ -81,28 +82,9 @@ func GetArgs() (*CliArgs, error) {
 
     // Build the usage string
     var usageText strings.Builder
-    var appProgNameWithExt, appProgName string
 
-    if len(os.Args) > 0 {
-        execPath := os.Args[0]
-
-        // Handle both Windows and Unix path separators
-        var baseName string
-        if strings.Contains(execPath, "\\") {
-            // Windows path - handle manually to work cross-platform
-            parts := strings.Split(execPath, "\\")
-            baseName = parts[len(parts)-1]
-        } else {
-            // Unix path or no path separators
-            baseName = filepath.Base(execPath)
-        }
-
-        appProgNameWithExt = baseName
-        appProgName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
-    } else {
-        appProgNameWithExt = "md-reader"
-        appProgName = "md-reader"
-    }
+    // Get executable base names using shared utility
+    appProgNameWithExt, appProgName := utils.GetExecutableBaseName()
 
     usageText.WriteString("<pre>\n")
     usageText.WriteString(fmt.Sprintf("Usage: %s [options] [filepath]\n\n", appProgName))

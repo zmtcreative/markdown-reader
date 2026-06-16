@@ -5,7 +5,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"md-reader/internal/utils"
 
 	"github.com/spf13/viper"
 )
@@ -113,38 +114,10 @@ var AlertCalloutStyles = map[string]string{
 }
 
 // getAppNameFromExecutable extracts the application name from the executable path
-// without the file extension
+// without the file extension. This is a thin wrapper around the shared utility.
 func getAppNameFromExecutable() string {
-	if len(os.Args) == 0 {
-		return "md-reader" // fallback
-	}
-
-	// Get the base name from the executable path
-	execPath := os.Args[0]
-
-	// Handle both Windows and Unix path separators
-	var baseName string
-	if strings.Contains(execPath, "\\") {
-		// Windows path - handle manually to work cross-platform
-		parts := strings.Split(execPath, "\\")
-		baseName = parts[len(parts)-1]
-	} else {
-		// Unix path or no path separators
-		baseName = filepath.Base(execPath)
-	}
-
-	// Remove the file extension
-	ext := filepath.Ext(baseName)
-	if ext != "" {
-		baseName = strings.TrimSuffix(baseName, ext)
-	}
-
-	// Use fallback if empty or invalid
-	if baseName == "" || baseName == "." {
-		return "md-reader"
-	}
-
-	return baseName
+	_, appName := utils.GetExecutableBaseName()
+	return appName
 }
 
 // NewConfigManager creates a new configuration manager
