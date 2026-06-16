@@ -44,8 +44,6 @@ import (
 //go:embed assets/alertcallouts-gfmstrict.icons
 var alertCalloutsGFMStrictData string
 
-var _ = alertCalloutsGFMStrictData
-
 const (
 	ALERT_NOICONS = iota
 	ALERT_GFM_STRICT
