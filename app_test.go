@@ -133,7 +133,12 @@ func TestSetAbout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := setAbout(tt.appProgNameWithExt)
+			result, err := setAbout(tt.appProgNameWithExt)
+
+			// Check that no error occurred
+			if err != nil {
+				t.Errorf("setAbout() returned unexpected error: %v", err)
+			}
 
 			// Check that result is not empty
 			if result == "" {

@@ -131,7 +131,12 @@ func NewApp(cliArgs *cli.CliArgs) *App {
 
 	// Handle app name
 	appProgNameWithExt := stringFromPtr(cliArgs.AppProgNameWithExt, "md-reader")
-	setAboutString := setAbout(appProgNameWithExt)
+	setAboutString, err := setAbout(appProgNameWithExt)
+	if err != nil {
+		// Log the error and use a fallback version string
+		log.Printf("##> LOG: Error generating about string: %v", err)
+		setAboutString = fmt.Sprintf("<h1>%s</h1><p>Version: %s</p>", appProgNameWithExt, Version)
+	}
 
 	return &App{
 		currentFile:        stringFromPtr(cliArgs.InitialFile, ""),          // Default to empty, can be set via CLI flag
@@ -160,7 +165,7 @@ func stringFromPtr(p *string, defaultValue string) string {
 	return defaultValue
 }
 
-func setAbout(appProgNameWithExt string) string {
+func setAbout(appProgNameWithExt string) (string, error) {
 	var versionText bytes.Buffer
 
 	authorName := gjson.Get(wailsConfig, "author.name").String()
@@ -184,16 +189,14 @@ func setAbout(appProgNameWithExt string) string {
 	}
 	tpl, err := template.New("about").Parse(aboutTemplate)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing about template: %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("parsing about template: %w", err)
 	}
 	err = tpl.Execute(&versionText, tplData)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error executing about template: %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("executing about template: %w", err)
 	}
 
-	return versionText.String()
+	return versionText.String(), nil
 }
 
 // startup is called when the app starts. The context is created
