@@ -184,7 +184,7 @@ func setAbout(appProgNameWithExt string) (string, error) {
 		AppName:     appProgNameWithExt,
 		Version:     Version,
 		BuildDate:   Date,
-		Copyright:   fmt.Sprintf("Copyright 2025 %s", authorName),
+		Copyright:   fmt.Sprintf("Copyright 2026 %s", authorName),
 		License:     licenseShort,
 	}
 	tpl, err := template.New("about").Parse(aboutTemplate)

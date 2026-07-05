@@ -105,7 +105,7 @@ func TestSetAbout(t *testing.T) {
 			appProgNameWithExt: "md-reader.exe",
 			expectedContains: []string{
 				"md-reader.exe",
-				"Copyright 2025",
+				"Copyright 2026",
 				"Version",
 				Date, // Use the actual variable instead of "BuildDate"
 			},
@@ -116,7 +116,7 @@ func TestSetAbout(t *testing.T) {
 			appProgNameWithExt: "markdown-viewer",
 			expectedContains: []string{
 				"markdown-viewer",
-				"Copyright 2025",
+				"Copyright 2026",
 			},
 			expectedNotContains: []string{},
 		},
@@ -124,7 +124,7 @@ func TestSetAbout(t *testing.T) {
 			name:               "empty app name",
 			appProgNameWithExt: "",
 			expectedContains: []string{
-				"Copyright 2025",
+				"Copyright 2026",
 				"Version",
 			},
 			expectedNotContains: []string{},
@@ -328,7 +328,7 @@ func TestAppVersionInfo(t *testing.T) {
 	// Check that version info contains expected elements
 	expectedElements := []string{
 		"test-md-reader.exe",
-		"Copyright 2025",
+		"Copyright 2026",
 	}
 
 	for _, element := range expectedElements {
