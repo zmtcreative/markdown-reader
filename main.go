@@ -53,17 +53,7 @@ func main() {
 	// This will initialize the application with the command-line arguments.
     mdrApp := NewApp(cliArgs)
 
-	// fmt.Printf("##> DEBUG (MAIN): App initialized with CLI args\n")
-	// fmt.Printf("####> Initial file: %s\n", mdrApp.currentFile)
-
-	// TODO: Add options to NewApp and Config to set Width and Height and validate the sizes
-	//       - Update the NewApp function to accept width and height parameters
-	//       - Update the Config struct to include width and height fields
-	//       - Update Settings.vue to bind the width and height fields to the UI
-	//       - Set minimum width and height values (640, 480)
-	//       - Use Wails ScreenGetAll(ctx context.Context) to get the current screen dimensions
-	//         - See https://wails.io/docs/reference/runtime/screen/
-	//         - Make sure Height and/or Width do not exceed the screen dimensions
+	// TODO: Add configurable window width/height with screen dimension validation
 
 	// Create application with options
 	werr := wails.Run(buildWailsAppOptions(mdrApp))

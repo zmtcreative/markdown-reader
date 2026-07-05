@@ -133,7 +133,12 @@ func TestSetAbout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := setAbout(tt.appProgNameWithExt)
+			result, err := setAbout(tt.appProgNameWithExt)
+
+			// Check that no error occurred
+			if err != nil {
+				t.Errorf("setAbout() returned unexpected error: %v", err)
+			}
 
 			// Check that result is not empty
 			if result == "" {
@@ -248,11 +253,6 @@ func TestNewApp(t *testing.T) {
 
 			if app == nil {
 				t.Fatal("NewApp() returned nil")
-			}
-
-			// Check that frontMatter map is initialized
-			if app.frontMatter == nil {
-				t.Error("NewApp() frontMatter map is nil")
 			}
 
 			// Check that configManager is initialized

@@ -135,8 +135,7 @@ func (dp *DocumentProcessor) LoadAndDisplayMarkdown(filePath string) error {
     }
 
     if dp.configManager.UseAbbreviations() {
-        if docFrontmatter["__ABBR__"] != nil {
-            abbrDefs := docFrontmatter["__ABBR__"].(map[string]string)
+        if abbrDefs, ok := docFrontmatter["__ABBR__"].(map[string]string); ok {
             htmlContent = markdown.ReplaceAbbreviationsInHTML(htmlContent, abbrDefs)
         }
     }

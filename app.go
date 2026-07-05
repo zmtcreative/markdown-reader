@@ -97,7 +97,6 @@ type App struct {
 	appProgName        string            // Store the application name without extension
 	appProgNameWithExt string            // Store the application name with extension
 	showHelp           bool              // Flag to indicate if help should be shown
-	frontMatter        map[string]string // Store frontmatter data
 	cmdlineOptions     string            // Store command line options here
 	versionInfo        string            // Store version information
 
@@ -132,10 +131,14 @@ func NewApp(cliArgs *cli.CliArgs) *App {
 
 	// Handle app name
 	appProgNameWithExt := stringFromPtr(cliArgs.AppProgNameWithExt, "md-reader")
-	setAboutString := setAbout(appProgNameWithExt)
+	setAboutString, err := setAbout(appProgNameWithExt)
+	if err != nil {
+		// Log the error and use a fallback version string
+		log.Printf("##> LOG: Error generating about string: %v", err)
+		setAboutString = fmt.Sprintf("<h1>%s</h1><p>Version: %s</p>", appProgNameWithExt, Version)
+	}
 
 	return &App{
-		frontMatter:        map[string]string{},                             // Initialize an empty map for frontmatter
 		currentFile:        stringFromPtr(cliArgs.InitialFile, ""),          // Default to empty, can be set via CLI flag
 		appProgName:        stringFromPtr(cliArgs.AppProgName, "md-reader"), // Store the application name without extension
 		appProgNameWithExt: appProgNameWithExt,                              // Store the application name with extension
@@ -162,7 +165,7 @@ func stringFromPtr(p *string, defaultValue string) string {
 	return defaultValue
 }
 
-func setAbout(appProgNameWithExt string) string {
+func setAbout(appProgNameWithExt string) (string, error) {
 	var versionText bytes.Buffer
 
 	authorName := gjson.Get(wailsConfig, "author.name").String()
@@ -186,16 +189,14 @@ func setAbout(appProgNameWithExt string) string {
 	}
 	tpl, err := template.New("about").Parse(aboutTemplate)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing about template: %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("parsing about template: %w", err)
 	}
 	err = tpl.Execute(&versionText, tplData)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error executing about template: %v\n", err)
-		os.Exit(1)
+		return "", fmt.Errorf("executing about template: %w", err)
 	}
 
-	return versionText.String()
+	return versionText.String(), nil
 }
 
 // startup is called when the app starts. The context is created
@@ -340,34 +341,6 @@ func (a *App) ReloadCurrentDocument() error {
 	return a.reloadCurrentDocument()
 }
 
-// TODO: CLEANUP - These wrapper methods are never called from the frontend
-// The frontend uses its own JavaScript functions instead
-//
-// Analysis shows these methods exist but are never invoked from the Vue.js frontend.
-// The frontend handles DOM class manipulation directly via JavaScript.
-// These can be safely removed in a future cleanup since the functionality
-// is handled by the DocumentProcessor methods directly.
-//
-// // AddDocClass adds the class to html and body elements
-// func (a *App) AddDocClass(thisClass ...string) {
-//     a.documentProcessor.AddDocClass(thisClass...)
-// }
-//
-// // RemoveDocClass removes the class from html and body elements
-// func (a *App) RemoveDocClass(thisClass ...string) {
-//     a.documentProcessor.RemoveDocClass(thisClass...)
-// }
-//
-// // ToggleDocClass toggles the class on html and body elements
-// func (a *App) ToggleDocClass(thisClass ...string) {
-//     a.documentProcessor.ToggleDocClass(thisClass...)
-// }
-//
-// // OpenFileMenuHandler handles the File > Open menu action
-// func (a *App) OpenFileMenuHandler(data *menu.CallbackData) {
-//     a.fileManager.OpenFileMenuHandler(data, &a.currentFile)
-// }
-
 // Settings-related methods
 
 // GetSettings returns the current application settings
@@ -395,11 +368,12 @@ func (a *App) SaveSettings(settings *app.Config) error {
 
 	// Update the current app settings
 
-	// Recreate the document processor with new settings
+	// Recreate the document processor and file manager under the watcher lock to
+	// prevent a data race with the file-watcher goroutine that reads these fields.
+	a.watchMu.Lock()
 	a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
-
-	// Update the file manager with the new document processor
 	a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
+	a.watchMu.Unlock()
 
 	// Automatically reload the current document to apply new settings
 	if a.currentFile != "" {
@@ -422,11 +396,12 @@ func (a *App) SaveSettingsSessionOnly(settings *app.Config) error {
 
 	// Update the current app settings
 
-	// Recreate the document processor with new settings
+	// Recreate the document processor and file manager under the watcher lock to
+	// prevent a data race with the file-watcher goroutine that reads these fields.
+	a.watchMu.Lock()
 	a.documentProcessor = app.NewDocumentProcessorWithStyle(a.ctx, a.configManager)
-
-	// Update the file manager with the new document processor
 	a.fileManager = app.NewFileManager(a.ctx, a.binaryDetector, a.documentProcessor)
+	a.watchMu.Unlock()
 
 	// Automatically reload the current document to apply new settings
 	if a.currentFile != "" {
@@ -556,12 +531,16 @@ func (a *App) GetMonospaceFontsWithDetectionInfo() map[string]interface{} {
 }
 
 func (a *App) reloadCurrentDocument() error {
-	currentFile := a.GetCurrentFile()
+	a.watchMu.Lock()
+	currentFile := a.currentFile
+	processor := a.documentProcessor
+	a.watchMu.Unlock()
+
 	if currentFile == "" {
 		return fmt.Errorf("no document currently loaded")
 	}
 
-	if err := appLoadMarkdown(a.documentProcessor, currentFile); err != nil {
+	if err := appLoadMarkdown(processor, currentFile); err != nil {
 		return fmt.Errorf("failed to reload document %s: %w", currentFile, err)
 	}
 
@@ -675,14 +654,6 @@ func (a *App) handleWatchedFileEvent(event fsnotify.Event) {
 }
 
 func (a *App) scheduleAutoRefresh() {
-	a.watchMu.Lock()
-	previousTimer := a.autoRefreshTimer
-	a.watchMu.Unlock()
-
-	if previousTimer != nil {
-		previousTimer.Stop()
-	}
-
 	newTimer := appAfterFunc(autoRefreshDebounce, func() {
 		if !a.configManager.UseAutoRefresh() {
 			return
@@ -694,8 +665,13 @@ func (a *App) scheduleAutoRefresh() {
 	})
 
 	a.watchMu.Lock()
+	previousTimer := a.autoRefreshTimer
 	a.autoRefreshTimer = newTimer
 	a.watchMu.Unlock()
+
+	if previousTimer != nil {
+		previousTimer.Stop()
+	}
 }
 
 func sameDocumentPath(left, right string) bool {

@@ -15,8 +15,9 @@
         latest Git commit) that would be used for the build, but without actually
         performing the build.
 
-        You can use the -Build, -NSIS, and -UPX switches to
-        perform the build, create an NSIS installer, and compress the executable.
+        You can use the -Build, -NSIS, -UPX, and -ZipFile switches to
+        perform the build, create an NSIS installer, compress the executable,
+        and package the installer into a ZIP file.
     .PARAMETER Build
         Run the build process without generating the NSIS installer.
     .PARAMETER NSIS
@@ -25,6 +26,9 @@
         Implies -Build. Use UPX to compress the executable file.
     .PARAMETER RunAllTests
         Run the full frontend test suite when invoking Run-AllTests.ps1 before building.
+    .PARAMETER ZipFile
+        Implies -NSIS. After creating the NSIS installer, compresses it into a
+        ZIP file and generates SHA256 and SHA1 hashes for the ZIP.
     .PARAMETER NoTests
         Bypass Run-AllTests.ps1 before building.
 #>
@@ -42,6 +46,9 @@ param (
     [Parameter(Mandatory = $false, HelpMessage = "(Implies -Build) Use UPX to compress the executable file.")]
     [Alias("u","c","compress","compact")]
     [switch]$UPX,
+    [Parameter(Mandatory = $false, HelpMessage = "(Implies -NSIS) Compress the NSIS installer into a ZIP file and generate hashes for it.")]
+    [Alias("z","zip")]
+    [switch]$ZipFile,
     [Parameter(Mandatory = $false, HelpMessage = "Run the full frontend test suite before building.")]
     [switch]$RunAllTests,
     [Parameter(Mandatory = $false, HelpMessage = "Bypass running tests before building.")]
@@ -67,7 +74,7 @@ if (Test-Path -Path "$tmpProjectRoot\wails.json") {
 # Set the default behavior to show the current version and file version
 # without performing the build.
 $ShowVersionOnly = $true
-if ($Build -or $NSIS -or $UPX) {
+if ($Build -or $NSIS -or $UPX -or $ZipFile) {
     $ShowVersionOnly = $false
 }
 
@@ -861,6 +868,9 @@ function Invoke-WailsBuild {
     $PackageJsonPath = Join-Path $ProjectRoot "frontend" "package.json"
     $InfoJsonPath = Join-Path $ProjectRoot "build" "windows" "info.json"
 
+    if ($ZipFile) {
+        $NSIS = $true
+    }
     if ($NSIS) {
         $NSISOption = "-nsis"
         $Build = $true
@@ -943,6 +953,24 @@ function Invoke-WailsBuild {
 
         # Create SHA1 and SHA256 hashes for the executable files
         New-FileHashes -DirectoryPath (Join-Path $ProjectRoot "build" "bin") -FilePattern "*.exe"
+
+        if ($ZipFile) {
+            $binDir = Join-Path $ProjectRoot "build" "bin"
+            $installer = Get-ChildItem -Path $binDir -Filter "*-installer.exe" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if (-not $installer) {
+                Write-Host -ForegroundColor Red "No NSIS installer executable found in $binDir."
+            } else {
+                $zipPath = Join-Path $installer.DirectoryName ($installer.BaseName + ".zip")
+                Write-Host -ForegroundColor Cyan "Compressing installer into ZIP: $zipPath"
+                Compress-Archive -Path $installer.FullName -DestinationPath $zipPath -Force
+                Write-Host -ForegroundColor Cyan "Writing sha256 and sha1 hashes for ZIP file..."
+                $sha256Hash = (Get-FileHash $zipPath -Algorithm SHA256).Hash
+                $sha1Hash = (Get-FileHash $zipPath -Algorithm SHA1).Hash
+                $zipName = Split-Path -Leaf $zipPath
+                "$sha256Hash  $zipName" | Out-File -FilePath ($zipPath + ".sha256") -Encoding utf8
+                "$sha1Hash  $zipName" | Out-File -FilePath ($zipPath + ".sha1") -Encoding utf8
+            }
+        }
 
         Restore-RepositoryToCleanState
     }

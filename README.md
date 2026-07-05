@@ -23,10 +23,10 @@ The reader supports the current CommonMark spec plus a wide range of Extension:
 - Typographic Enhancements (*like [smartypants](https://daringfireball.net/projects/smartypants/)*)
   - Fancy quotes
   - Proper en-dash and em-dash
-  - Proper elipsis rendering
+  - Proper ellipsis rendering
 - Emojis
 - Inline HTML  (*allows inclusion of bare HTML in Markdown -- __Potentially Unsafe__*)
-- Sanitize HTML  (*removes some potentiall dangerous HTML elements and disables potentially dangerous URLs with executable file extensions in the URL -- __should be enabled when using Inline HTML__*)
+- Sanitize HTML  (*removes some potential dangerous HTML elements and disables potentially dangerous URLs with executable file extensions in the URL -- __should be enabled when using Inline HTML__*)
 - Frontmatter Parsing  (*currently can use the __Title:__ and __Date:__ entries in markdown frontmatter*)
 - Mermaid Diagrams and Charts
 - Image Figure Wrapping  (*provides a syntax for including captions with images*)
@@ -61,4 +61,4 @@ Development is still ongoing.
 
 This application is currently being privately developed and we are not (currently) accepting collaborators, feature requests or pull-requests.
 
-The repository **is** public and you are welcome to fork the project and modify it as you see fit, provided you adhere to the [LICENSE](LICENSE) and provide attribution in your `README.md` or a `NOTICE.md` file in your forked repository.
+The repository __is__ public and you are welcome to fork the project and modify it as you see fit, provided you adhere to the [LICENSE](LICENSE) and provide attribution in your `README.md` or a `NOTICE.md` file in your forked repository.

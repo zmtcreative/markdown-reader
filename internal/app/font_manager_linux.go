@@ -7,6 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // getWindowsFontsFromRegistry is not available on non-Windows platforms
@@ -64,7 +67,7 @@ func (fm *FontManager) getLinuxSystemFonts() []string {
 				// Clean up the font name
 				fontName = strings.ReplaceAll(fontName, "_", " ")
 				fontName = strings.ReplaceAll(fontName, "-", " ")
-				fontName = strings.Title(strings.ToLower(fontName))
+				fontName = cases.Title(language.English, cases.Compact).String(strings.ToLower(fontName))
 
 				// Remove common style suffixes
 				styleSuffixes := []string{

@@ -2,9 +2,11 @@ package app
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"md-reader/internal/utils"
 
 	"github.com/spf13/viper"
 )
@@ -112,38 +114,10 @@ var AlertCalloutStyles = map[string]string{
 }
 
 // getAppNameFromExecutable extracts the application name from the executable path
-// without the file extension
+// without the file extension. This is a thin wrapper around the shared utility.
 func getAppNameFromExecutable() string {
-	if len(os.Args) == 0 {
-		return "md-reader" // fallback
-	}
-
-	// Get the base name from the executable path
-	execPath := os.Args[0]
-
-	// Handle both Windows and Unix path separators
-	var baseName string
-	if strings.Contains(execPath, "\\") {
-		// Windows path - handle manually to work cross-platform
-		parts := strings.Split(execPath, "\\")
-		baseName = parts[len(parts)-1]
-	} else {
-		// Unix path or no path separators
-		baseName = filepath.Base(execPath)
-	}
-
-	// Remove the file extension
-	ext := filepath.Ext(baseName)
-	if ext != "" {
-		baseName = strings.TrimSuffix(baseName, ext)
-	}
-
-	// Use fallback if empty or invalid
-	if baseName == "" || baseName == "." {
-		return "md-reader"
-	}
-
-	return baseName
+	_, appName := utils.GetExecutableBaseName()
+	return appName
 }
 
 // NewConfigManager creates a new configuration manager
@@ -231,7 +205,9 @@ func getConfigDir(appName string) string {
 	}
 
 	// Ensure directory exists
-	os.MkdirAll(configDir, 0755)
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		log.Printf("##> LOG: Warning: could not create config directory %q: %v", configDir, err)
+	}
 
 	return configDir
 }
@@ -241,10 +217,10 @@ func (cm *ConfigManager) loadConfig() {
 	if err := cm.viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found, use defaults
-			fmt.Printf("Config file not found, using defaults: %s\n", cm.configPath)
+			log.Printf("##> LOG: Config file not found, using defaults: %s", cm.configPath)
 		} else {
 			// Config file found but another error occurred
-			fmt.Printf("Error reading config file: %v\n", err)
+			log.Printf("##> LOG: Error reading config file: %v", err)
 			cm.config = defaultConfig()
 			return
 		}
@@ -252,14 +228,14 @@ func (cm *ConfigManager) loadConfig() {
 
 	// Unmarshal configuration into struct
 	if err := cm.viper.Unmarshal(cm.config); err != nil {
-		fmt.Printf("Error unmarshaling config: %v\n", err)
+		log.Printf("##> LOG: Error unmarshaling config: %v", err)
 		// Use defaults if unmarshal fails
 		cm.config = defaultConfig()
 	}
 
 	// Validate and enforce security constraint: inline HTML must always be sanitized
 	if cm.config.Application.UseInlineHTML && !cm.config.Application.UseSanitize {
-		fmt.Printf("Security: Enabling HTML sanitization (inline HTML requires sanitization)\n")
+		log.Printf("##> LOG: Security: Enabling HTML sanitization (inline HTML requires sanitization)")
 		cm.config.Application.UseSanitize = true
 	}
 }

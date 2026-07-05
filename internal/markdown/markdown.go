@@ -24,14 +24,6 @@ import (
 	d2diagrams "github.com/FurqanSoftware/goldmark-d2"
 	katex "github.com/kingreatwill/goldmark-katex/v2"
 
-	// d2dagrelayout "oss.terrastruct.com/d2/d2layouts/d2dagrelayout"
-
-	// d2themescatalog "oss.terrastruct.com/d2/d2themes/d2themescatalog"
-
-	// katex "github.com/kingreatwill/goldmark-katex/v2"
-	// d2diagrams "github.com/FurqanSoftware/goldmark-d2"
-	// d2themescatalog "oss.terrastruct.com/d2/d2themes/d2themescatalog"
-	// d2elklayout "oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	blockattr "github.com/mdigger/goldmark-attributes"
 	bracketedspan "github.com/nemunaire/goldmark-inline-attributes"
 	fences "github.com/stefanfritsch/goldmark-fences"
@@ -51,8 +43,6 @@ import (
 
 //go:embed assets/alertcallouts-gfmstrict.icons
 var alertCalloutsGFMStrictData string
-
-var _ = alertCalloutsGFMStrictData
 
 const (
 	ALERT_NOICONS = iota
@@ -534,16 +524,9 @@ func InitAlertCalloutsIcons(icondata string) map[string]string {
 				alias := strings.TrimSpace(parts[0])
 				primary := strings.TrimSpace(parts[1])
 				// Set alias to reference the primary icon (will be set after core icons are loaded)
+				// Forward-reference aliases (primary not yet seen) are resolved by the second pass below.
 				if svg, exists := ai[primary]; exists {
 					ai[alias] = svg
-				} else {
-					// Store for later processing if primary doesn't exist yet
-					// This handles the case where aliases are defined before their primary keys
-					defer func(alias, primary string) {
-						if svg, exists := ai[primary]; exists {
-							ai[alias] = svg
-						}
-					}(alias, primary)
 				}
 			}
 			continue

@@ -1,11 +1,46 @@
 package utils
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
+
+// GetExecutableBaseName extracts the application name from the executable path.
+// It handles both Windows and Unix path separators and returns both the name
+// with and without the file extension.
+func GetExecutableBaseName() (withExt, withoutExt string) {
+	if len(os.Args) == 0 {
+		return "md-reader", "md-reader"
+	}
+
+	execPath := os.Args[0]
+
+	// Handle both Windows and Unix path separators
+	var baseName string
+	if strings.Contains(execPath, "\\") {
+		// Windows path - handle manually to work cross-platform
+		parts := strings.Split(execPath, "\\")
+		baseName = parts[len(parts)-1]
+	} else {
+		// Unix path or no path separators
+		baseName = filepath.Base(execPath)
+	}
+
+	// Use fallback if empty or invalid
+	if baseName == "" || baseName == "." {
+		return "md-reader", "md-reader"
+	}
+
+	ext := filepath.Ext(baseName)
+	if ext != "" {
+		return baseName, strings.TrimSuffix(baseName, ext)
+	}
+	return baseName, baseName
+}
 
 // GetValueFromMap performs a case-insensitive search for a key in a map.
 func GetValueFromMap(m map[string]string, key string) string {
